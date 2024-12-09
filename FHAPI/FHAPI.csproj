@@ -11,8 +11,4 @@
     <PackageReference Include="XmlRpc" Version="2.1.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Interfaces\" />
-  </ItemGroup>
-
 </Project>

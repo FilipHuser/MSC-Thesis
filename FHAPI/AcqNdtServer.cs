@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using CookComputing.XmlRpc;
+using FHAPI.Interfaces;
 
 namespace FHAPI
 {
@@ -20,7 +21,7 @@ namespace FHAPI
             Host = host;
             Port = port;
             DataConnectionTimeout = dataConnectionTimeout;
-            RPCP = XmlRpcProxyGen.Create<IXmlRpcProxy>();
+            RPCP = XmlRpcProxyGen.Create<IRPC>();
             ((XmlRpcClientProtocol)RPCP).Url = RPCServerURL;
 
 
@@ -42,7 +43,7 @@ namespace FHAPI
         public string? Port { get; set; }
         public string? RPCServerURL => $"http://{Host}:{Port}/RPC2";
         public TransportType TransportType { get; set; }
-        public IXmlRpcProxy RPCP { get; set; }
+        public IRPC RPCP { get; set; }
         public string? ACKRPCNamespace { get; set; } = "acq.";
         public List<string> FullList { get; set; } = new List<string>();
         public List<string> MethodsList { get; set; } = new List<string>();
@@ -64,6 +65,7 @@ namespace FHAPI
                     data += partial;
                 }
             }
+            RPCP.LoadTemplate(data);
         }
         #endregion
     }
