@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113 d17.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FHAPI", "FHAPI\FHAPI.csproj", "{4BC81DEA-EF3F-4EEC-8248-C80A4461C661}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "TestApp\TestApp.csproj", "{CC249EEF-2981-4EE9-B73C-BB1085370B87}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4BC81DEA-EF3F-4EEC-8248-C80A4461C661}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BC81DEA-EF3F-4EEC-8248-C80A4461C661}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BC81DEA-EF3F-4EEC-8248-C80A4461C661}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BC81DEA-EF3F-4EEC-8248-C80A4461C661}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC249EEF-2981-4EE9-B73C-BB1085370B87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC249EEF-2981-4EE9-B73C-BB1085370B87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC249EEF-2981-4EE9-B73C-BB1085370B87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC249EEF-2981-4EE9-B73C-BB1085370B87}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
