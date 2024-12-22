@@ -1,14 +1,9 @@
-﻿using FHAPI;
-
-namespace TestAppn
+﻿namespace TestApp
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            var anc = new AcqNdtChannel(ChannelType.DIGITAL);
-
-            Console.WriteLine(anc);
         }
     }
 }
