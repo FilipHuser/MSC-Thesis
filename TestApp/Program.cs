@@ -7,7 +7,7 @@ namespace TestApp
         static void Main(string[] args)
         {
             FHAPI fhapi = new FHAPI();
-            fhapi.L();
+            fhapi.Run();
         }
     }
 }
