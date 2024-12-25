@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kveer.XmlRPC" Version="1.3.1" />
-    <PackageReference Include="XmlRpc" Version="2.1.1" />
+    <PackageReference Include="PacketDotNet" Version="1.4.7" />
+    <PackageReference Include="SharpPcap" Version="6.3.0" />
   </ItemGroup>
 
 </Project>
