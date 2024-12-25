@@ -63,8 +63,16 @@ namespace FHAPILib
 
         private static void device_OnPacketArrival(object sender, PacketCapture e)
         {
-            Console.WriteLine($"Len={e.Data.Length}:\n {BitConverter.ToString(e.Data.ToArray()).Replace("-", " ")}\n\n");
-        }
+            var ethernetPacket = EthernetPacket.ParsePacket(e.GetPacket().LinkLayerType, e.GetPacket().Data);
+            if (ethernetPacket.PayloadPacket is IPv4Packet ipPacket)
+            {
+                string sourceIp = ipPacket.SourceAddress.ToString();
+                string destIp = ipPacket.DestinationAddress.ToString();
+
+                Console.WriteLine($"Source IP: {sourceIp}, Destination IP: {destIp}, Len={e.Data.Length}:");
+            }
+            Console.WriteLine($"{BitConverter.ToString(e.Data.ToArray()).Replace("-", " ")}\n\n");
+        } 
         #endregion
     }
 }
