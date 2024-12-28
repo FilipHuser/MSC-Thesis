@@ -1,0 +1,60 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+@using SharpPcap;
+
+<h1>@ViewBag.N</h1>
+
+<div class="container mt-4">
+    <div class="mt-4">
+        <label for="deviceSelect" class="form-label">Select a Capture Device:</label>
+        <select id="deviceSelect" class="form-select" required>
+            <option value="-1" selected disabled>Choose a device...</option>
+            @{
+                int i = 0;
+            }
+            @foreach (var dev in (CaptureDeviceList)ViewBag.devices)
+            {
+                <option value="@i">@dev.Description</option>
+                i++;
+            }
+        </select>
+    </div>
+
+    <div class="mt-4">
+        <label for="filterInput" class="form-label">Packet Filter:</label>
+        <input type="text" id="filterInput" class="form-control" placeholder="Enter a filter (e.g., tcp, udp, port 80) [Berkeley Packet Filters]" />
+    </div>
+
+    <div class="mt-4">
+        <label for="readTimeoutInput" class="form-label">Read Timeout (ms):</label>
+        <input type="number" id="readTimeoutInput" class="form-control" placeholder="Enter read timeout in milliseconds" />
+    </div>
+
+    <div class="mt-4">
+        <label for="packetsToFetchInput" class="form-label">Number of packets to fetch:</label>
+        <input type="number" id="packetsToFetchInput" class="form-control" placeholder="Enter number of packets to fetch" min="1" max="100"/>
+    </div>
+
+    <div class="mt-4">
+        <label for="fetchFrequency" class="form-label">Data Fetch Frequency (ms):</label>
+        <input type="range" id="fetchFrequency" class="form-range" min="100" max="5000" step="100" value="1000" />
+        <div class="d-flex justify-content-between">
+            <small>100 ms</small>
+            <small>5000 ms</small>
+        </div>
+    </div>
+</div>
+
+<div class="container" id="graphPartial">
+
+</div>
+
+@section Scripts {
+
+    <script>
+        loadPartialView('_FetchPacketsPartial' , 'Home' , 'graphPartial');
+    </script>
+
+}

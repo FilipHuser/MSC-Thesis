@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using PacketDotNet;
 using SharpPcap;
 
@@ -10,68 +11,49 @@ namespace FHAPILib
         public FHAPI()
         {
             ReadTimeout = 1000;
-            Filter = "udp";
         }
 
         #region PROPERTIES
+        public CaptureDeviceList CaptureDevices => CaptureDeviceList.Instance;
         public int ReadTimeout { get; set; } //ms
-        public string Filter { get; set; }
+        public string? Filter { get; set; }
+        public ConcurrentQueue<RawCapture> CapturedPackets { get; set; } = new ConcurrentQueue<RawCapture>();
+        private ILiveDevice CaptureDevice { get; set; }
+        private Thread CaptureThread { get; set; }
         #endregion
-
+         
         #region METHODS
-        public void Run()
-        {
-            ListCaptureDevices();
-            Console.WriteLine();
-            Console.Write("-- Please choose a device to capture: ");
-            if (!int.TryParse(Console.ReadLine(), out int deviceIndex)) { return; }
-            Capture(deviceIndex);
-            Console.WriteLine("\nPress Enter to stop capturing...\n");
-            Console.ReadLine();
-        }
-
-        private void ListCaptureDevices()
-        {
-            Console.WriteLine("The following devices are available on this machine:");
-            Console.WriteLine("----------------------------------------------------");
-            Console.WriteLine();
-            int i = 0;
-            foreach (var dev in CaptureDeviceList.Instance)
-            {
-                Console.WriteLine("{0}) {1}", i, dev.Description);
-                i++;
-            }
-        }
-
-        private async void Capture(int deviceIndex)
+        public void StartCapturing(int deviceIndex)
         {
             var devices = CaptureDeviceList.Instance;
-            using var device = devices[deviceIndex];
+            CaptureDevice = devices[deviceIndex];
 
-            device.OnPacketArrival += new PacketArrivalEventHandler(device_OnPacketArrival);
-            device.Open(DeviceModes.Promiscuous, ReadTimeout);
-            device.Filter = Filter;
+            CaptureDevice.OnPacketArrival += new PacketArrivalEventHandler(device_OnPacketArrival);
+            CaptureDevice.Open(DeviceModes.Promiscuous, ReadTimeout);
+            CaptureDevice.Filter = Filter??"";
 
-       
-            await Task.Run(() => { device.Capture(); });
-            
-            device.StartCapture();
-            device.Close();
+            CaptureThread = new Thread(() =>
+            {
+                CaptureDevice.StartCapture();
+            });
+
+            CaptureThread.Start();
+        }
+        public void StopCapturing()
+        {
+            if (CaptureDevice == null) { return; }
+            CaptureDevice.StopCapture();
+            CaptureDevice.Close();
+
+            if (CaptureThread != null && CaptureThread.IsAlive)
+            {
+                CaptureThread.Join();
+            }
         }
 
-
-
-        private static void device_OnPacketArrival(object sender, PacketCapture e)
+        private void device_OnPacketArrival(object sender, PacketCapture e)
         {
-            var ethernetPacket = EthernetPacket.ParsePacket(e.GetPacket().LinkLayerType, e.GetPacket().Data);
-            if (ethernetPacket.PayloadPacket is IPv4Packet ipPacket)
-            {
-                string sourceIp = ipPacket.SourceAddress.ToString();
-                string destIp = ipPacket.DestinationAddress.ToString();
-
-                Console.WriteLine($"Source IP: {sourceIp}, Destination IP: {destIp}, Len={e.Data.Length}:");
-            }
-            Console.WriteLine($"{BitConverter.ToString(e.Data.ToArray()).Replace("-", " ")}\n\n");
+            CapturedPackets.Enqueue(e.GetPacket());
         } 
         #endregion
     }
