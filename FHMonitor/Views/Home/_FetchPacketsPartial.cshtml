@@ -1,22 +1,5 @@
 ﻿@using SharpPcap;
 @using System.Net;
-@model List<RawCapture>
+@model string
 
-<h1>@ViewBag.N</h1>
-<h1>@Model.Count</h1>
-
-<table class="table">
-    <thead>
-        <tr>
-            <th>Length</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var packet in Model)
-        {
-            <tr>
-                <td>@packet.Data.Length</td>
-            </tr>
-        }
-    </tbody>
-</table>
+<h5>Fetched: @Model</h5>

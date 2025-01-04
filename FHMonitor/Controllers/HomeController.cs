@@ -26,11 +26,22 @@ namespace FHMonitor.Controllers
             return View();
         }
 
+        public IActionResult CapturePackets(MonitorSettingsViewModel ms)
+        {
+            _fhapis.NPacketsPerFetch = ms.NPacketsPerFetch;
+            _fhapis.FHAPI.Filter = ms.Filter;
+            _fhapis.StartCapturing(ms.CaptureDeviceIndex);
+
+            return RedirectToAction("Index");
+        }
+
         public IActionResult _FetchPacketsPartial()
         {
-            var packets = _fhapis.GetPackets(5);
-            ViewBag.N = _fhapis.PacketCount;
-            return PartialView(packets);
+            var packets = _fhapis.GetPackets();
+            ViewBag.packetsInQueue = _fhapis.FHAPI.CapturedPackets.Count;
+
+            var numericData = packets.Select(p => (float)p.Data.Length).ToList();
+            return Json(numericData);
         }
 
         public IActionResult Privacy()
