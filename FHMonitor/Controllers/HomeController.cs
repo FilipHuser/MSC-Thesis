@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using FHAPILib;
 using FHMonitor.Services;
 using PacketDotNet;
+using Microsoft.Extensions.Logging;
 
 namespace FHMonitor.Controllers
 {
@@ -25,7 +26,6 @@ namespace FHMonitor.Controllers
             ViewBag.devices = fhapi.CaptureDevices;
             return View();
         }
-
         public IActionResult CapturePackets(MonitorSettingsViewModel ms)
         {
             _fhapis.NPacketsPerFetch = ms.NPacketsPerFetch;
@@ -34,14 +34,25 @@ namespace FHMonitor.Controllers
 
             return RedirectToAction("Index");
         }
-
         public IActionResult _FetchPacketsPartial()
         {
             var packets = _fhapis.GetPackets();
-            ViewBag.packetsInQueue = _fhapis.FHAPI.CapturedPackets.Count;
 
-            var numericData = packets.Select(p => (float)p.Data.Length).ToList();
-            return Json(numericData);
+            var response = new List<int>();
+
+            //_logger.LogInformation(_fhapis.FHAPI.CapturedPackets.Count.ToString());
+
+            foreach (var packet in packets)
+            {
+                if (Packet.ParsePacket(packet.LinkLayerType, packet.Data) is EthernetPacket { PayloadPacket: IPv4Packet { PayloadPacket: UdpPacket udpPacket } })
+                {
+                    //_logger.LogInformation(BitConverter.ToInt16(udpPacket.PayloadData).ToString());
+                    var val = BitConverter.ToInt16(udpPacket.PayloadData);
+
+                    if (val != 1) { response.Add(BitConverter.ToInt16(udpPacket.PayloadData)); }
+                }
+            }
+            return Json(response);
         }
 
         public IActionResult Privacy()

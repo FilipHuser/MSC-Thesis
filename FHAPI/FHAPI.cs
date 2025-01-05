@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using PacketDotNet;
 using SharpPcap;
+using System.Net.Sockets;
 
 namespace FHAPILib
 {
@@ -50,7 +51,6 @@ namespace FHAPILib
                 CaptureThread.Join();
             }
         }
-
         private void device_OnPacketArrival(object sender, PacketCapture e)
         {
             CapturedPackets.Enqueue(e.GetPacket());

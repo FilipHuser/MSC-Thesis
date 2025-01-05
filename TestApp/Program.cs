@@ -10,29 +10,46 @@ namespace TestApp
         static void Main(string[] args)
         {
             FHAPI fhapi = new FHAPI();
-            //fhapi.Filter = "udp and src host 192.168.2.6";
+            fhapi.Filter = "udp and src host 192.168.50.245";
 
-            DateTime startTime = DateTime.Now;
-            TimeSpan timeLimit = TimeSpan.FromSeconds(5);
+            foreach (var dev in CaptureDeviceList.Instance)
+            {
+                Console.WriteLine(dev.Description);
+            }
 
 
-            fhapi.StartCapturing(4);
+            fhapi.StartCapturing(3);
             while (true)
             {
-                if (DateTime.Now - startTime > timeLimit)
+                RawCapture? rawPacket;
+                if (fhapi.CapturedPackets.TryDequeue(out rawPacket))
                 {
-                    Console.WriteLine("Time limit reached. Stopping capture.");
-                    break;
-                }
+                    // Parse the raw packet to an EthernetPacket
+                    var packet = Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
 
-                RawCapture? packet;
-                if (fhapi.CapturedPackets.TryDequeue(out packet))
-                {
-                    var p = Packet.ParsePacket(packet.LinkLayerType, packet.Data);
-
-                    if (p.PayloadPacket is IPv4Packet ipPacket)
+                    // Check if the packet is an IP packet
+                    if (packet is EthernetPacket ethPacket)
                     {
-                        Console.WriteLine($"dst: {ipPacket.DestinationAddress} | src: {ipPacket.SourceAddress}");
+                        // Further parse for IP layer (IPv4)
+                        if (ethPacket.PayloadPacket is IPv4Packet ipPacket)
+                        {
+                            // Check if the packet is a UDP packet
+                            if (ipPacket.PayloadPacket is UdpPacket udpPacket)
+                            {
+                                // Extract details of the UDP packet
+                                Console.WriteLine("UDP Packet:");
+                                Console.WriteLine($"Source IP: {ipPacket.SourceAddress}");
+                                Console.WriteLine($"Destination IP: {ipPacket.DestinationAddress}");
+                                Console.WriteLine($"Source Port: {udpPacket.SourcePort}");
+                                Console.WriteLine($"Destination Port: {udpPacket.DestinationPort}");
+                                Console.WriteLine($"UDP Length: {udpPacket.PayloadData.Length}");
+                                Console.WriteLine($"Data: {BitConverter.ToString(udpPacket.PayloadData)}");
+
+                                // If you want to interpret the payload as a string (assuming it is ASCII or UTF-8 encoded)
+                                string payloadText = System.Text.Encoding.UTF8.GetString(udpPacket.PayloadData);
+                                Console.WriteLine($"Payload Text: {payloadText}");
+                            }
+                        }
                     }
                 }
             }

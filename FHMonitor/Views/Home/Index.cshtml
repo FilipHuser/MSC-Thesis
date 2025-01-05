@@ -25,7 +25,7 @@
                             i++;
                         }
                     </select>
-                </div> 
+                </div>
 
                 <div class="mb-3">
                     <label for="filterInput" class="form-label">Packet Filter:</label>
@@ -39,8 +39,19 @@
 
                 <div class="mb-3">
                     <label for="packetsToFetchInput" class="form-label">Number of packets to fetch:</label>
-                    <input asp-for="NPacketsPerFetch" type="number" id="packetsToFetchInput" class="form-control" placeholder="Enter number of packets to fetch" min="1" max="100" />
+                    <input asp-for="NPacketsPerFetch" type="number" id="packetsToFetchInput" class="form-control" placeholder="Enter number of packets to fetch" min="1" max="1000" />
                 </div>
+
+                <!-- Slider for frequency adjustment -->
+                <div class="mb-3">
+                    <label for="frequencySlider" class="form-label">Frequency of Data Fetch (ms):</label>
+                    <input type="range" class="form-range" id="frequencySlider" min="10" max="5000" value="100" step="10">
+                    <div class="d-flex justify-content-between">
+                        <span>10 ms</span>
+                        <span>5000 ms</span>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn btn-primary">Start capturing</button>
             </form>
         </div>
@@ -48,78 +59,25 @@
 }
 
 <div class="card mt-4">
-    <div class="card-body">
-        <div class="mt-3">
-            <label for="fetchFrequency" class="form-label">Data Fetch Frequency (ms):</label>
-            <input type="range" id="fetchFrequency" class="form-range" min="100" max="5000" step="100" value="1000" />
-            <div class="d-flex justify-content-between">
-                <small>100 ms</small>
-                <small>5000 ms</small>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card mt-4">
     <canvas id="packetChart" width="400" height="200"></canvas>
 </div>
 
 @section Scripts {
     <script>
-        let fetchInterval = 1000; // Default fetch interval in milliseconds
-        let startTime = Date.now(); // Record the start time
-        let chartData = []; // Array to store fetched data
-
-        // Update the fetch frequency based on range input
-        document.getElementById("fetchFrequency").addEventListener("input", function () {
-            fetchInterval = parseInt(this.value);
-            if (fetchTimer) {
-                clearInterval(fetchTimer);
-                startFetchInterval();
-            }
-        });
-
-        let fetchTimer;
-
-        function startFetchInterval() {
-            fetchTimer = setInterval(fetchPacketData, fetchInterval);
-        }
-
-        async function fetchPacketData() {
-            try {
-                // Fetch packet data from the server
-                const response = await fetch('/Home/_FetchPacketsPartial');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
-                const fetchedData = await response.json();
-
-                // Add new data points to the chartData array
-                const currentTime = (Date.now() - startTime) / 1000; // Elapsed time in seconds
-                fetchedData.forEach(value => {
-                    chartData.push({ x: currentTime, y: value });
-                });
-
-                // Update the chart with new data
-                updateChart();
-            } catch (error) {
-                console.error('Error fetching packet data:', error);
-            }
-        }
-
         // Initialize Chart.js
         const ctx = document.getElementById('packetChart').getContext('2d');
         const packetChart = new Chart(ctx, {
-            type: 'scatter', // Use scatter plot
+            type: 'line',
             data: {
                 datasets: [{
                     label: 'Packet Data',
-                    data: chartData,
+                    data: [], // Start with an empty dataset
+                    cubicInterpolationMode: 'monotone',
+                    tension: 0.4,
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     borderColor: 'rgba(75, 192, 192, 1)',
                     borderWidth: 1,
-                    showLine: true // Connect points with a line (optional)
+                    showLine: true
                 }]
             },
             options: {
@@ -142,11 +100,44 @@
             }
         });
 
-        function updateChart() {
-            packetChart.update();
+        let startTime = Date.now();
+        let fetchInterval = 1000; // Initial fetch interval set to 1000 ms
+
+        // Function to fetch data
+        async function fetchPacketData() {
+            try {
+                const response = await fetch('@Url.Action("_FetchPacketsPartial")');
+                const data = await response.json();
+
+                if (Array.isArray(data)) {
+                    const currentTime = (Date.now() - startTime) / 1000; // Time in seconds since start
+
+                    data.forEach(value => {
+                        packetChart.data.datasets[0].data.push({
+                            x: currentTime,
+                            y: value
+                        });
+                    });
+
+                    packetChart.update();
+                }
+            } catch (error) {
+                console.error('Error fetching packet data:', error);
+            }
         }
 
-        // Start the automatic fetching
-        startFetchInterval();
+        // Function to adjust the interval based on slider value
+        function adjustInterval() {
+            const sliderValue = document.getElementById('frequencySlider').value;
+            fetchInterval = parseInt(sliderValue, 10);
+            clearInterval(dataFetchInterval);
+            dataFetchInterval = setInterval(fetchPacketData, fetchInterval); // Adjust the interval
+        }
+
+        // Set the initial fetch interval
+        let dataFetchInterval = setInterval(fetchPacketData, fetchInterval);
+
+        // Listen to changes on the frequency slider and adjust the fetching interval
+        document.getElementById('frequencySlider').addEventListener('input', adjustInterval);
     </script>
 }
