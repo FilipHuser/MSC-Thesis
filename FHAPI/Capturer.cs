@@ -11,10 +11,10 @@ namespace FHAPILib
 {
     public class Capturer : BaseComponent
     {
-        protected Capturer(ref ConcurrentQueue<RawCapture> capturedPackets) : base(ref capturedPackets) { }
         #region PROPERTIES
+        protected int DeviceIndex { get; set; } = 4;
         protected string? Filter { get; set; }
-        private int _readTimeout { get; set; } = 1000; //ms
+        private int _readTimeout { get; set; } = 100; //ms
         protected int ReadTimeout
         {
             get => _readTimeout;
@@ -23,25 +23,24 @@ namespace FHAPILib
         protected bool IsCapturing { get; set; } = false;
         private ILiveDevice? _captureDevice { get; set; }
         private Thread? _captureThread { get; set; }
+        
+        public event EventHandler? OnPacketArrival;
         #endregion
+
+        public Capturer(ref ConcurrentQueue<RawCapture> capturedPackets) : base(ref capturedPackets) { }
+
         #region METHODS
-        protected void StartCapturing(int deviceIndex)
+        public void StartCapturing()
         {
             var devices = CaptureDevices;
-            _captureDevice = devices[deviceIndex];
-
+            _captureDevice = devices[DeviceIndex];
             _captureDevice.OnPacketArrival += new PacketArrivalEventHandler(device_OnPacketArrival);
             _captureDevice.Open(DeviceModes.Promiscuous, ReadTimeout);
             _captureDevice.Filter = Filter ?? "";
-
-            _captureThread = new Thread(() =>
-            {
-                _captureDevice.StartCapture();
-            });
-
+            _captureThread = new Thread(() => { _captureDevice.StartCapture(); });
             _captureThread.Start();
         }
-        protected void StopCapturing()
+        public void StopCapturing()
         {
             if (_captureDevice == null) { return; }
             _captureDevice.StopCapture();
@@ -54,6 +53,7 @@ namespace FHAPILib
         }
         protected void device_OnPacketArrival(object sender, PacketCapture e)
         {
+            OnPacketArrival?.Invoke(this , EventArgs.Empty);
             _packetsQueue.Enqueue(e.GetPacket());
         }
         #endregion

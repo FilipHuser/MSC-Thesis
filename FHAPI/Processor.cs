@@ -12,29 +12,71 @@ namespace FHAPILib
 {
     public class Processor : BaseComponent
     {
-        private int _packetBatchSize; 
-        public int PacketBatchSize 
+        #region PROPERTIES
+        private int _packetBatchSize;
+        public int PacketBatchSize
         {
             get => _packetBatchSize;
             set { if (value > 0) { _packetBatchSize = value; } else { throw new ArgumentException("Invalid batch size !"); } }
         }
-        private Queue<RawCapture> PacketBuffer = new Queue<RawCapture>();
+        public bool IsBufferingActive { get; set; } = false;
+        private readonly Mutex _IBAMutex;
+        private ConcurrentQueue<RawCapture> _packetBuffer { get; set; } = new ConcurrentQueue<RawCapture>();
+        public int BufferSize => _packetBuffer.Count;
         private Thread? _bufferThread { get; set; }
+        public delegate void QueueProcessorFunc();
+        #endregion
+        
         public Processor(ref ConcurrentQueue<RawCapture> packetsQueue) : base(ref packetsQueue)
         {
             PacketBatchSize = 1;
+            _IBAMutex = new Mutex();
         }
-        public delegate void QueueProcessorFunc();
+
         #region METHODS
+        public void StartBuffering()
+        {
+            if (IsBufferingActive) { return; }
 
 
+            _IBAMutex.WaitOne();
+            try {
+                IsBufferingActive = true;
+            } catch {
+                _IBAMutex.ReleaseMutex();
+            }
 
-        public List<RawCapture> GetPackets()
+            Console.WriteLine("BUFFERING STARTED...");
+            _bufferThread = new Thread(() => 
+            {
+                while (_packetsQueue.TryDequeue(out RawCapture? packet))
+                {
+                    _packetBuffer.Enqueue(packet);
+                }
+                StopBuffering();
+            });
+            _bufferThread.Start();
+        }
+        public void StopBuffering()
+        {
+            Console.WriteLine("BUFFERING STOPED...");
+            try {
+                IsBufferingActive = false;
+            } catch {
+                _IBAMutex.ReleaseMutex();
+            }
+
+            if (_bufferThread != null && _bufferThread.IsAlive)
+            {
+                _bufferThread.Join();
+            }
+        }
+        public List<RawCapture> GetPackets(QueueProcessorFunc? processorFunc = null)
         {
             var batch = new List<RawCapture>();
             for (int i = 0; i < PacketBatchSize; i++)
             {
-                if (_packetsQueue.TryDequeue(out RawCapture? packet)) { batch.Add(packet); }
+                if (_packetBuffer.TryDequeue(out RawCapture? packet)) { batch.Add(packet); }
             }
             return batch;
         }

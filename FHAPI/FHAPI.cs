@@ -9,16 +9,25 @@ namespace FHAPILib
 {
     public class FHAPI
     {
-        private readonly Processor _processor;
+        private readonly Capturer _capturer;
+        public readonly Processor _processor;
         private ConcurrentQueue<RawCapture> _capturedPackets = new ConcurrentQueue<RawCapture>();
         private ConcurrentQueue<RawCapture> CapturedPackets
         {
             get => _capturedPackets;
             set { _capturedPackets = value;  }  
         }
+        public int PacketsCount => _capturedPackets.Count;
         public FHAPI()
         {
             _processor = new Processor(ref _capturedPackets);
+            _capturer = new Capturer(ref _capturedPackets);
+
+            _capturer.OnPacketArrival += (sender , e) => _processor.StartBuffering();
+        }
+        public void Run()
+        {
+            _capturer.StartCapturing();
         }
     }
 }
