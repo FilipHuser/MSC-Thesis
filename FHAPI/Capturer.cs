@@ -12,7 +12,16 @@ namespace FHAPILib
     public class Capturer : BaseComponent
     {
         #region PROPERTIES
-        protected int DeviceIndex { get; set; } = 4;
+        private int _deviceIndex { get; set; }
+        protected int DeviceIndex 
+        {
+            get => _deviceIndex;
+            set
+            {
+                if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value), $"Device Index must be in range of <0 , {CaptureDevices.Count}"); }
+                _deviceIndex = value;
+            }
+        }
         protected string? Filter { get; set; }
         private int _readTimeout { get; set; } = 100; //ms
         protected int ReadTimeout
@@ -20,14 +29,17 @@ namespace FHAPILib
             get => _readTimeout;
             set => _readTimeout = (value > 0) ? value : throw new ArgumentOutOfRangeException(nameof(value), "ReadTimeout must be greater than zero.");
         }
-        protected bool IsCapturing { get; set; } = false;
         private ILiveDevice? _captureDevice { get; set; }
         private Thread? _captureThread { get; set; }
         
-        public event EventHandler? OnPacketArrival;
+        public event EventHandler? OnStartCapturing;
+        public event EventHandler? OnStopCapturing;
         #endregion
 
-        public Capturer(ref ConcurrentQueue<RawCapture> capturedPackets) : base(ref capturedPackets) { }
+        public Capturer(ref ConcurrentQueue<RawCapture> capturedPackets) : base(ref capturedPackets) 
+        {
+            DeviceIndex = 4;
+        }
 
         #region METHODS
         public void StartCapturing()
@@ -38,22 +50,20 @@ namespace FHAPILib
             _captureDevice.Open(DeviceModes.Promiscuous, ReadTimeout);
             _captureDevice.Filter = Filter ?? "";
             _captureThread = new Thread(() => { _captureDevice.StartCapture(); });
+            OnStartCapturing?.Invoke(this, EventArgs.Empty);
             _captureThread.Start();
+            Console.WriteLine("Capturing started...");
         }
         public void StopCapturing()
         {
-            if (_captureDevice == null) { return; }
-            _captureDevice.StopCapture();
-            _captureDevice.Close();
-
-            if (_captureThread != null && _captureThread.IsAlive)
-            {
-                _captureThread.Join();
-            }
+            _captureDevice?.StopCapture();
+            _captureDevice?.Close();
+            _captureThread?.Join();
+            OnStopCapturing?.Invoke(this, EventArgs.Empty);
+            Console.WriteLine("Capturing stopped...");
         }
         protected void device_OnPacketArrival(object sender, PacketCapture e)
         {
-            OnPacketArrival?.Invoke(this , EventArgs.Empty);
             _packetsQueue.Enqueue(e.GetPacket());
         }
         #endregion

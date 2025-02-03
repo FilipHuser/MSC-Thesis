@@ -4,14 +4,18 @@
     {
         static void Main(string[] args)
         {
-            FHAPILib.FHAPI fhapi = new FHAPILib.FHAPI();
-            fhapi.Run();
+            using (FHAPILib.FHAPI fhapi = new FHAPILib.FHAPI())
+            {
+                fhapi.Run();
 
-            while (true) 
-            { 
-                Console.WriteLine($"CAPTURED PACKETS QUEUE: {fhapi.PacketsCount}");
-                Console.WriteLine($"BUFFER QUEUE: {fhapi._processor.BufferSize}");
-                Thread.Sleep(100);
+
+                Console.WriteLine($"CAPTURED PACKETS QUEUE: {fhapi.CapturedPacketsCount}");
+                Console.WriteLine($"BUFFER QUEUE: {fhapi.BufferedPacketsCount}");
+
+                Thread.Sleep(1000);
+
+                Console.WriteLine($"CAPTURED PACKETS QUEUE: {fhapi.CapturedPacketsCount}");
+                Console.WriteLine($"BUFFER QUEUE: {fhapi.BufferedPacketsCount}");
             }
         } 
     }

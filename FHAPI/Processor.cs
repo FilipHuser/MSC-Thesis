@@ -24,6 +24,7 @@ namespace FHAPILib
         private ConcurrentQueue<RawCapture> _packetBuffer { get; set; } = new ConcurrentQueue<RawCapture>();
         public int BufferSize => _packetBuffer.Count;
         private Thread? _bufferThread { get; set; }
+        private CancellationTokenSource _cancellationTokenSource { get; set; } = new CancellationTokenSource();
         public delegate void QueueProcessorFunc();
         #endregion
         
@@ -36,40 +37,25 @@ namespace FHAPILib
         #region METHODS
         public void StartBuffering()
         {
-            if (IsBufferingActive) { return; }
-
-
-            _IBAMutex.WaitOne();
-            try {
-                IsBufferingActive = true;
-            } catch {
-                _IBAMutex.ReleaseMutex();
-            }
-
-            Console.WriteLine("BUFFERING STARTED...");
+            var cancellationToken = _cancellationTokenSource.Token;
             _bufferThread = new Thread(() => 
             {
-                while (_packetsQueue.TryDequeue(out RawCapture? packet))
+                Console.WriteLine("Buffering started...");
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    _packetBuffer.Enqueue(packet);
+                    while (_packetsQueue.TryDequeue(out RawCapture? packet))
+                    {
+                        _packetBuffer.Enqueue(packet);
+                    }
                 }
-                StopBuffering();
             });
             _bufferThread.Start();
         }
         public void StopBuffering()
         {
-            Console.WriteLine("BUFFERING STOPED...");
-            try {
-                IsBufferingActive = false;
-            } catch {
-                _IBAMutex.ReleaseMutex();
-            }
-
-            if (_bufferThread != null && _bufferThread.IsAlive)
-            {
-                _bufferThread.Join();
-            }
+            Console.WriteLine("Buffering stopped...");
+            _cancellationTokenSource?.Cancel();
+            _bufferThread?.Join();
         }
         public List<RawCapture> GetPackets(QueueProcessorFunc? processorFunc = null)
         {
