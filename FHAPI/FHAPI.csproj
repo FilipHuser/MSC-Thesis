@@ -14,6 +14,8 @@
     <PackageReference Include="PacketDotNet" Version="1.4.7" />
     <PackageReference Include="SharpPcap" Version="6.3.0" />
     <PackageReference Include="SharpPcap.Standard" Version="4.4.0" />
+    <PackageReference Include="Spectre.Console" Version="0.49.1" />
+    <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />
   </ItemGroup>
 
 </Project>

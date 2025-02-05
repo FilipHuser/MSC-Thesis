@@ -30,15 +30,19 @@ namespace FHAPILib
             set => _readTimeout = (value > 0) ? value : throw new ArgumentOutOfRangeException(nameof(value), "ReadTimeout must be greater than zero.");
         }
         private ILiveDevice? _captureDevice { get; set; }
+        public ILiveDevice? CaptureDevice
+        {
+            get => DeviceIndex >= 0 && DeviceIndex < CaptureDevices.Count ? CaptureDevices [DeviceIndex] : null;
+        }
         private Thread? _captureThread { get; set; }
         
         public event EventHandler? OnStartCapturing;
         public event EventHandler? OnStopCapturing;
         #endregion
 
-        public Capturer(ref ConcurrentQueue<RawCapture> capturedPackets) : base(ref capturedPackets) 
+        public Capturer(ref ConcurrentQueue<RawCapture> capturedPackets , int deviceIndex) : base(ref capturedPackets) 
         {
-            DeviceIndex = 4;
+            DeviceIndex = deviceIndex;
         }
 
         #region METHODS
@@ -52,7 +56,6 @@ namespace FHAPILib
             _captureThread = new Thread(() => { _captureDevice.StartCapture(); });
             OnStartCapturing?.Invoke(this, EventArgs.Empty);
             _captureThread.Start();
-            Console.WriteLine("Capturing started...");
         }
         public void StopCapturing()
         {
@@ -60,7 +63,6 @@ namespace FHAPILib
             _captureDevice?.Close();
             _captureThread?.Join();
             OnStopCapturing?.Invoke(this, EventArgs.Empty);
-            Console.WriteLine("Capturing stopped...");
         }
         protected void device_OnPacketArrival(object sender, PacketCapture e)
         {

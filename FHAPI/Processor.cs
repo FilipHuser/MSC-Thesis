@@ -40,12 +40,13 @@ namespace FHAPILib
             var cancellationToken = _cancellationTokenSource.Token;
             _bufferThread = new Thread(() => 
             {
-                Console.WriteLine("Buffering started...");
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     while (_packetsQueue.TryDequeue(out RawCapture? packet))
                     {
                         _packetBuffer.Enqueue(packet);
+                        //Thread.Sleep(500);
                     }
                 }
             });
@@ -53,7 +54,6 @@ namespace FHAPILib
         }
         public void StopBuffering()
         {
-            Console.WriteLine("Buffering stopped...");
             _cancellationTokenSource?.Cancel();
             _bufferThread?.Join();
         }
