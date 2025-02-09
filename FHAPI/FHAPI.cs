@@ -14,7 +14,7 @@ namespace FHAPILib
         public int BufferedPacketsCount => _processor.BufferSize;
 
         private readonly Capturer _capturer;
-        public readonly Processor _processor;
+        private readonly Processor _processor;
         private ConcurrentQueue<RawCapture> _capturedPackets = new ConcurrentQueue<RawCapture>();
         private ConcurrentQueue<RawCapture> CapturedPackets
         {
@@ -25,7 +25,7 @@ namespace FHAPILib
         public FHAPI()
         {
             _processor = new Processor(ref _capturedPackets);
-            _capturer = new Capturer(ref _capturedPackets , 4);
+            _capturer = new Capturer(ref _capturedPackets);
             _capturer.OnStartCapturing += (sender , e) => _processor.StartBuffering();
             _capturer.OnStopCapturing += (sender, e) => _processor.StopBuffering();
         }
@@ -36,28 +36,40 @@ namespace FHAPILib
 
         public async Task Monitor(CancellationToken token)
         {
-            var table = new Table();
-            table.Title = new TableTitle($"FHAPI ~ dev: {_capturer?.CaptureDevice?.Name}");
-            table.Caption = new TableTitle("Press Any Key To Exit...");
-            table.Border = TableBorder.Ascii2;
-            table.AddColumns("QUEUE" , "COUNT");
-            table.AddRow("[red]MAIN[/]", "0");
-            table.AddRow("[green]BUFF[/]", "0");
-            table.Width = 40;
+            AnsiConsole.Write(new Rows(new Text($"DEVICE: {_capturer.CaptureDevice?.Name}")));
+            // Create the first table
+            var table1 = new Table()
+                .Border(TableBorder.Ascii2)
+                .AddColumns("QUEUE", "COUNT")
+                .AddRow("[red]MAIN[/]", "0")
+                .AddRow("[green]BUFF[/]", "0");
 
-            await AnsiConsole.Live(table)
-                        .StartAsync(async ctx => {
+            // Create the second table
+            var table2 = new Table()
+                .Border(TableBorder.Ascii2)
+                .Width(100)
+                .Centered()
+                .AddColumns("IP SOURCE", "IP DESTINATION", "SIZE", "DATA");
 
-                            while (!token.IsCancellationRequested)
-                            {
-                                table.UpdateCell(0, 1, $"[red]{CapturedPacketsCount}[/]");
-                                table.UpdateCell(1, 1, $"[green]{_processor.BufferSize}[/]");
-                                ctx.Refresh();
-                                //await Task.Delay(13, token);
-                            }
-                        });
+            await AnsiConsole.Live(new Rows(table1, table2)) // Stack them vertically
+                .StartAsync(async ctx =>
+                {
+                    while (!token.IsCancellationRequested)
+                    {
+                        // Update table 1 dynamically
+                        table1.UpdateCell(0, 1, $"[red]{CapturedPacketsCount}[/]");
+                        table1.UpdateCell(1, 1, $"[green]{_processor.BufferSize}[/]");
+
+                        foreach (var packet in GetPackets())
+                        {
+                            table2.AddRow($"{packet.SourceAddress}", "", "", "", "");
+                        }
+
+                        ctx.Refresh();
+                    }
+                });
         }
-
+        public List<IPv4Packet> GetPackets() => _processor.GetPackets();
         public void Dispose()
         {
             _capturer.StopCapturing();

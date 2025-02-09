@@ -6,6 +6,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using FHAPI.Core;
+using PacketDotNet;
 using SharpPcap;
 
 namespace FHAPILib
@@ -30,7 +31,7 @@ namespace FHAPILib
         
         public Processor(ref ConcurrentQueue<RawCapture> packetsQueue) : base(ref packetsQueue)
         {
-            PacketBatchSize = 1;
+            PacketBatchSize = 100;
             _IBAMutex = new Mutex();
         }
 
@@ -46,7 +47,6 @@ namespace FHAPILib
                     while (_packetsQueue.TryDequeue(out RawCapture? packet))
                     {
                         _packetBuffer.Enqueue(packet);
-                        //Thread.Sleep(500);
                     }
                 }
             });
@@ -57,12 +57,18 @@ namespace FHAPILib
             _cancellationTokenSource?.Cancel();
             _bufferThread?.Join();
         }
-        public List<RawCapture> GetPackets(QueueProcessorFunc? processorFunc = null)
+        public List<IPv4Packet> GetPackets(QueueProcessorFunc? processorFunc = null)
         {
-            var batch = new List<RawCapture>();
+            var batch = new List<IPv4Packet>();
             for (int i = 0; i < PacketBatchSize; i++)
             {
-                if (_packetBuffer.TryDequeue(out RawCapture? packet)) { batch.Add(packet); }
+                if (_packetBuffer.TryDequeue(out RawCapture? packet))
+                {
+                    if (Packet.ParsePacket(packet.LinkLayerType, packet.Data) is IPv4Packet ipPacket)
+                    {
+                        batch.Add(ipPacket);
+                    }
+                }
             }
             return batch;
         }

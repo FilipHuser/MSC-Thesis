@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using FHAPI.Core;
 using SharpPcap;
+using Spectre.Console;
 
 namespace FHAPILib
 {
@@ -22,7 +24,7 @@ namespace FHAPILib
                 _deviceIndex = value;
             }
         }
-        protected string? Filter { get; set; }
+        public string? Filter { get; set; }
         private int _readTimeout { get; set; } = 100; //ms
         protected int ReadTimeout
         {
@@ -40,9 +42,17 @@ namespace FHAPILib
         public event EventHandler? OnStopCapturing;
         #endregion
 
-        public Capturer(ref ConcurrentQueue<RawCapture> capturedPackets , int deviceIndex) : base(ref capturedPackets) 
+        public Capturer(ref ConcurrentQueue<RawCapture> capturedPackets , int? deviceIndex = null) : base(ref capturedPackets) 
         {
-            DeviceIndex = deviceIndex;
+            if (deviceIndex == null)
+            {
+                string deviceName = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("SELECT CAPTURE DEVICE:")
+                                                                                 .AddChoices(CaptureDevices.Select(x => x.Name)))??"";
+                deviceIndex = CaptureDevices.ToList().FindIndex(x => x.Name == deviceName);
+            }
+
+            Filter = AnsiConsole.Prompt(new TextPrompt<string>("FILTER (BPF): "));
+            DeviceIndex = (int)deviceIndex;
         }
 
         #region METHODS
