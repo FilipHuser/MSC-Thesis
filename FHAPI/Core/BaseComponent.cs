@@ -15,6 +15,6 @@ namespace FHAPI.Core
             _packetsQueue = packetsQueue;
         }
         protected readonly ConcurrentQueue<RawCapture> _packetsQueue;
-        protected CaptureDeviceList CaptureDevices => CaptureDeviceList.Instance;
+        public CaptureDeviceList CaptureDevices => CaptureDeviceList.Instance;
     }
 }

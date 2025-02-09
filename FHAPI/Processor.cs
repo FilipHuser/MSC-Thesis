@@ -7,7 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using FHAPI.Core;
 using PacketDotNet;
+using PacketDotNet.Ieee80211;
 using SharpPcap;
+using Spectre.Console;
 
 namespace FHAPILib
 {
@@ -20,19 +22,15 @@ namespace FHAPILib
             get => _packetBatchSize;
             set { if (value > 0) { _packetBatchSize = value; } else { throw new ArgumentException("Invalid batch size !"); } }
         }
-        public bool IsBufferingActive { get; set; } = false;
-        private readonly Mutex _IBAMutex;
         private ConcurrentQueue<RawCapture> _packetBuffer { get; set; } = new ConcurrentQueue<RawCapture>();
         public int BufferSize => _packetBuffer.Count;
         private Thread? _bufferThread { get; set; }
         private CancellationTokenSource _cancellationTokenSource { get; set; } = new CancellationTokenSource();
-        public delegate void QueueProcessorFunc();
         #endregion
-        
+
         public Processor(ref ConcurrentQueue<RawCapture> packetsQueue) : base(ref packetsQueue)
         {
-            PacketBatchSize = 100;
-            _IBAMutex = new Mutex();
+            PacketBatchSize = 1;
         }
 
         #region METHODS
@@ -57,20 +55,19 @@ namespace FHAPILib
             _cancellationTokenSource?.Cancel();
             _bufferThread?.Join();
         }
-        public List<IPv4Packet> GetPackets(QueueProcessorFunc? processorFunc = null)
+        public List<FHPacket> GetPackets(Func<int , bool> filterFunction)
         {
-            var batch = new List<IPv4Packet>();
-            for (int i = 0; i < PacketBatchSize; i++)
+            var packets = new List<FHPacket>();
+            var counter = 0;
+            while (packets.Count < PacketBatchSize && !_packetBuffer.IsEmpty)
             {
                 if (_packetBuffer.TryDequeue(out RawCapture? packet))
                 {
-                    if (Packet.ParsePacket(packet.LinkLayerType, packet.Data) is IPv4Packet ipPacket)
-                    {
-                        batch.Add(ipPacket);
-                    }
+                    if (filterFunction(counter)) { packets.Add(new FHPacket(packet)); }
                 }
+                counter++;
             }
-            return batch;
+            return packets;
         }
         #endregion
     }

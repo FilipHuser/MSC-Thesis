@@ -15,17 +15,17 @@ namespace FHAPILib
     {
         #region PROPERTIES
         private int _deviceIndex { get; set; }
-        protected int DeviceIndex 
+        public int DeviceIndex 
         {
             get => _deviceIndex;
             set
             {
-                if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value), $"Device Index must be in range of <0 , {CaptureDevices.Count}"); }
+                if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value), $"Device Index must be in range of <0 , {CaptureDevices.Count})"); }
                 _deviceIndex = value;
             }
         }
         public string? Filter { get; set; }
-        private int _readTimeout { get; set; } = 100; //ms
+        private int _readTimeout { get; set; } = 10; //ms
         protected int ReadTimeout
         {
             get => _readTimeout;
@@ -41,20 +41,7 @@ namespace FHAPILib
         public event EventHandler? OnStartCapturing;
         public event EventHandler? OnStopCapturing;
         #endregion
-
-        public Capturer(ref ConcurrentQueue<RawCapture> capturedPackets , int? deviceIndex = null) : base(ref capturedPackets) 
-        {
-            if (deviceIndex == null)
-            {
-                string deviceName = AnsiConsole.Prompt(new SelectionPrompt<string>().Title("SELECT CAPTURE DEVICE:")
-                                                                                 .AddChoices(CaptureDevices.Select(x => x.Name)))??"";
-                deviceIndex = CaptureDevices.ToList().FindIndex(x => x.Name == deviceName);
-            }
-
-            Filter = AnsiConsole.Prompt(new TextPrompt<string>("FILTER (BPF): "));
-            DeviceIndex = (int)deviceIndex;
-        }
-
+        public Capturer(ref ConcurrentQueue<RawCapture> capturedPackets) : base(ref capturedPackets) { }
         #region METHODS
         public void StartCapturing()
         {

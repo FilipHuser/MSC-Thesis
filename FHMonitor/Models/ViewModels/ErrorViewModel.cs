@@ -1,4 +1,4 @@
-namespace FHMonitor.Models
+namespace FHMonitor.Models.ViewModels
 {
     public class ErrorViewModel
     {

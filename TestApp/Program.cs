@@ -7,6 +7,7 @@ namespace TestApp
         static void Main(string[] args)
         {
             AnsiConsole.Write(new FigletText("FHAPI").Centered().Color(Color.Blue));
+            AnsiConsole.Write(new Rule().RuleStyle("blue"));
 
             var cts = new CancellationTokenSource();
             using (FHAPILib.FHAPI fhapi = new FHAPILib.FHAPI())

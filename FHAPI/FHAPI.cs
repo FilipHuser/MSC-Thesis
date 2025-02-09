@@ -5,23 +5,28 @@ using PacketDotNet;
 using SharpPcap;
 using System.Net.Sockets;
 using Spectre.Console;
+using Spectre.Console.Rendering;
+using FHAPI.Core;
+using log4net.Util;
 
 namespace FHAPILib
 {
     public class FHAPI : IDisposable
     {
-        public int CapturedPacketsCount => _capturedPackets.Count;
-        public int BufferedPacketsCount => _processor.BufferSize;
-
+        #region PROPERTIES
         private readonly Capturer _capturer;
         private readonly Processor _processor;
+        public CaptureDeviceList CaptureDevices => _capturer.CaptureDevices;
+        public int CapturedPacketsCount => _capturedPackets.Count;
+        public int BufferedPacketsCount => _processor.BufferSize;
         private ConcurrentQueue<RawCapture> _capturedPackets = new ConcurrentQueue<RawCapture>();
         private ConcurrentQueue<RawCapture> CapturedPackets
         {
             get => _capturedPackets;
             set { _capturedPackets = value;  }  
         }
-        public int PacketsCount => _capturedPackets.Count;
+        public bool IsRunning { get; set; } = false;
+        #endregion
         public FHAPI()
         {
             _processor = new Processor(ref _capturedPackets);
@@ -29,50 +34,54 @@ namespace FHAPILib
             _capturer.OnStartCapturing += (sender , e) => _processor.StartBuffering();
             _capturer.OnStopCapturing += (sender, e) => _processor.StopBuffering();
         }
-        public void Run()
+        #region METHODS
+        public void Run(int deviceIndex , string filter)
         {
+            _capturer.DeviceIndex = deviceIndex;
+            _capturer.Filter = filter;
             _capturer.StartCapturing();
         }
-
         public async Task Monitor(CancellationToken token)
         {
             AnsiConsole.Write(new Rows(new Text($"DEVICE: {_capturer.CaptureDevice?.Name}")));
-            // Create the first table
+
             var table1 = new Table()
                 .Border(TableBorder.Ascii2)
                 .AddColumns("QUEUE", "COUNT")
                 .AddRow("[red]MAIN[/]", "0")
                 .AddRow("[green]BUFF[/]", "0");
 
-            // Create the second table
-            var table2 = new Table()
-                .Border(TableBorder.Ascii2)
-                .Width(100)
-                .Centered()
-                .AddColumns("IP SOURCE", "IP DESTINATION", "SIZE", "DATA");
+            var packetLogs = new List<Text>();
+            const int maxLogLength = 10;
 
-            await AnsiConsole.Live(new Rows(table1, table2)) // Stack them vertically
+            await AnsiConsole.Live(new Rows(table1))
                 .StartAsync(async ctx =>
                 {
                     while (!token.IsCancellationRequested)
                     {
-                        // Update table 1 dynamically
                         table1.UpdateCell(0, 1, $"[red]{CapturedPacketsCount}[/]");
                         table1.UpdateCell(1, 1, $"[green]{_processor.BufferSize}[/]");
 
                         foreach (var packet in GetPackets())
                         {
-                            table2.AddRow($"{packet.SourceAddress}", "", "", "", "");
+                            var packetInfo = new Text($"{packet.SourceAddress} => {packet.DestinationAddress}: [{packet.Payload?.Length}]", new Style(Color.Yellow));
+                            packetLogs.Add(packetInfo);
+                            if (packetLogs.Count > maxLogLength) { packetLogs.RemoveAt(0); }
                         }
+                        var updatedRows = new List<IRenderable> { table1 };
+                        updatedRows.AddRange(packetLogs);
 
+                        ctx.UpdateTarget(new Rows(updatedRows));
                         ctx.Refresh();
+                        Thread.Sleep(300);
                     }
                 });
         }
-        public List<IPv4Packet> GetPackets() => _processor.GetPackets();
+        public List<FHPacket> GetPackets() =>_processor.GetPackets(x => (x + 1) % 5 == 0);
         public void Dispose()
         {
             _capturer.StopCapturing();
         }
+        #endregion
     }
 }

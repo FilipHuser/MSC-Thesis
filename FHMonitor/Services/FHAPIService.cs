@@ -6,37 +6,15 @@ namespace FHMonitor.Services
 {
     public class FHAPIService
     {
-        public FHAPIService()
-        {
-            FHAPI = new FHAPI();
-            NPacketsPerFetch = 1;
-        }
         #region PROPERTIES
-        public FHAPI FHAPI { get; set; }
-        public int NPacketsPerFetch {  get; set; }
-        public int PacketCount => FHAPI.CapturedPackets.Count;
+        private readonly FHAPILib.FHAPI _fhapi;
         #endregion
-        #region METHODS
-        public void StartCapturing(int deviceIndex) => FHAPI.StartCapturing(deviceIndex);
-        public void StopCapturing() => FHAPI.StopCapturing();
-        public List<RawCapture> GetPackets()
+        public FHAPIService(FHAPILib.FHAPI fhapi)
         {
-            List<RawCapture> packets = new List<RawCapture>();
-
-            for (int i = 0; i < NPacketsPerFetch; i++)
-            {
-                if (FHAPI.CapturedPackets.TryDequeue(out RawCapture? packet))
-                {
-                    if (packet != null) { packets.Add(packet); }
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            return packets;
+            _fhapi = fhapi;
         }
+        #region METHODS
+        public CaptureDeviceList GetCaptureDevices() => _fhapi.CaptureDevices;
         #endregion
     }
 }

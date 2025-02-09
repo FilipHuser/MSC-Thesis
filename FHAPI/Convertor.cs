@@ -9,7 +9,7 @@ namespace FHAPILib
 {
     internal static class Convertor<T> where T : struct
     {
-        public static T? Convert(byte[] payload , int offset)
+        public static T? ConvertPayload(byte[] payload , int offset)
         {
             Func<byte[], int, T>? convertFunc = null;
 
