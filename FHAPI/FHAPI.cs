@@ -35,12 +35,14 @@ namespace FHAPILib
             _capturer.OnStopCapturing += (sender, e) => _processor.StopBuffering();
         }
         #region METHODS
-        public void Run(int deviceIndex , string filter)
+        public void Run()
         {
-            _capturer.DeviceIndex = deviceIndex;
-            _capturer.Filter = filter;
             _capturer.StartCapturing();
         }
+        public void SetDeviceIndex(int index) => _capturer.DeviceIndex = index;
+        public void SetFilter(string filter) => _capturer.Filter = filter;
+
+
         public async Task Monitor(CancellationToken token)
         {
             AnsiConsole.Write(new Rows(new Text($"DEVICE: {_capturer.CaptureDevice?.Name}")));
@@ -78,10 +80,7 @@ namespace FHAPILib
                 });
         }
         public List<FHPacket> GetPackets() =>_processor.GetPackets(x => (x + 1) % 5 == 0);
-        public void Dispose()
-        {
-            _capturer.StopCapturing();
-        }
+        public void Dispose() => _capturer.StopCapturing();
         #endregion
     }
 }

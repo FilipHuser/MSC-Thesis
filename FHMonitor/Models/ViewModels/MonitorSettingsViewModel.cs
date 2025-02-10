@@ -6,10 +6,10 @@ namespace FHMonitor.Models.ViewModels
     {
         #region PROPERTIES
         [Display(Name = "Capture Device")]
+
+        [Required(ErrorMessage = "Device is required.")]
         public int CaptureDeviceIndex { get; set; }
         public string? Filter { get; set; }
-        public int ReadTimeout { get; set; } = 100;
-        public int NPacketsPerFetch { get; set; }
         #endregion
     }
 }

@@ -4,57 +4,62 @@
 @model FHMonitor.Models.ViewModels.MonitorSettingsViewModel;
 @using SharpPcap;
 
-<div class="card mt-4">
+<div class="card mt-3">
     <div class="card-header">
-        <h5 class="card-title">Packet Capture Configuration</h5>
+        <h5 class="card-title">Monitor Settings</h5>
     </div>
     <div class="card-body">
-        @using (Html.BeginForm("SetSettings" , "Monitoring" , FormMethod.Post))
+        @using (Html.BeginForm("", "", FormMethod.Post, new { id = "settingsForm" }))
         {
-            @Html.LabelFor(x => x.CaptureDeviceIndex);
+            <div class="mb-3">
+                @Html.LabelFor(x => x.CaptureDeviceIndex)
+                @Html.DropDownListFor(x => x.CaptureDeviceIndex, new SelectList(ViewBag.captureDevices, "Value", "Name"), new { @class = "form-select" })
+                @Html.ValidationMessageFor(x => x.CaptureDeviceIndex, "", new { @class = "text-danger" })
+            </div>
+            <div class="mb-3">
+                @Html.LabelFor(x => x.Filter)
+                @Html.TextBoxFor(x => x.Filter , new { @class = "form-control"})
+                @Html.ValidationMessageFor(x => x.Filter, "", new { @class = "text-danger" })
+                <div id="emailHelp" class="form-text">*Berkley Packet Filters.</div>
+            </div>
+            <button class="btn btn-primary" type="submit">Submit settings</button>
         }
-
-        <form asp-action="CapturePackets" method="post">
-            <div class="mb-3">
-                <label for="deviceSelect" class="form-label">Select a Capture Device:</label>
-                <select asp-for="CaptureDeviceIndex" id="deviceSelect" class="form-select" required>
-                    @{
-                        int i = 0;
-                    }
-                    @foreach (var dev in (CaptureDeviceList)ViewBag.captureDevices)
-                    {
-                        <option value="@i">@dev.Description</option>
-                        i++;
-                    }
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label for="filterInput" class="form-label">Packet Filter:</label>
-                <input asp-for="Filter" type="text" id="filterInput" class="form-control" placeholder="Enter a filter (e.g., tcp, udp, port 80) [BPF]" />
-            </div>
-
-            <div class="mb-3">
-                <label for="readTimeoutInput" class="form-label">Read Timeout (ms):</label>
-                <input asp-for="ReadTimeout" type="number" id="readTimeoutInput" class="form-control" placeholder="Enter read timeout in milliseconds" />
-            </div>
-
-            <div class="mb-3">
-                <label for="packetsToFetchInput" class="form-label">Number of packets to fetch:</label>
-                <input asp-for="NPacketsPerFetch" type="number" id="packetsToFetchInput" class="form-control" placeholder="Enter number of packets to fetch" min="1" max="1000" />
-            </div>
-
-            <!-- Slider for frequency adjustment -->
-            <div class="mb-3">
-                <label for="frequencySlider" class="form-label">Frequency of Data Fetch (ms):</label>
-                <input type="range" class="form-range" id="frequencySlider" min="10" max="5000" value="100" step="10">
-                <div class="d-flex justify-content-between">
-                    <span>10 ms</span>
-                    <span>5000 ms</span>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Start capturing</button>
-        </form>
     </div>
 </div>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="container d-flex justify-content-between gap-5" id="partial">
+            @Html.ActionLink("Stop", "", "Monitoring", null, new { @class = "btn btn-danger flex-fill disabled" })
+            @Html.ActionLink("Reset", "", "Monitoring", null, new { @class = "btn btn-warning flex-fill disabled" })
+            @Html.ActionLink("Start", "", "Monitoring", null, new { @class = "btn btn-success flex-fill disabled" })
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        jq(document).ready(function () {
+            jq("#settingsForm").submit(function (event) {
+                event.preventDefault();
+
+                var formData = jq(this).serializeArray();
+
+                var data = {};
+                jq.each(formData, function () {
+                    data[this.name] = this.value;
+                });
+
+                CallMethod("SetSettings", "Monitoring", data)
+                .then(function (success) {
+                    if (success) {
+                        jq("#partial a.btn").removeClass("disabled");
+                    } else {
+                        alert("Failed to apply settings.");
+                        jq("#partial a.btn").addClass("disabled");
+                    }
+                });
+            });
+        });
+    </script>
+}
