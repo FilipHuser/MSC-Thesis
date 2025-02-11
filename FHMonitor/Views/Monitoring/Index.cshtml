@@ -11,6 +11,7 @@
     <div class="card-body">
         @using (Html.BeginForm("", "", FormMethod.Post, new { id = "settingsForm" }))
         {
+            @Html.AntiForgeryToken();
             <div class="mb-3">
                 @Html.LabelFor(x => x.CaptureDeviceIndex)
                 @Html.DropDownListFor(x => x.CaptureDeviceIndex, new SelectList(ViewBag.captureDevices, "Value", "Name"), new { @class = "form-select" })
@@ -18,7 +19,7 @@
             </div>
             <div class="mb-3">
                 @Html.LabelFor(x => x.Filter)
-                @Html.TextBoxFor(x => x.Filter , new { @class = "form-control"})
+                @Html.TextBoxFor(x => x.Filter, "" , new { @class = "form-control" })
                 @Html.ValidationMessageFor(x => x.Filter, "", new { @class = "text-danger" })
                 <div id="emailHelp" class="form-text">*Berkley Packet Filters.</div>
             </div>
@@ -27,12 +28,14 @@
     </div>
 </div>
 
+@{ await Html.RenderPartialAsync("_GraphPartial"); }
+
 <div class="card mt-3">
     <div class="card-body">
         <div class="container d-flex justify-content-between gap-5" id="partial">
-            @Html.ActionLink("Stop", "", "Monitoring", null, new { @class = "btn btn-danger flex-fill disabled" })
-            @Html.ActionLink("Reset", "", "Monitoring", null, new { @class = "btn btn-warning flex-fill disabled" })
-            @Html.ActionLink("Start", "", "Monitoring", null, new { @class = "btn btn-success flex-fill disabled" })
+            @Html.ActionLink("Stop Capturing", "StopCapturing", "Monitoring", null, new { @class = "btn btn-danger flex-fill disabled" })
+            @Html.ActionLink("Reset Settings", "ResetSettings", "Monitoring", null, new { @class = "btn btn-warning flex-fill disabled" })
+            @Html.ActionLink("Start Capturing", "StartCapturing", "Monitoring", null, new { @class = "btn btn-success flex-fill disabled" })
         </div>
     </div>
 </div>
@@ -50,16 +53,83 @@
                     data[this.name] = this.value;
                 });
 
-                CallMethod("SetSettings", "Monitoring", data)
-                .then(function (success) {
-                    if (success) {
-                        jq("#partial a.btn").removeClass("disabled");
-                    } else {
-                        alert("Failed to apply settings.");
-                        jq("#partial a.btn").addClass("disabled");
-                    }
-                });
+                callMethod("SetSettings", "Monitoring", data)
+                    .then(function (success) {
+                        if (success) {
+                            jq("#partial a.btn").removeClass("disabled");
+                        } else {
+                            alert("Failed to apply settings.");
+                            jq("#partial a.btn").addClass("disabled");
+                        }
+                    });
             });
+
+            // Initialize chart context
+            const ctx = document.getElementById("monitor").getContext("2d");
+
+            let time = 0; // Starting time
+
+            const chart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: "Packet",
+                        data: [],
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    animation: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom'
+                        },
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Function to fetch and update chart with real-time data
+            async function updateChart() {
+                try {
+                    // Fetch the real-time data from the server
+                    const response = await fetch('@Url.Action("GetPackets")');
+
+                    // Ensure the response body is not empty and parse it as JSON
+                    const data = await response.json();
+
+                    if (Array.isArray(data)) {
+                        // Assuming data is an array of integers
+                        let newData = data;  // This is the list of packet values (integers)
+
+                        // Add each data point to the chart (you can customize this part as per your requirements)
+                        newData.forEach((value, index) => {
+                            time += 1;
+                            chart.data.labels.push(time);
+                            chart.data.datasets[0].data.push({ x: time, y: value });
+
+                            // Keep only the last 20 points to prevent excessive data buildup
+                            if (chart.data.labels.length > 20) {
+                                chart.data.labels.shift();
+                                chart.data.datasets[0].data.shift();
+                            }
+                        });
+
+                        chart.update();
+                    } else {
+                        console.error("Received data is not in the expected format. Expected an array of integers.");
+                    }
+                } catch (error) {
+                    console.error("Error fetching packet data:", error);
+                }
+            }
+
+            // Simulate real-time data every second
+            setInterval(updateChart, 5); // Update every second
         });
     </script>
 }

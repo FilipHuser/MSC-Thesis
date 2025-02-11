@@ -35,9 +35,13 @@ namespace FHAPILib
             _capturer.OnStopCapturing += (sender, e) => _processor.StopBuffering();
         }
         #region METHODS
-        public void Run()
+        public void StartCapturing()
         {
             _capturer.StartCapturing();
+        }
+        public void StopCapturing()
+        {
+            _capturer.StopCapturing();
         }
         public void SetDeviceIndex(int index) => _capturer.DeviceIndex = index;
         public void SetFilter(string filter) => _capturer.Filter = filter;

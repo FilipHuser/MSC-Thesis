@@ -1,4 +1,5 @@
-﻿using FHAPILib;
+﻿using FHAPI.Core;
+using FHAPILib;
 using FHMonitor.Models.ViewModels;
 using PacketDotNet;
 using SharpPcap;
@@ -16,6 +17,9 @@ namespace FHMonitor.Services
         }
         #region METHODS
         public CaptureDeviceList GetCaptureDevices() => _fhapi.CaptureDevices;
+        public List<FHPacket> GetPackets() => _fhapi.GetPackets();
+        public void StartCapturing() => _fhapi.StartCapturing();
+        public void StopCapturing() => _fhapi.StopCapturing();
         public void SetSetting(MonitorSettingsViewModel ms)
         {
             _fhapi.SetDeviceIndex(ms.CaptureDeviceIndex);

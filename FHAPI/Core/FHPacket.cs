@@ -24,7 +24,7 @@ namespace FHAPI.Core
         }
         public IPAddress? SourceAddress { get; set; }
         public IPAddress? DestinationAddress { get; set; }
-        public Byte[]? Payload { get; set; }
+        public Byte[] Payload { get; set; } = new Byte[0];
         public int PayloadLenght => Payload?.Length ?? -1;
     }
 }
