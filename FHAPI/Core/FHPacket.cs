@@ -20,11 +20,13 @@ namespace FHAPI.Core
                 SourceAddress = ipPacket.SourceAddress;
                 DestinationAddress = ipPacket.DestinationAddress;
                 Payload = udpPacket.PayloadData;
+                Timestamp = packet.Timeval.Date;
             }
         }
         public IPAddress? SourceAddress { get; set; }
         public IPAddress? DestinationAddress { get; set; }
         public Byte[] Payload { get; set; } = new Byte[0];
         public int PayloadLenght => Payload?.Length ?? -1;
+        public DateTime Timestamp { get; set; }
     }
 }

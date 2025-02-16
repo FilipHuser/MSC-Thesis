@@ -30,7 +30,7 @@ namespace FHAPILib
 
         public Processor(ref ConcurrentQueue<RawCapture> packetsQueue) : base(ref packetsQueue)
         {
-            PacketBatchSize = 1;
+            PacketBatchSize = 100;
         }
 
         #region METHODS

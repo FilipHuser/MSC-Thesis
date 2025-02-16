@@ -28,12 +28,16 @@ function callMethod(method, controller, data = {}) {
 
 function loadPartialView(partialViewName, controller, elementID, data = {}) {
     var url = '/' + controller + '/' + partialViewName;
-
+    var token = $('input[name="__RequestVerificationToken"]').val();
     // Make the AJAX request
     jq.ajax({
         url: url,
         type: 'GET',
-        data: data,
+        data: JSON.stringify(data),
+        contentType: 'application/json',
+        headers: {
+            'RequestVerificationToken': token
+        },
         success: function (response) {
             // On success, inject the response (partial view) into the element with the given ID
             jq('#' + elementID).html(response);

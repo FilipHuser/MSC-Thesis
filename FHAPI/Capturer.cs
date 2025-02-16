@@ -25,7 +25,7 @@ namespace FHAPILib
             }
         }
         public string? Filter { get; set; }
-        private int _readTimeout { get; set; } = 10; //ms
+        private int _readTimeout { get; set; } = 5; //ms
         protected int ReadTimeout
         {
             get => _readTimeout;

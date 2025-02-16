@@ -18,13 +18,13 @@ namespace FHMonitor.Services
         #region METHODS
         public CaptureDeviceList GetCaptureDevices() => _fhapi.CaptureDevices;
         public List<FHPacket> GetPackets() => _fhapi.GetPackets();
-        public void StartCapturing() => _fhapi.StartCapturing();
-        public void StopCapturing() => _fhapi.StopCapturing();
-        public void SetSetting(MonitorSettingsViewModel ms)
+        public void StartCapturing(MonitorSettingsViewModel ms)
         {
-            _fhapi.SetDeviceIndex(ms.CaptureDeviceIndex);
-            _fhapi.SetFilter(ms.Filter??"");
+            _fhapi.SetDeviceIndex(_fhapi.CaptureDevices.ToList().FindIndex(x => x.Name == ms.CaptureDeviceName));
+            _fhapi.SetFilter(ms.Filter ?? "");
+            _fhapi.StartCapturing();
         }
+        public void StopCapturing() => _fhapi.StopCapturing();
         #endregion
     }
 }
