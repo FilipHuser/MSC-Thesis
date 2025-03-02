@@ -23,7 +23,7 @@
 
             const ctx = document.getElementById("monitor").getContext("2d");
             const chart = new Chart(ctx, {
-                type: "line",
+                type: "scatter",
                 data: {
                     labels: [], // The x-axis will be automatically managed with timestamp
                     datasets: [{
@@ -34,7 +34,7 @@
                     }]
                 },
                 options: {
-                    animation: true,
+                    animation: false,
                     scales: {
                         x: {
                             type: 'linear',
@@ -45,7 +45,7 @@
                             }
                         },
                         y: {
-                            beginAtZero: true,
+                            beginAtZero: false,
                             title: {
                                 display: true,
                                 text: 'Value'
@@ -55,7 +55,7 @@
                 }
             });
 
-            const maxDataPoints = 500;
+            const maxDataPoints = 5000;
 
             async function updateChart() {
                 try {
@@ -73,15 +73,13 @@
                         console.log(data.length);
                         // Map the data to the correct format
                         const newData = data.map(d => {
-                            const timestampMs = new Date(d.timestamp).getTime() / 100000000000; // Convert timestamp to milliseconds
+                            const timestampMs = new Date(d.timestamp) / 10000000000000; // Convert timestamp to milliseconds
                             return {
                                 x: timestampMs,  // Use timestamp in milliseconds for x-axis
                                 y: d.value     // Use value for y-axis
                             };
                         });
 
-                        // Update the chart data
-                        chart.data.labels = newData.map(d => d.x); // Set the x-axis labels (timestamps in ms)
                         chart.data.datasets[0].data.push(...newData);
 
                         if (chart.data.datasets[0].data.length > maxDataPoints) {
@@ -100,7 +98,7 @@
             }
 
             // Set interval to update chart every second
-            setInterval(updateChart, 10);
+            setInterval(updateChart, 40);
         });
     </script>
 }

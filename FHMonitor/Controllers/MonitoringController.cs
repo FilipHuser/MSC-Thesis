@@ -44,16 +44,12 @@ namespace FHMonitor.Controllers
         {
             var packets = _fhapis.GetPackets()
                 .Select(x => {
-                    var subArray = new byte[2];
-                    Array.Copy(x.Payload, 6, subArray, 0, 2);
                     return new
                     {
                         Timestamp = x.Timestamp,
-                        Value = Convertor<short>.ConvertPayload(subArray, 0)
+                        Value = Convertor<short>.ConvertPayload(x.Payload.Skip(2).Take(2).ToArray(), 0)
                     };
-                })
-                .Where(x => x.Value != 0)
-                .ToList();
+                }).ToList();
 
             return Json(packets);
         }

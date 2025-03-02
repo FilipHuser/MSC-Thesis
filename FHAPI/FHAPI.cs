@@ -25,7 +25,7 @@ namespace FHAPILib
             get => _capturedPackets;
             set { _capturedPackets = value;  }  
         }
-        public bool IsRunning { get; set; } = false;
+        public bool IsRunning => _capturer.IsCapturing;
         #endregion
         public FHAPI()
         {
@@ -81,7 +81,7 @@ namespace FHAPILib
                     }
                 });
         }
-        public List<FHPacket> GetPackets() =>_processor.GetPackets(x => true);
+        public List<FHPacket> GetPackets() =>_processor.GetPackets(x => x % 150 != 0);
         public void Dispose() => _capturer.StopCapturing();
         #endregion
     }

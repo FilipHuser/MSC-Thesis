@@ -20,6 +20,7 @@ namespace FHMonitor.Services
         public List<FHPacket> GetPackets() => _fhapi.GetPackets();
         public void StartCapturing(MonitorSettingsViewModel ms)
         {
+            if (_fhapi.IsRunning) { _fhapi.StopCapturing(); }
             _fhapi.SetDeviceIndex(_fhapi.CaptureDevices.ToList().FindIndex(x => x.Name == ms.CaptureDeviceName));
             _fhapi.SetFilter(ms.Filter ?? "");
             _fhapi.StartCapturing();

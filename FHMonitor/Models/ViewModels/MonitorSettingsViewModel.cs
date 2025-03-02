@@ -9,7 +9,7 @@ namespace FHMonitor.Models.ViewModels
         [Display(Name = "Capture Device")]
         [Required(ErrorMessage = "Capture device is required.")]
         public string? CaptureDeviceName { get; set; }
-        public string? Filter { get; set; } = "src host 192.168.50.245 and udp and len >= 28";
+        public string? Filter { get; set; } = "src host 192.168.50.245 and udp and len = 60 and udp[4:2] = 26";
         #endregion
     }
 }

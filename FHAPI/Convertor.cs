@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using PacketDotNet;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FHAPILib
 {
@@ -15,6 +16,9 @@ namespace FHAPILib
 
             switch (typeof(T))
             {
+                case Type t when t == typeof(sbyte):
+                    convertFunc = (data, offset) => (T)(object)(sbyte)data[offset];
+                    break;
                 case Type t when t == typeof(short):
                     convertFunc = (data , offset) => (T)(object)BitConverter.ToInt16(data, offset);
                     break;

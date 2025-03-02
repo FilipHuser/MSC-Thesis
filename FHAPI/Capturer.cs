@@ -37,6 +37,7 @@ namespace FHAPILib
             get => DeviceIndex >= 0 && DeviceIndex < CaptureDevices.Count ? CaptureDevices [DeviceIndex] : null;
         }
         private Thread? _captureThread { get; set; }
+        public bool IsCapturing { get; set; } = false;
         
         public event EventHandler? OnStartCapturing;
         public event EventHandler? OnStopCapturing;
@@ -45,6 +46,7 @@ namespace FHAPILib
         #region METHODS
         public void StartCapturing()
         {
+            IsCapturing = true;
             var devices = CaptureDevices;
             _captureDevice = devices[DeviceIndex];
             _captureDevice.OnPacketArrival += new PacketArrivalEventHandler(device_OnPacketArrival);
@@ -56,6 +58,7 @@ namespace FHAPILib
         }
         public void StopCapturing()
         {
+            IsCapturing = false;
             _captureDevice?.StopCapture();
             _captureDevice?.Close();
             _captureThread?.Join();
