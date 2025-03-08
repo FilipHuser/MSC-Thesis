@@ -1,0 +1,64 @@
+﻿<Window x:Class="FHMA.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FHMA"
+        mc:Ignorable="d"
+        Title="FHMA" Height="450" Width="800">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal">
+            <Button Content="Analog"
+                    Padding="5"/>
+            <GridSplitter  Width="10"/>
+            <Button Content="Digital"
+                    Padding="5"/>
+        </StackPanel>
+
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding Graphs}"
+                  Margin="0 10">
+        </DataGrid>
+        
+        <Grid Grid.Row="2"
+              Width="auto">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0"
+                        Orientation="Horizontal">
+                <Button Grid.Column="0"
+                        Content="Add new module"
+                        Padding="5"
+                        Click="Button_AddGraph"/>
+                
+                <GridSplitter  Width="10"/>
+                
+                <Button Grid.Column="0"
+                        Content="Save as Graph Template"
+                        Padding="5"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" 
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right">
+                
+                <Label Content="Occupied channels:"/>
+                <TextBlock VerticalAlignment="Center"
+                           Text="{Binding GraphCount}"/>
+            </StackPanel>
+
+        </Grid>
+        
+    </Grid>
+</Window>

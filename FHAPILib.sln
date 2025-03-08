@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "TestApp\TestApp.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FHMonitor", "FHMonitor\FHMonitor.csproj", "{730AC782-2147-4470-82DC-80BB2FF853C0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FHMA", "FHMA\FHMA.csproj", "{6BBAAE7F-6BCD-433B-A2F5-46A374AD033F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{730AC782-2147-4470-82DC-80BB2FF853C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{730AC782-2147-4470-82DC-80BB2FF853C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{730AC782-2147-4470-82DC-80BB2FF853C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BBAAE7F-6BCD-433B-A2F5-46A374AD033F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BBAAE7F-6BCD-433B-A2F5-46A374AD033F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BBAAE7F-6BCD-433B-A2F5-46A374AD033F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BBAAE7F-6BCD-433B-A2F5-46A374AD033F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
