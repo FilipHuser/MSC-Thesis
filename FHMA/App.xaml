@@ -2,8 +2,9 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:FHMA"
+             xmlns:convertors="clr-namespace:FHMA.Convertors"
              StartupUri="Views\MainWindow.xaml">
     <Application.Resources>
-         
+        <convertors:EnumConverter x:Key="EnumConverter"/>
     </Application.Resources>
 </Application>

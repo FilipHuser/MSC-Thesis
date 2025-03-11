@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FHMA"
         mc:Ignorable="d"
-        Title="FHMA" Height="450" Width="800">
+        Title="FHMA" Height="450" Width="500"
+        WindowStartupLocation="CenterScreen">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -15,16 +16,41 @@
         
         <StackPanel Grid.Row="0"
                     Orientation="Horizontal">
-            <Button Content="Analog"
-                    Padding="5"/>
+
+            <Button Grid.Column="0"
+                    Content="Add Graph"
+                    Padding="5"
+                    Click="Button_AddGraph"/>
+
             <GridSplitter  Width="10"/>
-            <Button Content="Digital"
+
+            <Button Grid.Column="0"
+                    Content="Save Template"
                     Padding="5"/>
+
         </StackPanel>
 
         <DataGrid Grid.Row="1"
                   ItemsSource="{Binding Graphs}"
-                  Margin="0 10">
+                  Margin="0 10"
+                  IsReadOnly="True"
+                  CanUserResizeColumns="False"
+                  CanUserResizeRows="False"
+                  CanUserSortColumns="False"
+                  CanUserReorderColumns="False"
+                  GridLinesVisibility="None"
+                  AutoGenerateColumns="False"
+                  HeadersVisibility="Column">
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Channel"
+                                    Width="*"
+                                    Binding="{Binding Channel}"/>
+                <DataGridTextColumn Header="Module"
+                                    Width="*"
+                                    Binding="{Binding ModuleType, Converter={StaticResource EnumConverter}}"/>
+            </DataGrid.Columns>
+                
         </DataGrid>
         
         <Grid Grid.Row="2"
@@ -36,28 +62,22 @@
 
             <StackPanel Grid.Column="0"
                         Orientation="Horizontal">
+                
                 <Button Grid.Column="0"
-                        Content="Add new module"
+                        Content="Start Capturing"
                         Padding="5"
-                        Click="Button_AddGraph"/>
-                
-                <GridSplitter  Width="10"/>
-                
-                <Button Grid.Column="0"
-                        Content="Save as Graph Template"
-                        Padding="5"/>
+                        Click="Button_StartCapturing"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" 
                         Orientation="Horizontal"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Right">
-                
+
                 <Label Content="Occupied channels:"/>
                 <TextBlock VerticalAlignment="Center"
                            Text="{Binding GraphCount}"/>
             </StackPanel>
-
         </Grid>
         
     </Grid>

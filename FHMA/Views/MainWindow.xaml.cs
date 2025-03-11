@@ -1,15 +1,6 @@
-﻿using System.ComponentModel;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using System.Windows;
 using FHMA.ViewModels;
+using FHMA.Views;
 
 namespace FHMA
 {
@@ -28,7 +19,19 @@ namespace FHMA
 
         private void Button_AddGraph(object sender, RoutedEventArgs e)
         {
-            _mv.Graphs.Add(new Models.Graph());
+            var gcw = new GraphConfigWindow(this);
+
+            gcw.OnGraphAdded += (graph) => { _mv.Graphs.Add(graph); };
+
+            gcw.Owner = this;
+            gcw.ShowDialog();
+        }
+
+        private void Button_StartCapturing(object sender, RoutedEventArgs e)
+        {
+            var mw = new MonitorWindow(_mv.Graphs);
+            mw.Show();
+            this.Close();
         }
     }
 }
