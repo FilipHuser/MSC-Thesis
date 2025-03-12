@@ -81,7 +81,7 @@ namespace FHAPILib
                     }
                 });
         }
-        public List<FHPacket> GetPackets() =>_processor.GetPackets(x => x % 150 != 0);
+        public List<FHPacket> GetPackets() =>_processor.GetPackets(x => true); //x % 150 != 0
         public void Dispose() => _capturer.StopCapturing();
         #endregion
     }

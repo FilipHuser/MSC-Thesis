@@ -12,6 +12,7 @@ using SkiaSharp;
 using System.Runtime.Serialization;
 using FHAPILib;
 using FHAPI.Core;
+using System.ComponentModel;
 
 namespace FHMA.Models
 {
@@ -38,6 +39,8 @@ namespace FHMA.Models
         }
         public ModuleType ModuleType { get; set; }
 
+        public bool IsReading { get; set; } = true;
+        private readonly Random _random = new();
         public Axis[] XAxes { get; set; }
         private readonly List<DateTimePoint> _values = [];
         private readonly DateTimeAxis _customAxis;
@@ -64,19 +67,31 @@ namespace FHMA.Models
             XAxes = [_customAxis];
         }
 
-        public Task Update(List<FHPacket> values)
+        private static double[] GetSeparators()
         {
-            var dateTimePoints = values.Select(x => new DateTimePoint(DateTime.Now, Convertor<short>.ConvertPayload(x.Payload.Skip(Channel).Take(2).ToArray(), 0)));
+            var now = DateTime.Now;
 
-            return Task.Run(() =>
+            return
+            [
+                now.Ticks
+            ];
+        }
+
+
+        public void Update(List<FHPacket> values)
+        {
+            var firstPacket = values.FirstOrDefault()?.Payload.ToArray();
+            var asdf = values.FirstOrDefault()?.Payload.Skip(Channel * 2).Take(2).ToArray();
+
+            var dateTimePoints = values.Select(x => new DateTimePoint(DateTime.Now, Convertor<short>.ConvertPayload(x.Payload.Skip(Channel*2).Take(2).ToArray(), 0))).ToList();
+            if (dateTimePoints.Count == 0) { return; }
+
+            lock (Sync)
             {
-                lock (Sync)
-                {
-                    _values.AddRange(dateTimePoints);
-
-                    if (_values.Count > 1000) { _values.RemoveAt(0); }
-                }
-            });
+                _values.Add(dateTimePoints.First());
+                if (_values.Count > 100) { _values.RemoveAt(0); }
+                _customAxis.CustomSeparators = GetSeparators();
+            }
         }
         private static string Formatter(DateTime date)
         {

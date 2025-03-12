@@ -31,6 +31,7 @@
                                 <lvc:CartesianChart Series="{Binding Series}"
                                                     SyncContext="{Binding Sync}"
                                                     XAxes="{Binding XAxes}"
+                                                    
                                     MinWidth="400"
                                     MinHeight="250"
                                     HorizontalAlignment="Stretch"
