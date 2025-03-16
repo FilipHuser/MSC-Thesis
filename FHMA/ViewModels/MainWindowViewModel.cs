@@ -10,7 +10,7 @@ namespace FHMA.ViewModels
     internal class MainWindowViewModel : BaseViewModel
     {
         public ObservableCollection<Graph> Graphs { get; set; } = new ObservableCollection<Graph>();
-        public string GraphCount => $"{Graphs.Count} / {ConfigurationManager.AppSettings["MaxGraphs"]}";
+        public string GraphCount => $"{Graphs.Count} / {ConfigurationManager.AppSettings["MaxChannels"]}";
         public MainWindowViewModel()
         {
             Graphs.CollectionChanged += (object? sender, NotifyCollectionChangedEventArgs e) => { OnPropertyChanged(nameof(GraphCount)); };

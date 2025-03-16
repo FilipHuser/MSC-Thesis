@@ -78,7 +78,7 @@ namespace FHMA.Models
                 now.Ticks
             ];
         }
-        public void Update(List<FHPacket> packets)
+        public void Update(List<DateTimePoint> points)
         {
             var convertType = typeof(short);
 
@@ -89,26 +89,9 @@ namespace FHMA.Models
                 return LowerBound + (((x - short.MinValue) * (UpperBound - LowerBound) / (short.MaxValue - short.MinValue)));
             };
 
-            var dateTimePoints = new List<DateTimePoint>();
-
-            foreach (var packet in packets)
-            {
-                // First value: Take 2 bytes after skipping 'offset'
-                var firstValue = Convertor<short>.ConvertPayload(packet.Payload.Skip(offset).Take(2).ToArray(), 0) ?? 0;
-
-                // Second value: Take another 2 bytes after skipping the offset for the second value
-                var secondValue = Convertor<short>.ConvertPayload(packet.Payload.Skip(offset + 4).Take(2).ToArray(), 0) ?? 0;
-
-                // Add both values to DateTimePoints list (you may want to map both values to DateTimePoint)
-                dateTimePoints.Add(new DateTimePoint(packet.Timestamp, mapRange(firstValue)));
-                dateTimePoints.Add(new DateTimePoint(packet.Timestamp, mapRange(secondValue)));
-            }
-
-            if (dateTimePoints.Count == 0) { return; }
-
             lock (Sync)
             {
-                foreach (var point in dateTimePoints)
+                foreach (var point in points)
                 {
                     _yValues.Add(point);
                     if (_yValues.Count > PointLimit) { _yValues.RemoveAt(0); }

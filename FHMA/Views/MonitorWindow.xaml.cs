@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Configuration;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,11 +31,28 @@ namespace FHMA.Views
         public MonitorWindow(ObservableCollection<Graph> graphs)
         {
             InitializeComponent();
-            int.TryParse(ConfigurationManager.AppSettings["CaptureDeviceIndex"], out int cdi);
+
+            if (!int.TryParse(ConfigurationManager.AppSettings["CaptureDeviceIndex"], out int cdi) ||
+                !int.TryParse(ConfigurationManager.AppSettings["MaxChannels"], out int maxChannels))
+            {
+                throw new ArgumentException("Invalid configuration values for CaptureDeviceIndex or MaxChannels.");
+            }
 
             _fhapi = new FHAPILib.FHAPI();
+            
+            int count = graphs.Count;
+            int nRepetitions = (int)Math.Ceiling((maxChannels / 2.0) / count);
+
+            if (nRepetitions == 1 && count < maxChannels) { nRepetitions++; }
+
+            int payloadLength = (2 * count * nRepetitions) + 2;
+
+            string filter = $"src host {ConfigurationManager.AppSettings["DeviceIpAddr"]} and udp and udp[4:2] = {payloadLength}";
+
+
+
             _fhapi.SetDeviceIndex(cdi);
-            _fhapi.SetFilter(ConfigurationManager.AppSettings["Filter"]??"");
+            _fhapi.SetFilter(filter);
             _fhapi.StartCapturing();
 
             _vm = new MonitorWindowViewModel(graphs , _fhapi);

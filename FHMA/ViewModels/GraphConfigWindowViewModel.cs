@@ -17,7 +17,7 @@ namespace FHMA.ViewModels
 
         public GraphConfigWindowViewModel()
         {
-            int.TryParse(ConfigurationManager.AppSettings["MaxGraphs"] , out int maxGraphs);
+            int.TryParse(ConfigurationManager.AppSettings["MaxChannels"] , out int maxGraphs);
 
 
             ModuleTypes = new ObservableCollection<ModuleType>(Enum.GetValues(typeof(ModuleType)).Cast<ModuleType>());

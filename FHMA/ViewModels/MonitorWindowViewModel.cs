@@ -1,7 +1,10 @@
 ﻿using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 using System.Windows.Threading;
 using FHAPILib;
 using FHMA.Models;
+using LiveChartsCore.Defaults;
+using PacketDotNet;
 
 namespace FHMA.ViewModels
 {
@@ -21,9 +24,44 @@ namespace FHMA.ViewModels
             while (true)
             {
                 var packets = _fhapi.GetPackets();
+
+
+                Dictionary<int , List<DateTimePoint>> points = new Dictionary<int, List<DateTimePoint>>();
+
+                foreach (var packet in packets)
+                {
+                    var payload = packet.Payload;
+                    int nChannels = Graphs.Count;
+
+
+                    //int nRepetitions = 1 << (int)Math.Floor(Math.Log2(nChannels));
+
+
+
+
+
+
+
+
+                    /*
+                    // First value: Take 2 bytes after skipping 'offset'
+                    var firstValue = Convertor<short>.ConvertPayload(packet.Payload.Skip(offset).Take(2).ToArray(), 0) ?? 0;
+
+                    // Second value: Take another 2 bytes after skipping the offset for the second value
+                    var secondValue = Convertor<short>.ConvertPayload(packet.Payload.Skip(offset + 4).Take(2).ToArray(), 0) ?? 0;
+
+                    // Add both values to DateTimePoints list (you may want to map both values to DateTimePoint)
+                    points.Add(new DateTimePoint(packet.Timestamp, firstValue));
+                    points.Add(new DateTimePoint(packet.Timestamp, secondValue));
+                    */
+                }
+
+
+
+
                 foreach (var graph in Graphs)
                 {
-                    graph.Update(packets);
+                    //graph.Update();
                 }
                 await Task.Delay(10);
             }
