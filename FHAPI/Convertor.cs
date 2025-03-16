@@ -32,7 +32,8 @@ namespace FHAPILib
                     convertFunc = (data, offset) => (T)(object)BitConverter.ToDouble(data, offset);
                     break;
             }
-            return convertFunc != null ? convertFunc(payload , offset) : default;
+
+            return convertFunc != null ? convertFunc(payload.Reverse().ToArray() , offset) : default;
         }
     }
 }

@@ -25,18 +25,16 @@
                 <DataGridTemplateColumn>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel>
+                            <StackPanel HorizontalAlignment="Stretch">
                                 <Label Content="{Binding ModuleType, Converter={StaticResource EnumConverter}}"
                                        FontSize="22"/>
                                 <lvc:CartesianChart Series="{Binding Series}"
                                                     SyncContext="{Binding Sync}"
                                                     XAxes="{Binding XAxes}"
-                                                    
-                                    MinWidth="400"
-                                    MinHeight="250"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch"
-                                    Margin="10"/>
+                                                    MinHeight="250"                    
+                                                    HorizontalAlignment="Stretch"
+                                                    VerticalAlignment="Stretch"
+                                                    Margin="20"/>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

@@ -38,12 +38,13 @@ namespace FHMA.Models
             }
         }
         public ModuleType ModuleType { get; set; }
+        public double LowerBound { get; set; } = -10;
+        public double UpperBound { get; set; } = 10;
+        public int PointLimit { get; set; } = 2000;
 
-        public bool IsReading { get; set; } = true;
-        private readonly Random _random = new();
+        private readonly List<DateTimePoint> _yValues = [];
+        private readonly DateTimeAxis _xValues;
         public Axis[] XAxes { get; set; }
-        private readonly List<DateTimePoint> _values = [];
-        private readonly DateTimeAxis _customAxis;
         public ObservableCollection<ISeries> Series { get; set; }
         public object Sync { get; } = new object();
         public Graph()
@@ -51,22 +52,23 @@ namespace FHMA.Models
             Series = [
                 new LineSeries<DateTimePoint>
                 {
-                    Values = _values,
+                    Values = _yValues,
                     Fill = null,
+                    Stroke = new SolidColorPaint(SKColors.Blue) { StrokeThickness = 1 },
                     GeometryFill = null,
-                    GeometryStroke = null
+                    GeometryStroke = null,
+                    LineSmoothness = 1
                 }
             ];
 
-            _customAxis = new DateTimeAxis(TimeSpan.FromSeconds(1), Formatter)
+            _xValues = new DateTimeAxis(TimeSpan.FromSeconds(1), Formatter)
             {
                 AnimationsSpeed = TimeSpan.FromMilliseconds(0),
-                SeparatorsPaint = new SolidColorPaint(SKColors.Black.WithAlpha(100))
+                SeparatorsPaint = new SolidColorPaint(SKColors.Black.WithAlpha(50))
             };
 
-            XAxes = [_customAxis];
+            XAxes = [_xValues];
         }
-
         private static double[] GetSeparators()
         {
             var now = DateTime.Now;
@@ -76,21 +78,42 @@ namespace FHMA.Models
                 now.Ticks
             ];
         }
-
-
-        public void Update(List<FHPacket> values)
+        public void Update(List<FHPacket> packets)
         {
-            var firstPacket = values.FirstOrDefault()?.Payload.ToArray();
-            var asdf = values.FirstOrDefault()?.Payload.Skip(Channel * 2).Take(2).ToArray();
+            var convertType = typeof(short);
 
-            var dateTimePoints = values.Select(x => new DateTimePoint(DateTime.Now, Convertor<short>.ConvertPayload(x.Payload.Skip(Channel*2).Take(2).ToArray(), 0))).ToList();
+            int offset =  1 + (Channel * 2);
+            //int skip = 
+
+            Func<short , double> mapRange = (x) => {
+                return LowerBound + (((x - short.MinValue) * (UpperBound - LowerBound) / (short.MaxValue - short.MinValue)));
+            };
+
+            var dateTimePoints = new List<DateTimePoint>();
+
+            foreach (var packet in packets)
+            {
+                // First value: Take 2 bytes after skipping 'offset'
+                var firstValue = Convertor<short>.ConvertPayload(packet.Payload.Skip(offset).Take(2).ToArray(), 0) ?? 0;
+
+                // Second value: Take another 2 bytes after skipping the offset for the second value
+                var secondValue = Convertor<short>.ConvertPayload(packet.Payload.Skip(offset + 4).Take(2).ToArray(), 0) ?? 0;
+
+                // Add both values to DateTimePoints list (you may want to map both values to DateTimePoint)
+                dateTimePoints.Add(new DateTimePoint(packet.Timestamp, mapRange(firstValue)));
+                dateTimePoints.Add(new DateTimePoint(packet.Timestamp, mapRange(secondValue)));
+            }
+
             if (dateTimePoints.Count == 0) { return; }
 
             lock (Sync)
             {
-                _values.Add(dateTimePoints.First());
-                if (_values.Count > 100) { _values.RemoveAt(0); }
-                _customAxis.CustomSeparators = GetSeparators();
+                foreach (var point in dateTimePoints)
+                {
+                    _yValues.Add(point);
+                    if (_yValues.Count > PointLimit) { _yValues.RemoveAt(0); }
+                    _xValues.CustomSeparators = GetSeparators();
+                }
             }
         }
         private static string Formatter(DateTime date)
