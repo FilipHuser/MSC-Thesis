@@ -47,15 +47,13 @@ namespace FHMA.Views
 
             int payloadLength = (2 * count * nRepetitions) + 2;
 
-            string filter = $"src host {ConfigurationManager.AppSettings["DeviceIpAddr"]} and udp and udp[4:2] = {payloadLength}";
-
-
+            string filter = $"src host {ConfigurationManager.AppSettings["DeviceIpAddr"]} and udp and udp[4:2] = {payloadLength+8}";
 
             _fhapi.SetDeviceIndex(cdi);
             _fhapi.SetFilter(filter);
             _fhapi.StartCapturing();
 
-            _vm = new MonitorWindowViewModel(graphs , _fhapi);
+            _vm = new MonitorWindowViewModel(nRepetitions, graphs, _fhapi);
             DataContext = _vm;
 
             this.Closing += (e, s) => { _fhapi.StopCapturing(); };

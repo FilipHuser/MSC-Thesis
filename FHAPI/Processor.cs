@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using FHAPI.Core;
 using PacketDotNet;
-using PacketDotNet.Ieee80211;
 using SharpPcap;
-using Spectre.Console;
 
 namespace FHAPILib
 {
@@ -20,12 +15,19 @@ namespace FHAPILib
         public int PacketBatchSize
         {
             get => _packetBatchSize;
-            set { if (value > 0) { _packetBatchSize = value; } else { throw new ArgumentException("Invalid batch size !"); } }
+            set
+            {
+                if (value > 0) { _packetBatchSize = value; }
+                else { throw new ArgumentException("Invalid batch size!"); }
+            }
         }
-        private ConcurrentQueue<RawCapture> _packetBuffer { get; set; } = new ConcurrentQueue<RawCapture>();
+
+        private readonly ConcurrentQueue<RawCapture> _packetBuffer = new();
         public int BufferSize => _packetBuffer.Count;
-        private Thread? _bufferThread { get; set; }
-        private CancellationTokenSource _cancellationTokenSource { get; set; } = new CancellationTokenSource();
+
+        private Thread? _bufferThread;
+        private CancellationTokenSource _cancellationTokenSource = new();
+        private readonly object _lock = new();  // Lock object for thread safety
         #endregion
 
         public Processor(ref ConcurrentQueue<RawCapture> packetsQueue) : base(ref packetsQueue)
@@ -36,36 +38,56 @@ namespace FHAPILib
         #region METHODS
         public void StartBuffering()
         {
-            var cancellationToken = _cancellationTokenSource.Token;
-            _bufferThread = new Thread(() => 
+            lock (_lock)
             {
+                if (_bufferThread is { IsAlive: true }) return; // Prevent multiple starts
 
-                while (!cancellationToken.IsCancellationRequested)
+                _cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = _cancellationTokenSource.Token;
+
+                _bufferThread = new Thread(() =>
                 {
-                    while (_packetsQueue.TryDequeue(out RawCapture? packet))
+                    while (!cancellationToken.IsCancellationRequested)
                     {
-                        _packetBuffer.Enqueue(packet);
+                        while (_packetsQueue.TryDequeue(out RawCapture? packet))
+                        {
+                            _packetBuffer.Enqueue(packet);
+                        }
+                        Thread.Sleep(1); // Prevents 100% CPU usage
                     }
-                }
-            });
-            _bufferThread.Start();
+                })
+                {
+                    IsBackground = true
+                };
+                _bufferThread.Start();
+            }
         }
+
         public void StopBuffering()
         {
-            _cancellationTokenSource?.Cancel();
-            _bufferThread?.Join();
+            lock (_lock)
+            {
+                _cancellationTokenSource?.Cancel();
+                _bufferThread?.Join();
+                _cancellationTokenSource?.Dispose();
+            }
         }
-        public List<FHPacket> GetPackets(Func<int , bool> filterFunction)
+
+        public List<FHPacket> GetPackets(Func<int, bool> filterFunction)
         {
             var packets = new List<FHPacket>();
             var counter = 0;
+
             while (packets.Count < PacketBatchSize && !_packetBuffer.IsEmpty)
             {
                 if (_packetBuffer.TryDequeue(out RawCapture? packet))
                 {
-                    if (filterFunction(counter)) { packets.Add(new FHPacket(packet)); }
+                    if (filterFunction(counter))
+                    {
+                        packets.Add(new FHPacket(packet));
+                    }
+                    counter++;
                 }
-                counter++;
             }
             return packets;
         }

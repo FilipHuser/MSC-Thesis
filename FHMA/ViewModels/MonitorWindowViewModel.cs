@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
+using System.Threading.Channels;
 using System.Windows.Threading;
 using FHAPILib;
 using FHMA.Models;
@@ -10,60 +11,54 @@ namespace FHMA.ViewModels
 {
     class MonitorWindowViewModel
     {
+        private readonly int _nRepetitions;
         private readonly FHAPILib.FHAPI _fhapi;
         public ObservableCollection<Graph> Graphs { get; set; } = new ObservableCollection<Graph>();
-        public MonitorWindowViewModel(ObservableCollection<Graph> graphs , FHAPILib.FHAPI fhapi)
+        public MonitorWindowViewModel(int nRepetitions , ObservableCollection<Graph> graphs , FHAPILib.FHAPI fhapi)
         {
+            _nRepetitions = nRepetitions;
             _fhapi = fhapi;
             Graphs = graphs;
+
             _ = UpdateData();
         }
 
         public async Task UpdateData()
         {
+            int nChannels = Graphs.Count;
+
             while (true)
             {
                 var packets = _fhapi.GetPackets();
 
-
-                Dictionary<int , List<DateTimePoint>> points = new Dictionary<int, List<DateTimePoint>>();
-
+                Dictionary<int, List<DateTimePoint>> points = new Dictionary<int, List<DateTimePoint>>();
                 foreach (var packet in packets)
                 {
-                    var payload = packet.Payload;
-                    int nChannels = Graphs.Count;
+                    for (int i = 0; i < _nRepetitions * nChannels; i++)
+                    {
+                        int offset = 1 + (i * 2);
+                        var value = Convertor<short>.ConvertPayload(packet.Payload.Skip(offset).Take(2).ToArray(), 0);
 
+                        if (value == null) { continue; }
 
-                    //int nRepetitions = 1 << (int)Math.Floor(Math.Log2(nChannels));
+                        if (!points.TryGetValue(i % nChannels, out var channelPoints))
+                        {
+                            points[i % nChannels] = new List<DateTimePoint>();
+                        }
 
-
-
-
-
-
-
-
-                    /*
-                    // First value: Take 2 bytes after skipping 'offset'
-                    var firstValue = Convertor<short>.ConvertPayload(packet.Payload.Skip(offset).Take(2).ToArray(), 0) ?? 0;
-
-                    // Second value: Take another 2 bytes after skipping the offset for the second value
-                    var secondValue = Convertor<short>.ConvertPayload(packet.Payload.Skip(offset + 4).Take(2).ToArray(), 0) ?? 0;
-
-                    // Add both values to DateTimePoints list (you may want to map both values to DateTimePoint)
-                    points.Add(new DateTimePoint(packet.Timestamp, firstValue));
-                    points.Add(new DateTimePoint(packet.Timestamp, secondValue));
-                    */
+                        points[i % nChannels].Add(new DateTimePoint(packet.Timestamp, value));
+                    }
                 }
 
-
-
-
+                if (points.Count == 0) { await Task.Delay(100); continue; }
                 foreach (var graph in Graphs)
                 {
-                    //graph.Update();
+                    var graphPoints = points[graph.Channel % nChannels];
+                    graph.Update(graphPoints);
                 }
-                await Task.Delay(10);
+
+
+                await Task.Delay(100);
             }
         }
     }

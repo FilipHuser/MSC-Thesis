@@ -23,13 +23,18 @@ namespace FHMA.ViewModels
             ModuleTypes = new ObservableCollection<ModuleType>(Enum.GetValues(typeof(ModuleType)).Cast<ModuleType>());
             Channels = new ObservableCollection<int>(Enumerable.Range(0, maxGraphs + 1));
 
-            ModuleType = ModuleTypes.FirstOrDefault();
-            Channel = Channels.FirstOrDefault();
+            Graph = new Graph()
+            {
+                ModuleType = ModuleTypes.FirstOrDefault(),
+                Channel = Channels.FirstOrDefault(),
+                UpperBound = 10,
+                LowerBound = -10,
+                PointLimit = 1000,
+            };
         }
 
         #region SELECTED_ITEMS
-        public ModuleType? ModuleType { get; set; }
-        public int? Channel { get; set; }
+        public Graph Graph { get; set; }        
         #endregion
     }
 }

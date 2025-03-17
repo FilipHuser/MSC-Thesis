@@ -25,8 +25,9 @@
             <GridSplitter  Width="10"/>
 
             <Button Grid.Column="0"
-                    Content="Save Template"
-                    Padding="5"/>
+                    Content="Load Template"
+                    Padding="5"
+                    Click="Button_LoadTemplate"/>
 
         </StackPanel>
 
@@ -43,12 +44,32 @@
                   HeadersVisibility="Column">
 
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Channel"
-                                    Width="*"
+                <DataGridTextColumn Header="CH"
+                                    Width="Auto"
                                     Binding="{Binding Channel}"/>
                 <DataGridTextColumn Header="Module"
                                     Width="*"
                                     Binding="{Binding ModuleType, Converter={StaticResource EnumConverter}}"/>
+                
+                <DataGridTextColumn Header="Upper bound"
+                                    Width="*"
+                                    Binding="{Binding UpperBound}"/>
+                <DataGridTextColumn Header="Lower bound"
+                                    Width="*"
+                                    Binding="{Binding LowerBound}"/>
+
+                <DataGridTextColumn Header="Point Limit"
+                                    Width="*"
+                                    Binding="{Binding PointLimit}"/>
+
+                <DataGridTemplateColumn Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="Remove"
+                                    Click="Button_RemoveGraph"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
                 
         </DataGrid>
@@ -62,7 +83,14 @@
 
             <StackPanel Grid.Column="0"
                         Orientation="Horizontal">
-                
+
+                <Button Grid.Column="0"
+                        Content="Save Template"
+                        Padding="5"
+                        Click="Button_SaveTemplate"/>
+
+                <GridSplitter  Width="10"/>
+
                 <Button Grid.Column="0"
                         Content="Start Capturing"
                         Padding="5"

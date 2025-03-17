@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,13 +35,15 @@ namespace FHMA.Views
 
         private void Button_AddGraph(object sender, RoutedEventArgs e)
         {
-            var graph = new Graph()
-            {
-                Channel = _vm.Channel ?? throw new ArgumentNullException(),
-                ModuleType = _vm.ModuleType ?? throw new ArgumentNullException(),
-            };
-            OnGraphAdded?.Invoke(graph);
+            OnGraphAdded?.Invoke(_vm.Graph);
             this.Close();
+        }
+
+        private void TextBox_NumberValidation(object sender, TextCompositionEventArgs e)
+        {
+            var textBox = (TextBox)sender;
+            var newText = textBox.Text.Insert(textBox.CaretIndex, e.Text);
+            e.Handled = !Regex.IsMatch(newText, @"^-?[0-9]*$");
         }
     }
 }

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FHMA.Views"
         mc:Ignorable="d"
-        Title="" Height="200" Width="200"
+        Title="" Height="350" Width="200"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -14,13 +14,31 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0">
-                <Label Content="Channel"/>
-                <ComboBox ItemsSource="{Binding Channels}"
-                          SelectedItem="{Binding Channel}"/>
+            <Label Content="Channel"
+                   Padding="0 5"/>
+            <ComboBox ItemsSource="{Binding Channels}"
+                      SelectedItem="{Binding Graph.Channel}"/>
 
-                <Label Content="Module"/>
+            <Label Content="Module"
+                   Padding="0 5"/>
             <ComboBox ItemsSource="{Binding ModuleTypes}"
-                      SelectedItem="{Binding ModuleType}"/>
+                      SelectedItem="{Binding Graph.ModuleType}"/>
+
+            <Label Content="Upper Bound"
+                   Padding="0 5"/>
+            <TextBox Text="{Binding Graph.UpperBound}"
+                     PreviewTextInput="TextBox_NumberValidation"/>
+
+            <Label Content="Lower Bound"
+                   Padding="0 5"/>
+            <TextBox Text="{Binding Graph.LowerBound}"
+                     PreviewTextInput="TextBox_NumberValidation"/>
+
+            <Label Content="Point Limit"
+                   Padding="0 5"/>
+            
+            <TextBox Text="{Binding Graph.PointLimit}"
+                     PreviewTextInput="TextBox_NumberValidation"/>
 
         </StackPanel>
 

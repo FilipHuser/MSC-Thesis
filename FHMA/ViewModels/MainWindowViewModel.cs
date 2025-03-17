@@ -9,7 +9,8 @@ namespace FHMA.ViewModels
 {
     internal class MainWindowViewModel : BaseViewModel
     {
-        public ObservableCollection<Graph> Graphs { get; set; } = new ObservableCollection<Graph>();
+        private ObservableCollection<Graph> _graphs = new ObservableCollection<Graph>();
+        public ObservableCollection<Graph> Graphs { get => _graphs; set => SetProperty(ref _graphs, value); }
         public string GraphCount => $"{Graphs.Count} / {ConfigurationManager.AppSettings["MaxChannels"]}";
         public MainWindowViewModel()
         {
