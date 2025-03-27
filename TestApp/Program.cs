@@ -1,24 +1,22 @@
-﻿using Spectre.Console;
+﻿using System;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace TestApp
+class Program
 {
-    internal class Program
+    static async Task Main(string[] args)  // Mark Main as async Task
     {
-        static void Main(string[] args)
-        {
-            AnsiConsole.Write(new FigletText("FHAPI").Centered().Color(Color.Blue));
-            AnsiConsole.Write(new Rule().RuleStyle("blue"));
+        FHAPILib.FHAPI fhapi = new FHAPILib.FHAPI();
+        fhapi.SetDeviceIndex(4);
+        fhapi.SetFilter("");
+        fhapi.StartCapturing();
 
-            var cts = new CancellationTokenSource();
-            using (FHAPILib.FHAPI fhapi = new FHAPILib.FHAPI())
-            {
-                fhapi.Run();
 
-                Task.Run(() => fhapi.Monitor(cts.Token));
+        CancellationTokenSource cts = new CancellationTokenSource();
 
-                Console.ReadKey();
-                cts.Cancel();
-            }
-        } 
+        await Task.Run(() => fhapi.Monitor(cts.Token));
+
+        while (true) ;
     }
 }

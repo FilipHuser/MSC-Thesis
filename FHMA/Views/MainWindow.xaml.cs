@@ -5,7 +5,6 @@ using System.Xml.Serialization;
 using FHMA.Models;
 using FHMA.ViewModels;
 using FHMA.Views;
-using LiveChartsCore.SkiaSharpView;
 
 namespace FHMA
 {
@@ -34,7 +33,6 @@ namespace FHMA
 
         private void Button_StartCapturing(object sender, RoutedEventArgs e)
         {
-            _mv.Graphs.ToList().ForEach(x => x.YAxes = [new Axis() { MinLimit = x.LowerBound, MaxLimit = x.UpperBound }]);
             var mw = new MonitorWindow(_mv.Graphs);
             mw.Show();
             this.Close();

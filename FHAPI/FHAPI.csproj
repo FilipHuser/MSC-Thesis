@@ -11,6 +11,24 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Dependencies\cyghidapi-libusb-0.dll" />
+    <None Remove="Dependencies\cygiconv-2.dll" />
+    <None Remove="Dependencies\cygmcrypt-4.dll" />
+    <None Remove="Dependencies\cygusb-1.0.dll" />
+    <None Remove="Dependencies\cygwin1.dll" />
+    <None Remove="Dependencies\emokitUDP.exe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Dependencies\cyghidapi-libusb-0.dll" />
+    <EmbeddedResource Include="Dependencies\cygiconv-2.dll" />
+    <EmbeddedResource Include="Dependencies\cygmcrypt-4.dll" />
+    <EmbeddedResource Include="Dependencies\cygusb-1.0.dll" />
+    <EmbeddedResource Include="Dependencies\cygwin1.dll" />
+    <EmbeddedResource Include="Dependencies\emokitUDP.exe" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="PacketDotNet" Version="1.4.7" />
     <PackageReference Include="SharpPcap" Version="6.3.0" />
     <PackageReference Include="SharpPcap.Standard" Version="4.4.0" />

@@ -4,13 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using PacketDotNet;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FHAPILib
 {
-    public static class Convertor<T> where T : struct
+    public static class Converter<T> where T : struct
     {
-        public static T? ConvertPayload(byte[] payload , int offset)
+        public static T? ConvertPayload(byte[] payload , int? offset = 0)
         {
             Func<byte[], int, T>? convertFunc = null;
 
@@ -33,7 +32,7 @@ namespace FHAPILib
                     break;
             }
 
-            return convertFunc != null ? convertFunc(payload.Reverse().ToArray() , offset) : default;
+            return convertFunc != null ? convertFunc(payload.Reverse().ToArray() , offset??0) : default;
         }
     }
 }

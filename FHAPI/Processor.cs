@@ -32,7 +32,7 @@ namespace FHAPILib
 
         public Processor(ref ConcurrentQueue<RawCapture> packetsQueue) : base(ref packetsQueue)
         {
-            PacketBatchSize = 100;
+            PacketBatchSize = 1000;
         }
 
         #region METHODS
@@ -40,7 +40,7 @@ namespace FHAPILib
         {
             lock (_lock)
             {
-                if (_bufferThread is { IsAlive: true }) return; // Prevent multiple starts
+                if (_bufferThread is { IsAlive: true }) return;
 
                 _cancellationTokenSource = new CancellationTokenSource();
                 var cancellationToken = _cancellationTokenSource.Token;
@@ -53,7 +53,7 @@ namespace FHAPILib
                         {
                             _packetBuffer.Enqueue(packet);
                         }
-                        Thread.Sleep(1); // Prevents 100% CPU usage
+                        Thread.Sleep(1);
                     }
                 })
                 {

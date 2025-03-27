@@ -47,7 +47,7 @@ namespace FHMonitor.Controllers
                     return new
                     {
                         Timestamp = x.Timestamp,
-                        Value = Convertor<short>.ConvertPayload(x.Payload.Skip(2).Take(2).ToArray(), 0)
+                        Value = Converter<short>.ConvertPayload(x.Payload.Skip(2).Take(2).ToArray(), 0)
                     };
                 }).ToList();
 

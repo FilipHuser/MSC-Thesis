@@ -8,6 +8,7 @@ using Spectre.Console;
 using Spectre.Console.Rendering;
 using FHAPI.Core;
 using log4net.Util;
+using System.Diagnostics;
 
 namespace FHAPILib
 {
@@ -83,6 +84,7 @@ namespace FHAPILib
         }
         public List<FHPacket> GetPackets() =>_processor.GetPackets(x => true); //x % 150 != 0
         public void Dispose() => _capturer.StopCapturing();
+
         #endregion
     }
 }

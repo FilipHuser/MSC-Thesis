@@ -4,54 +4,28 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FHMA.Views"
-        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        xmlns:controlls="clr-namespace:FHMA.Controls"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="Monitor" Height="900" Width="1000"
+        Title="Monitor" Height="800" Width="600"
         WindowStartupLocation="CenterScreen">
 
     <Grid Margin="10">
-        <DataGrid ItemsSource="{Binding Graphs}"
-                  IsReadOnly="True"
-                  CanUserResizeColumns="False"
-                  CanUserResizeRows="False"
-                  CanUserSortColumns="False"
-                  CanUserReorderColumns="False"
-                  GridLinesVisibility="None"
-                  AutoGenerateColumns="False"
-                  HeadersVisibility="None"
-                  ColumnWidth="*">
 
-            <DataGrid.Columns>
-                <DataGridTemplateColumn>
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
+        <ScrollViewer>
 
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
+            <ItemsControl ItemsSource="{Binding Graphs}"
+                          HorizontalContentAlignment="Stretch">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
 
+                        <controlls:GraphControl/>
 
-                                <Label Content="{Binding ModuleType, Converter={StaticResource EnumConverter}}"
-                                       FontSize="22"
-                                       Grid.Row="0"/>
-                                
-                                <lvc:CartesianChart Series="{Binding Series}"
-                                                    SyncContext="{Binding Sync}"
-                                                    XAxes="{Binding XAxes}"
-                                                    YAxes="{Binding YAxes}"
-                                                    AnimationsSpeed="00:00:00.250"
-                                                    ZoomMode="ZoomY"
-                                                    MinHeight="300"
-
-                                                    Grid.Row="1"/>
-
-                            </Grid>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            
+        </ScrollViewer>
+        
     </Grid>
 </Window>
