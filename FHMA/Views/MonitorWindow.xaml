@@ -19,7 +19,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
 
-                        <controlls:GraphControl/>
+                        <controlls:GraphControl/> 
 
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

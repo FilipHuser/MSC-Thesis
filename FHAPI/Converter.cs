@@ -9,7 +9,7 @@ namespace FHAPILib
 {
     public static class Converter<T> where T : struct
     {
-        public static T? ConvertPayload(byte[] payload , int? offset = 0)
+        public static Func<byte[], int, T> GetPayloadConvertFunction()
         {
             Func<byte[], int, T>? convertFunc = null;
 
@@ -31,8 +31,9 @@ namespace FHAPILib
                     convertFunc = (data, offset) => (T)(object)BitConverter.ToDouble(data, offset);
                     break;
             }
+            if (convertFunc == null) { throw new NotImplementedException("Unsoported convertion type!"); }
 
-            return convertFunc != null ? convertFunc(payload.Reverse().ToArray() , offset??0) : default;
+            return convertFunc;
         }
     }
 }

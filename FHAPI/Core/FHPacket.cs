@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using FHAPILib;
@@ -29,27 +30,30 @@ namespace FHAPI.Core
                 Payload = udpPacket.PayloadData;
                 Timestamp = packet.Timeval.Date;
 
-                Source = Converter<sbyte>.ConvertPayload(Payload.Take(1).ToArray()) switch
+                var convertFunc = Converter<sbyte>.GetPayloadConvertFunction();
+
+                Source = convertFunc(Payload.Take(1).ToArray() , 0) switch
                 {
                     1 => PacketSource.BIOPAC,
                     2 => PacketSource.EMOTIV,
                     _ => PacketSource.OTHER
-                };
-
-                PayloadElementSize = Source switch
-                {
-                    PacketSource.BIOPAC => sizeof(short),
-                    PacketSource.EMOTIV => sizeof(int),
-                    _ => -1
                 };
             }
         }
         public IPAddress? SourceAddress { get; set; }
         public IPAddress? DestinationAddress { get; set; }
         public PacketSource Source { get; }
-        public int PayloadElementSize { get; }
         public Byte[] Payload { get; set; } = new Byte[0];
         public int PayloadLength => Payload?.Length ?? -1;
         public DateTime Timestamp { get; set; }
+
+        #region METHODS
+        public Dictionary<int, List<(DateTime, double)>> ExtractData(int nRepetitions)
+        {
+            var points = new Dictionary<int, List<(DateTime, double)>>();
+
+            return points;
+        }
+        #endregion
     }
 }

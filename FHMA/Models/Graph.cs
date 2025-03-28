@@ -33,16 +33,6 @@ namespace FHMA.Models
         public ModuleType ModuleType { get; set; }
         public double LowerBound { get; set; }
         public double UpperBound { get; set; }
-        public int PointLimit { get; set; } = 10000;
-        [XmlIgnore]
-        public  WpfPlot PlotControl { get; } = new WpfPlot();
-        [XmlIgnore]
-        public DataStreamer Streamer { get; set; }
-
-        public Graph()
-        {
-            PlotControl.UserInputProcessor.Disable();
-            Streamer = PlotControl.Plot.Add.DataStreamer(PointLimit);
-        }
+        public int PointLimit { get; set; } = 1000;
     }
 }

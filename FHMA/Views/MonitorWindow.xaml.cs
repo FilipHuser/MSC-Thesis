@@ -38,7 +38,7 @@ namespace FHMA.Views
 
             _fhapi = new FHAPILib.FHAPI();
 
-            string filter = $"src host {ConfigurationManager.AppSettings["DeviceIpAddr"]} or src host 192.168.2.6 and udp";
+            string filter = $"src host {ConfigurationManager.AppSettings["BiopacIpAddr"]} or src host {ConfigurationManager.AppSettings["EmotiveIpAddr"]} and udp"; //ADD FILTERING FOR +10 UDP TO SKIP COUNTERS
 
             _fhapi.SetDeviceIndex(cdi);
             _fhapi.SetFilter(filter);
@@ -68,25 +68,22 @@ namespace FHMA.Views
             {
                 var packets = _fhapi.GetPackets();
 
-                var points = new Dictionary<int, List<(DateTime, int?)>>();
-
                 foreach (var packet in packets)
                 {
-                    if (packet.PayloadLength == 10) { continue; }
-
+    
                     int payloadElementSize = packet.PayloadElementSize;
                     int nRepetitions = ((packet.PayloadLength - 2) / payloadElementSize) / nChannels;
 
                     for (int i = 0; i < nRepetitions * nChannels; i++)
                     {
                         int offset = 1 + (i * payloadElementSize);
-                        var value = Converter<int>.ConvertPayload(packet.Payload.Skip(offset).Take(payloadElementSize).ToArray(), 0);
+
 
                         if (value == null) { continue; }
 
                         if (!points.TryGetValue(i % nChannels, out var existingList))
                         {
-                            existingList = new List<(DateTime, int?)>();
+                            existingList = new List<(DateTime, short?)>();
                             points[i % nChannels] = existingList;
                         }
 

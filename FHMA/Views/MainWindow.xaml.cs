@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Xml.Serialization;
 using FHMA.Models;
 using FHMA.ViewModels;
@@ -13,27 +14,30 @@ namespace FHMA
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly MainWindowViewModel _mv;
+        private readonly MainWindowViewModel _vm;
         public MainWindow()
         {
             InitializeComponent();
-            _mv = new MainWindowViewModel();
-            DataContext = _mv;
+            _vm = new MainWindowViewModel();
+            DataContext = _vm;
         }
 
         private void Button_AddGraph(object sender, RoutedEventArgs e)
         {
             var gcw = new GraphConfigWindow(this);
-
-            gcw.OnGraphAdded += (graph) => { _mv.Graphs.Add(graph); };
-
+            gcw.OnGraphAdded += (graph) => { _vm.Graphs.Add(graph); };
             gcw.Owner = this;
             gcw.ShowDialog();
         }
 
         private void Button_StartCapturing(object sender, RoutedEventArgs e)
         {
-            var mw = new MonitorWindow(_mv.Graphs);
+            if (_vm.Graphs.Count == 0)
+            {
+                MessageBox.Show("You need to add at least one graph before proceeding.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            var mw = new MonitorWindow(_vm.Graphs);
             mw.Show();
             this.Close();
         }
@@ -49,7 +53,7 @@ namespace FHMA
 
             using (var sw = new StreamWriter(filePath))
             {
-                serializer.Serialize(sw, _mv.Graphs.ToList());
+                serializer.Serialize(sw, _vm.Graphs.ToList());
             }
         }
         private void Button_LoadTemplate(object sender, RoutedEventArgs e)
@@ -65,14 +69,20 @@ namespace FHMA
             using (var sr = new StreamReader(filePath))
             {
                 var graphs = (List<Graph>?)serializer.Deserialize(sr);
-                if (graphs != null) { _mv.Graphs = new ObservableCollection<Graph>(graphs); }
-
+                if (graphs != null)
+                {
+                    _vm.Graphs.Clear();
+                    foreach (var graph in graphs)
+                    {
+                        _vm.Graphs.Add(graph);
+                    }
+                }
             }
         }
 
         private void Button_RemoveGraph(object sender, RoutedEventArgs e)
         {
-
+            if (sender is Button btn && btn.DataContext is Graph graph) { _vm.Graphs.Remove(graph); }
         }
     }
 }

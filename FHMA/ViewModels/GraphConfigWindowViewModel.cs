@@ -12,8 +12,8 @@ namespace FHMA.ViewModels
     class GraphConfigWindowViewModel : BaseViewModel
     {
 
-        public ObservableCollection<ModuleType> ModuleTypes { get; private set; }
-        public ObservableCollection<int> Channels { get; private set; }
+        public ObservableCollection<ModuleType> ModuleTypes { get; set; }
+        public ObservableCollection<int> Channels { get; set; }
 
         public GraphConfigWindowViewModel()
         {
