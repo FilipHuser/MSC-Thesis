@@ -3,6 +3,7 @@ using System.Configuration;
 using System.Windows;
 using System.Windows.Threading;
 using FHAPILib;
+using FHMA.Core;
 using FHMA.Models;
 using FHMA.ViewModels;
 using ScottPlot.WPF;
@@ -25,8 +26,7 @@ namespace FHMA.Views
             Interval = TimeSpan.FromMilliseconds(10), IsEnabled = true
         };
 
-
-        public MonitorWindow(ObservableCollection<Graph> graphs)
+        public MonitorWindow(ObservableCollection<BiometricSignal> biometricSignals)
         {
             InitializeComponent();
 
@@ -44,7 +44,7 @@ namespace FHMA.Views
             _fhapi.SetFilter(filter);
             _fhapi.StartCapturing();
 
-            _vm = new MonitorWindowViewModel(graphs);
+            _vm = new MonitorWindowViewModel(biometricSignals);
             DataContext = _vm;
 
             UpdateData();
@@ -54,13 +54,13 @@ namespace FHMA.Views
 
         public void UpdateData()
         {
-            int nChannels = _vm.Graphs.Count;
+            var biometricSignalsBySource = _vm.BiometricSignals.ToList().GroupBy(x => x.Source);
 
             _updateTimer.Tick += (s, e) =>
             {
-                foreach (var graph in _vm.Graphs)
-                {
-                    if (graph.Streamer.HasNewData) { graph.PlotControl.Refresh(); }
+                foreach (var graph in _vm.BiometricSignals.SelectMany(x => x.Graphs))
+                { 
+                   if (graph.Streamer.HasNewData) { graph.PlotControl.Refresh(); }
                 }
             };
 
@@ -68,35 +68,22 @@ namespace FHMA.Views
             {
                 var packets = _fhapi.GetPackets();
 
+
                 foreach (var packet in packets)
                 {
-    
-                    int payloadElementSize = packet.PayloadElementSize;
-                    int nRepetitions = ((packet.PayloadLength - 2) / payloadElementSize) / nChannels;
+                    if(packet.PayloadLength < 18) { continue; }
+                    var matchingGraphs = biometricSignalsBySource.FirstOrDefault(x => x.Key == packet.Source)?.SelectMany(x => x.Graphs).ToList();
 
-                    for (int i = 0; i < nRepetitions * nChannels; i++)
+                    if (matchingGraphs == null) { continue; }
+
+                    var points = packet.ExtractData(matchingGraphs.Count);
+
+                    if (points == null || points.Count == 0) { continue; }
+
+                    for (int i = 0; i < matchingGraphs.Count; i++)
                     {
-                        int offset = 1 + (i * payloadElementSize);
-
-
-                        if (value == null) { continue; }
-
-                        if (!points.TryGetValue(i % nChannels, out var existingList))
-                        {
-                            existingList = new List<(DateTime, short?)>();
-                            points[i % nChannels] = existingList;
-                        }
-
-                        existingList.Add((packet.Timestamp, value));
-                    }
-                }
-
-                if (points.Count > 0) 
-                {
-                    for (int i = 0; i < _vm.Graphs.Count; i++)
-                    {
-                        var values = points[i % nChannels].Select(x => (double)(x.Item2 ?? 0)).ToList();
-                        _vm.Graphs.ElementAt(i).Streamer.AddRange(values);
+                        var values = points[i % matchingGraphs.Count].Select(x => x.Item2);
+                        matchingGraphs.ElementAt(i).Streamer.AddRange(values);
                     }
                 }
             };

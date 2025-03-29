@@ -1,17 +1,14 @@
-﻿using System.Collections.ObjectModel;
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Xml.Serialization;
+using FHMA.Core;
 using FHMA.Models;
 using FHMA.ViewModels;
 using FHMA.Views;
 
 namespace FHMA
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         private readonly MainWindowViewModel _vm;
@@ -22,67 +19,43 @@ namespace FHMA
             DataContext = _vm;
         }
 
-        private void Button_AddGraph(object sender, RoutedEventArgs e)
-        {
-            var gcw = new GraphConfigWindow(this);
-            gcw.OnGraphAdded += (graph) => { _vm.Graphs.Add(graph); };
-            gcw.Owner = this;
-            gcw.ShowDialog();
-        }
-
         private void Button_StartCapturing(object sender, RoutedEventArgs e)
         {
-            if (_vm.Graphs.Count == 0)
+            if (_vm.BiometricSignals.Count == 0)
             {
                 MessageBox.Show("You need to add at least one graph before proceeding.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            var mw = new MonitorWindow(_vm.Graphs);
+            var mw = new MonitorWindow(_vm.BiometricSignals);
             mw.Show();
             this.Close();
         }
-        private void Button_SaveTemplate(object sender, RoutedEventArgs e)
+        private void Button_SaveConfiguration(object sender, RoutedEventArgs e)
         {
-            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FHMA", "Config");
-             
-            if (!Directory.Exists(appDataPath)){ Directory.CreateDirectory(appDataPath); }
-
-            string filePath = Path.Combine(appDataPath , "GraphsTemplate.xml");
-
-            XmlSerializer serializer = new XmlSerializer(typeof(List<Graph>));
-
-            using (var sw = new StreamWriter(filePath))
-            {
-                serializer.Serialize(sw, _vm.Graphs.ToList());
-            }
+            XmlSettingsManager.StoreSettings("BiometricSignalsConfiguration" , "BSConf.xml" , _vm.BiometricSignals.ToList() , true);
         }
-        private void Button_LoadTemplate(object sender, RoutedEventArgs e)
+        private void Button_LoadConfiguration(object sender, RoutedEventArgs e)
         {
-            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FHMA", "Config");
-
-            if (!Directory.Exists(appDataPath)) { Directory.CreateDirectory(appDataPath); }
-
-            string filePath = Path.Combine(appDataPath, "GraphsTemplate.xml");
-
-            XmlSerializer serializer = new XmlSerializer(typeof(List<Graph>));
-
-            using (var sr = new StreamReader(filePath))
-            {
-                var graphs = (List<Graph>?)serializer.Deserialize(sr);
-                if (graphs != null)
+            _vm.Refresh();
+        }
+        private void Button_AddBiometricSignal(object sender, RoutedEventArgs e)
+        {
+            var bscw = new BiometricSignalConfigWindow(this);
+            bscw.OnGraphAdded += (biometricSignal) => {
+                if (_vm.BiometricSignals.Count == _vm.MaxChannels)
                 {
-                    _vm.Graphs.Clear();
-                    foreach (var graph in graphs)
-                    {
-                        _vm.Graphs.Add(graph);
-                    }
+                    MessageBox.Show("You have reached the maximum number of channels allowed.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
                 }
-            }
-        }
 
+                _vm.BiometricSignals.Add(biometricSignal);
+            };
+            bscw.Owner = this;
+            bscw.ShowDialog();
+        }
         private void Button_RemoveGraph(object sender, RoutedEventArgs e)
         {
-            if (sender is Button btn && btn.DataContext is Graph graph) { _vm.Graphs.Remove(graph); }
+            if (sender is Button btn && btn.DataContext is BiometricSignal biometricSignal) { _vm.BiometricSignals.Remove(biometricSignal); }
         }
     }
 }

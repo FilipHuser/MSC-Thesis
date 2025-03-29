@@ -1,0 +1,45 @@
+﻿<Window x:Class="FHMA.Views.BiometricSignalConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FHMA.Views"
+        mc:Ignorable="d"
+        Title="Add Biometric Signal" Height="150" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <Label Content="Biometric Signals"
+                   Padding="0 5"/>
+            <ComboBox ItemsSource="{Binding BiometricSignals}"
+                      SelectedItem="{Binding BiometricSignal}"/>
+
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="50" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Button Content="Create Biometric Signal"
+                    HorizontalAlignment="Stretch" 
+                    VerticalAlignment="Center"
+                    Grid.Column="0"
+                    Click="Button_CreateBiometricSignal"/>
+            
+            <Button Content="Add Biometric Signal" 
+                    HorizontalAlignment="Stretch" 
+                    VerticalAlignment="Center" 
+                    Grid.Column="2"
+                    Click="Button_AddBiometricSignal"/>
+        </Grid>
+    </Grid>
+</Window>

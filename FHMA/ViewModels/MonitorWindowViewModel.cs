@@ -8,12 +8,13 @@ using PacketDotNet;
 
 namespace FHMA.ViewModels
 {
-    class MonitorWindowViewModel
+    class MonitorWindowViewModel : BaseViewModel
     {
-        public ObservableCollection<Graph> Graphs { get; set; } = new ObservableCollection<Graph>();
-        public MonitorWindowViewModel(ObservableCollection<Graph> graphs)
+        public ObservableCollection<BiometricSignal> BiometricSignals { get; set; } = new ObservableCollection<BiometricSignal>();
+
+        public MonitorWindowViewModel(ObservableCollection<BiometricSignal> biometricSignals)
         {
-            Graphs = graphs;
+            BiometricSignals = biometricSignals;
         }
     }
 }

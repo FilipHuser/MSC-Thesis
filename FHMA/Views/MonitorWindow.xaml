@@ -4,28 +4,36 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FHMA.Views"
-        xmlns:controlls="clr-namespace:FHMA.Controls"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         Title="Monitor" Height="800" Width="600"
         WindowStartupLocation="CenterScreen">
 
     <Grid Margin="10">
-
         <ScrollViewer>
-
-            <ItemsControl ItemsSource="{Binding Graphs}"
-                          HorizontalContentAlignment="Stretch">
+            <ItemsControl ItemsSource="{Binding BiometricSignals}" HorizontalContentAlignment="Stretch">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-
-                        <controlls:GraphControl/> 
-
+                        <GroupBox Header="{Binding}">
+                            <ItemsControl ItemsSource="{Binding Graphs}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <Label Content="{Binding Label}" 
+                                                   FontSize="16" 
+                                                   FontWeight="Bold" 
+                                                   HorizontalAlignment="Center" 
+                                                   Margin="0,0,0,10"/>
+                                            <ContentControl Content="{Binding PlotControl, Mode=OneTime}"
+                                                            MinHeight="200"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </GroupBox>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-            
         </ScrollViewer>
-        
     </Grid>
 </Window>
