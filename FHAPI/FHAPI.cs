@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-using PacketDotNet;
+﻿using System.Collections.Concurrent;
 using SharpPcap;
-using System.Net.Sockets;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using FHAPI.Core;
-using log4net.Util;
-using System.Diagnostics;
 
 namespace FHAPILib
 {

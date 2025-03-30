@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
 using System.Xml.Serialization;
 using ScottPlot;
 using ScottPlot.Plottables;
@@ -22,16 +23,25 @@ namespace FHMA.Models
         public string? Label { get; set; }
         public double LowerBound { get; set; } = -10;
         public double UpperBound { get; set; } = 10;
-        public int PointLimit { get; set; } = 5000;
+        private int _pointLimit = 1000;
+        public int PointLimit
+        {
+            get => _pointLimit;
+            set
+            {
+                _pointLimit = value;
+                Streamer = PlotControl.Plot.Add.DataStreamer(_pointLimit);
+            }
+        }
         [XmlIgnore]
         public WpfPlot PlotControl { get; } = new WpfPlot();
         [XmlIgnore]
-        public DataStreamer Streamer { get; set; }
+        public DataStreamer? Streamer { get; set; }
 
         public Graph()
         {
-            Streamer = PlotControl.Plot.Add.DataStreamer(PointLimit);
             PlotControl.UserInputProcessor.Disable();
+            PlotControl.Plot.Axes.AutoScale();
         }
         public object Clone() => this.MemberwiseClone();
     }

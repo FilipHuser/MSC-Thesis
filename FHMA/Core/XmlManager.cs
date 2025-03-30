@@ -9,7 +9,7 @@ using System.Xml.Serialization;
 
 namespace FHMA.Core
 {
-    public static class XmlSettingsManager
+    public static class XmlManager
     {
         private static T? LoadFromFile<T>(string filePath)
         {
@@ -20,7 +20,7 @@ namespace FHMA.Core
             }
         }
 
-        public static List<T> LoadSettings<T>(string folderName, string? fileName = null)
+        public static List<T> Load<T>(string folderName, string? fileName = null)
         {
             var settingsList = new List<T>();
 
@@ -50,7 +50,7 @@ namespace FHMA.Core
 
             return settingsList;
         }
-        public static void StoreSettings<T>(string folderName, string fileName , T t , bool? overwrite = null)
+        public static void Store<T>(string folderName, string fileName , T t , bool? overwrite = null)
         {
             string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FHMA", folderName);
 

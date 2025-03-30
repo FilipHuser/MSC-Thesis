@@ -23,7 +23,7 @@ namespace FHMA.ViewModels
 
         public void Refresh()
         {
-            BiometricSignals = new ObservableCollection<BiometricSignal>(XmlSettingsManager.LoadSettings<BiometricSignal>("BiometricSignals"));
+            BiometricSignals = new ObservableCollection<BiometricSignal>(XmlManager.Load<BiometricSignal>("BiometricSignals"));
             if (BiometricSignals.Any()) { BiometricSignal = BiometricSignals.First(); }
         }
     }

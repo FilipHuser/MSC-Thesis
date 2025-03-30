@@ -20,9 +20,8 @@ namespace FHMA.Views
 
         private void Button_SaveBiometricSignal(object sender, RoutedEventArgs e)
         {
-            var fileName = $"{_vm.BiometricSignal}.xml";
-
-            XmlSettingsManager.StoreSettings("BiometricSignals" , fileName , _vm.BiometricSignal);
+            _vm.BiometricSignal.Graphs = _vm.Graphs.ToList();
+            XmlManager.Store("BiometricSignals" , $"{_vm.BiometricSignal}.xml", _vm.BiometricSignal);
             this.Close();
         }
         private void Button_ClearAllGraphs(object sender, RoutedEventArgs e) => _vm.Graphs.Clear();

@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Configuration;
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using FHAPILib;
@@ -7,6 +8,7 @@ using FHMA.Core;
 using FHMA.Models;
 using FHMA.ViewModels;
 using ScottPlot.WPF;
+using SkiaSharp;
 
 namespace FHMA.Views
 {
@@ -68,10 +70,10 @@ namespace FHMA.Views
             {
                 var packets = _fhapi.GetPackets();
 
-
                 foreach (var packet in packets)
                 {
-                    if(packet.PayloadLength < 18) { continue; }
+                    if(packet.PayloadLength < 18) { continue; } // AFTER ADJUSTING FILTER NO NEED FOR THIS
+
                     var matchingGraphs = biometricSignalsBySource.FirstOrDefault(x => x.Key == packet.Source)?.SelectMany(x => x.Graphs).ToList();
 
                     if (matchingGraphs == null) { continue; }

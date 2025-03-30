@@ -32,7 +32,7 @@ namespace FHMA
         }
         private void Button_SaveConfiguration(object sender, RoutedEventArgs e)
         {
-            XmlSettingsManager.StoreSettings("BiometricSignalsConfiguration" , "BSConf.xml" , _vm.BiometricSignals.ToList() , true);
+            XmlManager.Store("BiometricSignalsConfiguration" , "BSConf.xml" , _vm.BiometricSignals.ToList() , true);
         }
         private void Button_LoadConfiguration(object sender, RoutedEventArgs e)
         {
