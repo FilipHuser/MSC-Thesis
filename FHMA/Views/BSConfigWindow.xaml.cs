@@ -7,16 +7,15 @@ using FHMA.ViewModels;
 
 namespace FHMA.Views
 {
-    public partial class BiometricSignalConfigWindow : Window
+    public partial class BSConfigWindow : Window
     {
-        private readonly BiometricSignalConfigWindowViewModel _vm;
+        private readonly BSConfigWindowViewModel _vm;
         public delegate void GraphAddHandler(BiometricSignal biometricSignal);
         public event GraphAddHandler? OnGraphAdded;
-        public BiometricSignalConfigWindow(Window parent)
+        public BSConfigWindow()
         {
             InitializeComponent();
-            parent.Closed += (s, e) => this.Close();
-            _vm = new BiometricSignalConfigWindowViewModel();
+            _vm = new BSConfigWindowViewModel(this);
             DataContext = _vm;
         }
 
@@ -28,7 +27,7 @@ namespace FHMA.Views
         }
         private void Button_CreateBiometricSignal(object sender, RoutedEventArgs e)
         {
-            var bscw = new BiometricSignalCreateWindow();
+            var bscw = new BSCreateWindow();
             bscw.Owner = this;
 
             bscw.Closed += (s, e) => { _vm.Refresh(); };

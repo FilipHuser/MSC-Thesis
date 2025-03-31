@@ -8,13 +8,13 @@ using FHMA.Core;
 
 namespace FHMA.Views
 {
-    public partial class BiometricSignalCreateWindow : Window
+    public partial class BSCreateWindow : Window
     {
-        private readonly BiometricSignalCreateWindowViewModel _vm;
-        public BiometricSignalCreateWindow()
+        private readonly BSCreateWindowViewModel _vm;
+        public BSCreateWindow()
         {
             InitializeComponent();
-            _vm = new BiometricSignalCreateWindowViewModel();
+            _vm = new BSCreateWindowViewModel(this);
             DataContext = _vm;
         }
 

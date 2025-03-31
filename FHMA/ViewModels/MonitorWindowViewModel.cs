@@ -1,10 +1,6 @@
 ﻿using System.Collections.ObjectModel;
-using System.Text.RegularExpressions;
-using System.Threading.Channels;
-using System.Windows.Threading;
-using FHAPILib;
+using System.Windows;
 using FHMA.Models;
-using PacketDotNet;
 
 namespace FHMA.ViewModels
 {
@@ -12,7 +8,7 @@ namespace FHMA.ViewModels
     {
         public ObservableCollection<BiometricSignal> BiometricSignals { get; set; } = new ObservableCollection<BiometricSignal>();
 
-        public MonitorWindowViewModel(ObservableCollection<BiometricSignal> biometricSignals)
+        public MonitorWindowViewModel(Window window , ObservableCollection<BiometricSignal> biometricSignals) : base(window)
         {
             BiometricSignals = biometricSignals;
         }

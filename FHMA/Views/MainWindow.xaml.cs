@@ -15,7 +15,7 @@ namespace FHMA
         public MainWindow()
         {
             InitializeComponent();
-            _vm = new MainWindowViewModel();
+            _vm = new MainWindowViewModel(this);
             DataContext = _vm;
         }
 
@@ -33,29 +33,6 @@ namespace FHMA
         private void Button_SaveConfiguration(object sender, RoutedEventArgs e)
         {
             XmlManager.Store("BiometricSignalsConfiguration" , "BSConf.xml" , _vm.BiometricSignals.ToList() , true);
-        }
-        private void Button_LoadConfiguration(object sender, RoutedEventArgs e)
-        {
-            _vm.Refresh();
-        }
-        private void Button_AddBiometricSignal(object sender, RoutedEventArgs e)
-        {
-            var bscw = new BiometricSignalConfigWindow(this);
-            bscw.OnGraphAdded += (biometricSignal) => {
-                if (_vm.BiometricSignals.Count == _vm.MaxChannels)
-                {
-                    MessageBox.Show("You have reached the maximum number of channels allowed.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                _vm.BiometricSignals.Add(biometricSignal);
-            };
-            bscw.Owner = this;
-            bscw.ShowDialog();
-        }
-        private void Button_RemoveGraph(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.DataContext is BiometricSignal biometricSignal) { _vm.BiometricSignals.Remove(biometricSignal); }
         }
     }
 }

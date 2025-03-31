@@ -20,14 +20,14 @@
             <Button Grid.Column="0"
                     Content="Add Biometric Signal"
                     Padding="5"
-                    Click="Button_AddBiometricSignal"/>
+                    Command="{Binding AddBSCommand}"/>
 
             <GridSplitter  Width="10"/>
 
             <Button Grid.Column="0"
                     Content="Load Configuration"
                     Padding="5"
-                    Click="Button_LoadConfiguration"/>
+                    Command="{Binding LoadConfCommand}"/>
 
         </StackPanel>
 
@@ -54,10 +54,9 @@
                         <DataTemplate>
 
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="⚙️"/>
 
-                                <Button Content="🗑️"
-                                        Click="Button_RemoveGraph"/>
+                                <Button Content="Remove"
+                                        Command="{Binding RemoveBSCommand}"/>
                             </StackPanel>
                             
                         </DataTemplate>

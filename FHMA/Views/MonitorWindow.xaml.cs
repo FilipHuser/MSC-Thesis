@@ -46,7 +46,7 @@ namespace FHMA.Views
             _fhapi.SetFilter(filter);
             _fhapi.StartCapturing();
 
-            _vm = new MonitorWindowViewModel(biometricSignals);
+            _vm = new MonitorWindowViewModel(this , biometricSignals);
             DataContext = _vm;
 
             UpdateData();

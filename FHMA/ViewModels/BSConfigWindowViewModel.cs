@@ -1,10 +1,11 @@
 ﻿using System.Collections.ObjectModel;
+using System.Windows;
 using FHMA.Core;
 using FHMA.Models;
 
 namespace FHMA.ViewModels
 {
-    internal class BiometricSignalConfigWindowViewModel : BaseViewModel
+    internal class BSConfigWindowViewModel : BaseViewModel
     {
         #region AVAILABLE_ITEMS
         private ObservableCollection<BiometricSignal> _biometricSignals = new ObservableCollection<BiometricSignal>();
@@ -16,7 +17,7 @@ namespace FHMA.ViewModels
         public BiometricSignal BiometricSignal { get => _biometricSignal; set => SetProperty(ref _biometricSignal, value); }
         #endregion
 
-        public BiometricSignalConfigWindowViewModel()
+        public BSConfigWindowViewModel(Window window) : base(window)
         {
             Refresh();
         }
