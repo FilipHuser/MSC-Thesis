@@ -33,13 +33,13 @@
                     HorizontalAlignment="Stretch" 
                     VerticalAlignment="Center"
                     Grid.Column="0"
-                    Click="Button_CreateBiometricSignal"/>
+                    Command="{Binding CreateBSCommand}"/>
             
             <Button Content="Add Biometric Signal" 
                     HorizontalAlignment="Stretch" 
                     VerticalAlignment="Center" 
                     Grid.Column="2"
-                    Click="Button_AddBiometricSignal"/>
+                    Command="{Binding AddBSCommand}"/>
         </Grid>
     </Grid>
 </Window>

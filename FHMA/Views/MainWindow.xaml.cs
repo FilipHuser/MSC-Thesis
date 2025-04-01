@@ -18,21 +18,5 @@ namespace FHMA
             _vm = new MainWindowViewModel(this);
             DataContext = _vm;
         }
-
-        private void Button_StartCapturing(object sender, RoutedEventArgs e)
-        {
-            if (_vm.BiometricSignals.Count == 0)
-            {
-                MessageBox.Show("You need to add at least one graph before proceeding.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            var mw = new MonitorWindow(_vm.BiometricSignals);
-            mw.Show();
-            this.Close();
-        }
-        private void Button_SaveConfiguration(object sender, RoutedEventArgs e)
-        {
-            XmlManager.Store("BiometricSignalsConfiguration" , "BSConf.xml" , _vm.BiometricSignals.ToList() , true);
-        }
     }
 }

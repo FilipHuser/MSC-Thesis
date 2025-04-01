@@ -56,7 +56,8 @@
                             <StackPanel Orientation="Horizontal">
 
                                 <Button Content="Remove"
-                                        Command="{Binding RemoveBSCommand}"/>
+                                        Command="{Binding DataContext.RemoveBSCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        CommandParameter="{Binding}"/>
                             </StackPanel>
                             
                         </DataTemplate>
@@ -79,14 +80,14 @@
                 <Button Grid.Column="0"
                         Content="Save Configuration"
                         Padding="5"
-                        Click="Button_SaveConfiguration"/>
+                        Command="{Binding SaveConfCommand}"/>
 
                 <GridSplitter  Width="10"/>
 
                 <Button Grid.Column="0"
                         Content="Start Capturing"
                         Padding="5"
-                        Click="Button_StartCapturing"/>
+                        Command="{Binding StartCapCommand}"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" 

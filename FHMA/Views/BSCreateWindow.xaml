@@ -63,11 +63,11 @@
 
                     <Button Content="Clear Graphs"
                             Grid.Column="0"
-                            Click="Button_ClearAllGraphs"/>
+                            Command="{Binding ClearGraphsCommand}"/>
 
                     <Button Content="Add Graph"
                             Grid.Column="2"
-                            Click="Button_AddGraph"/>
+                            Command="{Binding AddGraphCommand}"/>
                 </Grid>
 
             </Grid>
@@ -83,16 +83,16 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0">
+                    <Label Content="Name" Padding="0 5"/>
+                    <TextBox Text="{Binding BiometricSignal.Name}"/>
+                    
                     <Label Content="Source" Padding="0 5"/>
                     <ComboBox ItemsSource="{Binding Sources}" SelectedItem="{Binding BiometricSignal.Source}"/>
-
-                    <Label Content="Signal Type" Padding="0 5"/>
-                    <ComboBox ItemsSource="{Binding SignalTypes}" SelectedItem="{Binding BiometricSignal.Type}"/>
                 </StackPanel>
 
-                <Button Content="Save Biometric Signal"
+                <Button Content="Create"
                         Grid.Row="1"
-                        Click="Button_SaveBiometricSignal"/>
+                        Command="{Binding CreateBSCommand}"/>
             </Grid>
         </GroupBox>
     </Grid>

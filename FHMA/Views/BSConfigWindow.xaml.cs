@@ -18,22 +18,11 @@ namespace FHMA.Views
             _vm = new BSConfigWindowViewModel(this);
             DataContext = _vm;
         }
-
-        private void Button_AddBiometricSignal(object sender, RoutedEventArgs e)
-        {
-            if (_vm.BiometricSignal == null) { return; }
-            OnGraphAdded?.Invoke(_vm.BiometricSignal);
-            this.Close();
+        public void RaiseOnGraphAdded(BiometricSignal bs)
+        { 
+            OnGraphAdded?.Invoke(bs);
+            Close();
         }
-        private void Button_CreateBiometricSignal(object sender, RoutedEventArgs e)
-        {
-            var bscw = new BSCreateWindow();
-            bscw.Owner = this;
-
-            bscw.Closed += (s, e) => { _vm.Refresh(); };
-            bscw.Show();
-        }
-
         private void TextBox_NumberValidation(object sender, TextCompositionEventArgs e)
         {
             var textBox = (TextBox)sender;

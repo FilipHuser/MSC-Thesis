@@ -5,7 +5,7 @@ namespace FHMA.Models
 {
     public class BiometricSignal
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public PacketSource Source { get; set; }
         public List<Graph> Graphs { get; set; } = new List<Graph>();
 

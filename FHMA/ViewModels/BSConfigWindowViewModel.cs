@@ -2,30 +2,37 @@
 using System.Windows;
 using FHMA.Core;
 using FHMA.Models;
+using FHMA.Views;
 
 namespace FHMA.ViewModels
 {
     internal class BSConfigWindowViewModel : BaseViewModel
     {
-        #region AVAILABLE_ITEMS
+        #region PROPERTIES
+        private BiometricSignal? _biometricSignal;
         private ObservableCollection<BiometricSignal> _biometricSignals = new ObservableCollection<BiometricSignal>();
         public ObservableCollection<BiometricSignal> BiometricSignals { get => _biometricSignals; set => SetProperty(ref _biometricSignals, value); } 
+        public BiometricSignal? BiometricSignal { get => _biometricSignal; set => SetProperty(ref _biometricSignal, value); }
         #endregion
-
-        #region SELECTED_ITEMS
-        private BiometricSignal _biometricSignal = new BiometricSignal();
-        public BiometricSignal BiometricSignal { get => _biometricSignal; set => SetProperty(ref _biometricSignal, value); }
+        #region RELAY_COMMANDS
+        public RelayCommand AddBSCommand => new RelayCommand(execute => AddBiometricSignal() , canExecute => BiometricSignal != null);
+        public RelayCommand CreateBSCommand => new RelayCommand(execute => CreateBiometricSignal());
         #endregion
-
-        public BSConfigWindowViewModel(Window window) : base(window)
+        public BSConfigWindowViewModel(Window window) : base(window) => Refresh();
+        #region METHODS
+        private void AddBiometricSignal() => ((BSConfigWindow)Window).RaiseOnGraphAdded(BiometricSignal!);
+        private void CreateBiometricSignal()
         {
-            Refresh();
+            var bscw = new BSCreateWindow();
+            bscw.Owner = Window;
+            bscw.Closed += (e, s) => { Refresh(); };
+            bscw.Show();
         }
-
-        public void Refresh()
+        private void Refresh()
         {
             BiometricSignals = new ObservableCollection<BiometricSignal>(XmlManager.Load<BiometricSignal>("BiometricSignals"));
             if (BiometricSignals.Any()) { BiometricSignal = BiometricSignals.First(); }
         }
+        #endregion
     }
 }
