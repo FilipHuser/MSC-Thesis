@@ -25,7 +25,7 @@
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="50" />
+                <ColumnDefinition Width="64" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
@@ -35,7 +35,7 @@
                     Grid.Column="0"
                     Command="{Binding CreateBSCommand}"/>
             
-            <Button Content="Add Biometric Signal" 
+            <Button Content="Add" 
                     HorizontalAlignment="Stretch" 
                     VerticalAlignment="Center" 
                     Grid.Column="2"

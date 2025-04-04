@@ -40,7 +40,8 @@ namespace FHMA.Views
 
             _fhapi = new FHAPILib.FHAPI();
 
-            string filter = $"src host {ConfigurationManager.AppSettings["BiopacIpAddr"]} or src host {ConfigurationManager.AppSettings["EmotiveIpAddr"]} and udp"; //ADD FILTERING FOR +10 UDP TO SKIP COUNTERS
+            string filter = @$"udp and src host {ConfigurationManager.AppSettings["BiopacIpAddr"]} or
+                               src host {ConfigurationManager.AppSettings["EmotiveIpAddr"]} and udp[4:2] > 18";
 
             _fhapi.SetDeviceIndex(cdi);
             _fhapi.SetFilter(filter);
@@ -56,13 +57,15 @@ namespace FHMA.Views
 
         public void UpdateData()
         {
-            var biometricSignalsBySource = _vm.BiometricSignals.ToList().GroupBy(x => x.Source);
+            var bsList = _vm.BiometricSignals.ToList();
+            var bsBySource = bsList.GroupBy(x => x.Source);
+            var bsStoreage = new BiometricSignalStorage(bsList);
 
             _updateTimer.Tick += (s, e) =>
             {
                 foreach (var graph in _vm.BiometricSignals.SelectMany(x => x.Graphs))
-                { 
-                   if (graph.Streamer.HasNewData) { graph.PlotControl.Refresh(); }
+                {
+                   if (graph.Streamer?.HasNewData??false) { graph.PlotControl.Refresh(); }
                 }
             };
 
@@ -72,9 +75,7 @@ namespace FHMA.Views
 
                 foreach (var packet in packets)
                 {
-                    if(packet.PayloadLength < 18) { continue; } // AFTER ADJUSTING FILTER NO NEED FOR THIS
-
-                    var matchingGraphs = biometricSignalsBySource.FirstOrDefault(x => x.Key == packet.Source)?.SelectMany(x => x.Graphs).ToList();
+                    var matchingGraphs = bsBySource.FirstOrDefault(x => x.Key == packet.Source)?.SelectMany(x => x.Graphs).ToList();
 
                     if (matchingGraphs == null) { continue; }
 
@@ -84,8 +85,13 @@ namespace FHMA.Views
 
                     for (int i = 0; i < matchingGraphs.Count; i++)
                     {
-                        var values = points[i % matchingGraphs.Count].Select(x => x.Item2);
-                        matchingGraphs.ElementAt(i).Streamer.AddRange(values);
+                        var graph = matchingGraphs.ElementAt(i);
+                        int dataIndex = i % matchingGraphs.Count;
+
+                        bsStoreage.Add(graph , points[dataIndex].Last().Item2);
+
+                        var values = points[dataIndex].Select(x => x.Item2);
+                        graph.Streamer?.AddRange(values);
                     }
                 }
             };
