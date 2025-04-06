@@ -1,22 +1,35 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Net.Sockets;
+using System.Net;
+using System.Text;
+using FHMA.Models.ExternalModels;
+using System.Text.Json;
 
 class Program
 {
-    static async Task Main(string[] args)  // Mark Main as async Task
+    static void Main(string[] args)
     {
-        FHAPILib.FHAPI fhapi = new FHAPILib.FHAPI();
-        fhapi.SetDeviceIndex(4);
-        fhapi.SetFilter("");
-        fhapi.StartCapturing();
+        var model = new KMModel() { Val0 = 420 , Val1 = "asdf" , Val2 = 69 };
+        var json = JsonSerializer.Serialize(model);
 
 
-        CancellationTokenSource cts = new CancellationTokenSource();
 
-        await Task.Run(() => fhapi.Monitor(cts.Token));
 
-        while (true) ;
+        while (true)
+        {
+            Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+            IPAddress serverAddr = IPAddress.Parse("192.168.2.255");
+
+            IPEndPoint endPoint = new IPEndPoint(serverAddr, 12345);
+
+            byte[] payload = Encoding.ASCII.GetBytes(json);
+
+            sock.SendTo(payload, endPoint);
+            Console.WriteLine($"Sent => {json}");
+
+            Thread.Sleep(500);
+        }
     }
 }

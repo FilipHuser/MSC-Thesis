@@ -3,7 +3,7 @@ using System.Xml.Serialization;
 
 namespace FHMA.Core
 {
-    public static class XmlManager
+    internal static class XmlManager
     {
         private static T? LoadFromFile<T>(string filePath)
         {

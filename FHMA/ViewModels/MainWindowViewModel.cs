@@ -54,7 +54,6 @@ namespace FHMA.ViewModels
         private void LoadConfiguration()
         {
             BiometricSignals = new ObservableCollection<BiometricSignal>(XmlManager.Load<List<BiometricSignal>>("BiometricSignalsConfiguration", "BSConf.xml").First());
-            BiometricSignals.SelectMany(x => x.Graphs).ToList().ForEach(x => x.InitPlot());
         }
         private void SaveConfiguration()
         {

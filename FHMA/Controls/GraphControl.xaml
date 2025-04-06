@@ -7,7 +7,12 @@
              xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
              mc:Ignorable="d" 
              d:DesignHeight="200" d:DesignWidth="400">
-    <Grid>
-        <ContentControl Content="{Binding PlotControl, Mode=OneTime}"/>
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+
+        <ContentControl  Content="{Binding PlotControl, Mode=OneTime}"/>
     </Grid>
 </UserControl>

@@ -8,26 +8,29 @@ namespace FHAPILib
 {
     public static class Converter<T> where T : struct
     {
-        public static Func<byte[], int, double> GetPayloadConvertFunction()
+        public static Func<byte[], int, object> GetPayloadConvertFunction()
         {
-            Func<byte[], int, double>? convertFunc = null;
+            Func<byte[], int, object>? convertFunc = null;
 
             switch (typeof(T))
             {
                 case Type t when t == typeof(sbyte):
-                    convertFunc = (data, offset) => (double)(sbyte)data[offset];
+                    convertFunc = (data, offset) => (sbyte)data[offset];
                     break;
                 case Type t when t == typeof(short):
-                    convertFunc = (data, offset) => (double)BitConverter.ToInt16(data, offset);
+                    convertFunc = (data, offset) => BitConverter.ToInt16(data, offset);
                     break;
                 case Type t when t == typeof(int):
-                    convertFunc = (data, offset) => (double)BitConverter.ToInt32(data, offset);
+                    convertFunc = (data, offset) => BitConverter.ToInt32(data, offset);
                     break;
                 case Type t when t == typeof(long):
-                    convertFunc = (data, offset) => (double)BitConverter.ToInt64(data, offset);
+                    convertFunc = (data, offset) => BitConverter.ToInt64(data, offset);
                     break;
                 case Type t when t == typeof(double):
                     convertFunc = (data, offset) => BitConverter.ToDouble(data, offset);
+                    break;
+                case Type t when t == typeof(char):
+                    convertFunc = (data, offset) => BitConverter.ToChar(data, offset);
                     break;
                 default:
                     throw new NotImplementedException("Unsupported conversion type!");

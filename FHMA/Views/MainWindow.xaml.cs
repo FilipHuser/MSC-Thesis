@@ -12,7 +12,7 @@ namespace FHMA
     public partial class MainWindow : Window
     {
         private readonly MainWindowViewModel _vm;
-        public MainWindow()
+         public MainWindow()
         {
             InitializeComponent();
             _vm = new MainWindowViewModel(this);

@@ -8,7 +8,7 @@ using FHMA.Models;
 
 namespace FHMA.Core
 {
-    class BiometricSignalStorage
+    internal class BiometricSignalStorage
     {
         private string? _filePath;
         private  Dictionary<Graph, object?> AlignedValues = new Dictionary<Graph, object?>();
