@@ -79,7 +79,7 @@ namespace FHAPI.Core
                 existingList.Add((Timestamp, value));
             }
             return data;
-        }
+        } 
         #endregion
     }
 }

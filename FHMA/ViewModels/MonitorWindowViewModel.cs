@@ -44,7 +44,8 @@ namespace FHMA.ViewModels
             }
 
             string filter = @$"udp and src host {ConfigurationManager.AppSettings["BiopacIpAddr"]} or
-                               src host {ConfigurationManager.AppSettings["EmotiveIpAddr"]} and udp[4:2] > 18";
+                               src host {ConfigurationManager.AppSettings["EmotiveIpAddr"]} or
+                               src host {ConfigurationManager.AppSettings["StationIpAddr"]} and udp[4:2] > 18";
 
             _fhapi.SetDeviceIndex(cdi);
             _fhapi.SetFilter(filter);
@@ -108,7 +109,6 @@ namespace FHMA.ViewModels
 
                         var value = DataTransformer.Transform(data[dataIndex], packet.Source);
                         bsStoreage.Add(graph, value);
-
                     }
                 }
             };
