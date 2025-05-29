@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Graphium.ViewModels.BSConfigWindowViewModel">
+    <Position X="5.5" Y="3.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAIBABAAAAAAAIAAEAAAAEAAAAAgAAAAAAAA=</HashCode>
+      <FileName>ViewModels\BSConfigWindowViewModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
