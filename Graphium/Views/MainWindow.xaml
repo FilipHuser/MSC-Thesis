@@ -1,0 +1,106 @@
+﻿<Window x:Class="Graphium.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Graphium"
+        mc:Ignorable="d"
+        Title="Graphium" Height="450" Width="500"
+        Icon="../Assets/icon.ico"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal">
+
+            <Button Grid.Column="0"
+                    Content="Add Biological Signal"
+                    Padding="5"
+                    Command="{Binding AddBSCommand}"/>
+
+            <GridSplitter  Width="10"/>
+
+            <Button Grid.Column="0"
+                    Content="Load Configuration"
+                    Padding="5"
+                    Command="{Binding LoadConfCommand}"/>
+
+        </StackPanel>
+
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding BiologicalSignals}"
+                  Margin="0 10"
+                  IsReadOnly="True"
+                  CanUserResizeColumns="False"
+                  CanUserResizeRows="False"
+                  CanUserSortColumns="False"
+                  CanUserReorderColumns="False"
+                  GridLinesVisibility="None"
+                  AutoGenerateColumns="False"
+                  HeadersVisibility="Column">
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Biological Signal"
+                                    Width="*"
+                                    Binding="{Binding}"/>
+
+                <DataGridTemplateColumn Header="Actions"
+                                        Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+
+                            <StackPanel Orientation="Horizontal">
+
+                                <Button Content="Remove"
+                                        Command="{Binding DataContext.RemoveBSCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        CommandParameter="{Binding}"/>
+                            </StackPanel>
+                            
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+                
+        </DataGrid>
+        
+        <Grid Grid.Row="2"
+              Width="auto">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0"
+                        Orientation="Horizontal">
+
+                <Button Grid.Column="0"
+                        Content="Save Configuration"
+                        Padding="5"
+                        Command="{Binding SaveConfCommand}"/>
+
+                <GridSplitter  Width="10"/>
+
+                <Button Grid.Column="0"
+                        Content="Start Capturing"
+                        Padding="5"
+                        Command="{Binding StartCapCommand}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" 
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right">
+
+                <Label Content="Occupied channels:"/>
+                <TextBlock VerticalAlignment="Center"
+                           Text="{Binding GraphCount}"/>
+            </StackPanel>
+        </Grid>
+        
+    </Grid>
+</Window>

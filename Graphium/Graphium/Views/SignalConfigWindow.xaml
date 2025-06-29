@@ -1,0 +1,46 @@
+﻿<Window x:Class="Graphium.Views.SignalConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Graphium.Views"
+        mc:Ignorable="d"
+        Title="SignalConfigWindow" Height="150" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Icon="/Graphium;component/Assets/icon.ico">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <Label Content="Signals"
+                   Padding="0 5"/>
+            <ComboBox ItemsSource="{Binding Signals}"
+                      SelectedItem="{Binding Signal}"/>
+
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="64" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Button Content="Create Signal"
+                    HorizontalAlignment="Stretch" 
+                    VerticalAlignment="Center"
+                    Grid.Column="0"
+                    Command="{Binding CreateSignalCommand}"/>
+
+            <Button Content="Add" 
+                    HorizontalAlignment="Stretch" 
+                    VerticalAlignment="Center" 
+                    Grid.Column="2"
+                    Command="{Binding AddSignalCommand}"/>
+        </Grid>
+    </Grid>
+</Window>
