@@ -4,103 +4,63 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Graphium"
+        xmlns:controls="clr-namespace:Graphium.Controls"
+        xmlns:wpfui="clr-namespace:Wpf.Ui.Controls;assembly=Wpf.Ui"
         mc:Ignorable="d"
-        Title="Graphium" Height="450" Width="500"
+        Title="Graphium" Height="800" Width="1280"
         Icon="/Graphium;component/Assets/icon.ico"
         WindowStartupLocation="CenterScreen">
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="auto"/>
-        </Grid.RowDefinitions>
-        
-        <StackPanel Grid.Row="0"
-                    Orientation="Horizontal">
 
-            <Button Grid.Column="0"
-                    Content="Add Signal"
-                    Padding="5"
-                    Command="{Binding AddSignalCommand}"/>
+    <Grid>
+        <DockPanel>
+            <Menu DockPanel.Dock="Top">
+                <MenuItem Header="_File">
+                    <MenuItem Header="_New" Command="{Binding NewMeasurementTabCmd}"/>
+                </MenuItem>
+                <MenuItem Header="_Edit"/>
+                <MenuItem Header="_Study"/>
+                <MenuItem Header="_Transform"/>
+                <MenuItem Header="_Analysis"/>
+                <MenuItem Header="_Display"/>
+                <MenuItem Header="_Window"/>
+                <MenuItem Header="_Help"/>
+                <MenuItem Header="_Media"/>
+            </Menu>
 
-            <GridSplitter  Width="10"/>
+            <TabControl Margin="10"
+                        ItemsSource="{Binding MeasurementTabs}"
+                        SelectedIndex="0">
 
-            <Button Grid.Column="0"
-                    Content="Load Configuration"
-                    Padding="5"
-                    Command="{Binding LoadConfCommand}"/>
+                <TabControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid
+                              VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
 
-        </StackPanel>
+                            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" Grid.Column="0" Margin="0,0,10,0" />
 
-        <DataGrid Grid.Row="1"
-                  ItemsSource="{Binding Signals}"
-                  Margin="0 10"
-                  IsReadOnly="True"
-                  CanUserResizeColumns="False"
-                  CanUserResizeRows="False"
-                  CanUserSortColumns="False"
-                  CanUserReorderColumns="False"
-                  GridLinesVisibility="None"
-                  AutoGenerateColumns="False"
-                  HeadersVisibility="Column">
 
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Signal"
-                                    Width="*"
-                                    Binding="{Binding}"/>
-
-                <DataGridTemplateColumn Header="Actions"
-                                        Width="*">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-
-                            <StackPanel Orientation="Horizontal">
-
-                                <Button Content="Remove"
-                                        Command="{Binding DataContext.RemoveSignalCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
-                                        CommandParameter="{Binding}"/>
-                            </StackPanel>
+                            <wpfui:Button Grid.Column="1"
+                                          Style="{StaticResource TabCloseButtonStyle}"
+                                          Command="{Binding DataContext.CloseMeasurementTabCmd, RelativeSource={RelativeSource AncestorType=TabControl}}"
+                                          CommandParameter="{Binding}">
+                                <wpfui:SymbolIcon Symbol="Dismiss12"/>
+                            </wpfui:Button>
                             
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-                
-        </DataGrid>
-        
-        <Grid Grid.Row="2"
-              Width="auto">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
+                        </Grid>
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
 
-            <StackPanel Grid.Column="0"
-                        Orientation="Horizontal">
+                <TabControl.ContentTemplate>
+                    <DataTemplate>
+                        <ContentControl Content="{Binding Tab}"/>
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
 
-                <Button Grid.Column="0"
-                        Content="Save Configuration"
-                        Padding="5"
-                        Command="{Binding SaveConfCommand}"/>
-
-                <GridSplitter  Width="10"/>
-
-                <Button Grid.Column="0"
-                        Content="Start Capturing"
-                        Padding="5"
-                        Command="{Binding StartCapCommand}"/>
-            </StackPanel>
-
-            <StackPanel Grid.Column="1" 
-                        Orientation="Horizontal"
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Right">
-
-                <Label Content="Occupied channels:"/>
-                <TextBlock VerticalAlignment="Center"
-                           Text="{Binding SignalCount}"/>
-            </StackPanel>
-        </Grid>
-        
+            </TabControl>
+        </DockPanel>
     </Grid>
 </Window>

@@ -149,27 +149,3 @@ namespace Graphium.ViewModels
         #endregion
     }
 }
-
-
-/*
- 
-var signal1 = new Signal(typeof(PacketModule));
-var signal2 = new Signal(typeof(PacketModule));
-var signal3 = new Signal(typeof(PacketModule));
-var signal4 = new Signal(typeof(PacketModule));
-
-var signalCompound = new SignalComposite(typeof(PacketModule), new(){ signal2, signal3, signal4 });
-
-
-var list = new List<SignalBase>() { signal1, signalCompound };
-
-            
-var testData = new Dictionary<int, List<double>>
-{
-    { 0, new List<double> { 1.0, 2.0, 3.0, 4.0, 5.0 } },
-    { 1, new List<double> { 10.0, 9.0, 8.0, 7.0, 6.0 } },
-    { 2, new List<double> { 10.0, 9.0, 8.0, 7.0, 6.0 } },
-    { 3, new List<double> { 0.5, 1.5, 2.5, 3.5, 4.5 } }
-};
- 
- */
