@@ -1,6 +1,16 @@
-﻿using System.Windows;
-using Graphium.Models;
-using Graphium.ViewModels;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 
 namespace Graphium.Views
 {
@@ -9,23 +19,9 @@ namespace Graphium.Views
     /// </summary>
     public partial class SignalConfigWindow : Window
     {
-        #region PROPERTIES
-        private readonly SignalConfigViewModel _vm;
-        public delegate void SignalAddHandler(SignalBase signal);
-        public event SignalAddHandler? OnSignalAdded;
-        #endregion
-        #region METHODS
         public SignalConfigWindow()
         {
             InitializeComponent();
-            _vm = new SignalConfigViewModel(this);
-            DataContext = _vm;
         }
-        public void RaiseOnGrapAdded(SignalBase signal)
-        {
-            OnSignalAdded?.Invoke(signal);
-            Close();
-        }
-        #endregion
     }
 }

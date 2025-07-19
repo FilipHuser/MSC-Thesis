@@ -5,42 +5,19 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Graphium.Views"
         mc:Ignorable="d"
-        Title="SignalConfigWindow" Height="150" Width="400"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
-        Icon="/Graphium;component/Assets/icon.ico">
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="auto"/>
-        </Grid.RowDefinitions>
+        Title="SignalConfigWindow" Height="450" Width="800">
+    <Grid>
 
-        <StackPanel Grid.Row="0">
-            <Label Content="Signals"
-                   Padding="0 5"/>
-            <ComboBox ItemsSource="{Binding Signals}"
-                      SelectedItem="{Binding Signal}"/>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        </StackPanel>
-
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="64" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-
-            <Button Content="Create Signal"
-                    HorizontalAlignment="Stretch" 
-                    VerticalAlignment="Center"
-                    Grid.Column="0"
-                    Command="{Binding CreateSignalCommand}"/>
-
-            <Button Content="Add" 
-                    HorizontalAlignment="Stretch" 
-                    VerticalAlignment="Center" 
-                    Grid.Column="2"
-                    Command="{Binding AddSignalCommand}"/>
-        </Grid>
+        <ListBox>
+            <ListBoxItem Content="Channels"/>
+            <ListBoxItem Content="Lenght / Rate"/>
+        </ListBox>
+        
     </Grid>
 </Window>

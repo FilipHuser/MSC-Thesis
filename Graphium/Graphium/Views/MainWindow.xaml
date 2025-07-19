@@ -18,18 +18,24 @@
                     <MenuItem Header="_New" Command="{Binding NewMeasurementTabCmd}"/>
                 </MenuItem>
                 <MenuItem Header="_Edit"/>
-                <MenuItem Header="_Study"/>
                 <MenuItem Header="_Transform"/>
                 <MenuItem Header="_Analysis"/>
                 <MenuItem Header="_Display"/>
-                <MenuItem Header="_Window"/>
+                <MenuItem Header="_Signals">
+                    <MenuItem Header="_Setup Data Aquisition" Command="{Binding OpenSingalConfigWindowCmd}"/>
+                    <MenuItem Header="_New"/>
+                </MenuItem>
+                <MenuItem Header="_Window">
+                    <MenuItem Header="_Select Next Tab"/>
+                    <MenuItem Header="_Select Previous Tab"/>
+                </MenuItem>
                 <MenuItem Header="_Help"/>
                 <MenuItem Header="_Media"/>
             </Menu>
 
             <TabControl Margin="10"
                         ItemsSource="{Binding MeasurementTabs}"
-                        SelectedIndex="0">
+                        SelectedItem="{Binding SelectedTab}">
 
                 <TabControl.ItemTemplate>
                     <DataTemplate>
