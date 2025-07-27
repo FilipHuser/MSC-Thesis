@@ -6,8 +6,11 @@ namespace Graphium.Models
     public abstract class SignalBase
     {
         #region PROPERTIES
-        public abstract int Count { get; }
+
         public Type? Source;
+        public abstract int Count { get; }
+        public bool IsPlotted { get; set; }
+        public bool IsAcquired { get; set; }
         #endregion
         #region METHODS
         public SignalBase(Type source)

@@ -1,0 +1,70 @@
+﻿<UserControl x:Class="Graphium.Controls.SignalsConfigControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Graphium.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <DockPanel>
+        <TabControl>
+            <TabItem Header="Predefined">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DataGrid Grid.Row="0"
+                              ItemsSource="{Binding Signals}" 
+                              AutoGenerateColumns="False"
+                              SelectionMode="Extended"
+                              GridLinesVisibility="None"
+                              HeadersVisibility="Column">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Ackquire">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsAcquired, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Focusable="False"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="Plot">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsPlotted, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Focusable="False"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTextColumn Header="Channels" Binding="{Binding Count}" />
+                            <DataGridTextColumn Header="Label" Binding="{Binding}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Grid Grid.Row="1"
+                          Margin="0,2,0,0"
+                          HorizontalAlignment="Right">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Menu>
+                            <MenuItem Header="Options">
+                                <MenuItem Header="Save Configuration" />
+                                <MenuItem Header="Load Configuration" />
+                            </MenuItem>
+                        </Menu>
+
+                        <Button Grid.Column="2"
+                                Content="Close"
+                                Command="{Binding CloseCmd}"/>
+                    </Grid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="User defined"/>
+        </TabControl>
+    </DockPanel> 
+</UserControl>

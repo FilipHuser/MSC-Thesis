@@ -1,0 +1,32 @@
+﻿<Window x:Class="Graphium.Views.DataAcquisitionConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Graphium.Views"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
+        Title="Setup Data Acquisition" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="5*"/>
+        </Grid.ColumnDefinitions>
+
+        <ListBox Grid.Column="0"
+                 ItemsSource="{Binding MenuItems}"
+                 DisplayMemberPath="Header"
+                 SelectedItem="{Binding SelectedItem}"/>
+
+        <ContentPresenter Grid.Column="1"
+                  Margin="5"
+                  Content="{Binding SelectedItem.Content}">
+            <ContentPresenter.Resources>
+                <Style TargetType="UserControl">
+                    <Setter Property="DataContext" Value="{Binding SelectedItem}" />
+                </Style>
+            </ContentPresenter.Resources>
+        </ContentPresenter>
+    </Grid>
+
+</Window>

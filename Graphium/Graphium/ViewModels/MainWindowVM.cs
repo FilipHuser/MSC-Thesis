@@ -1,48 +1,69 @@
 ﻿using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using DataHub;
 using Graphium.Controls;
 using Graphium.Core;
+using Graphium.Models;
 using Graphium.Views;
 using Microsoft.VisualBasic;
 
 namespace Graphium.ViewModels
 {
-    internal class MainWindowViewModel : BaseViewModel
+    internal class MainWindowViewModel : ViewModelBase
     {
         #region PROPERTIES
-        private MeasurementTabControlViewModel? _selectedTab;
-        public MeasurementTabControlViewModel? SelectedTab { get => _selectedTab; set => SetProperty(ref _selectedTab, value); }
-        public ObservableCollection<MeasurementTabControlViewModel> MeasurementTabs { get; set; } = [];
+        private Hub _hub;
+        private MeasurementTabControlVM? _currentTab;
+        public MeasurementTabControlVM? CurrentTab { get => _currentTab; set => SetProperty(ref _currentTab, value); }
+        public ObservableCollection<MeasurementTabControlVM> MeasurementTabs { get; set; } = [];
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand NewMeasurementTabCmd => new RelayCommand(execute => NewMeasurementTab());
         public RelayCommand CloseMeasurementTabCmd => new RelayCommand((item) => CloseMeasurementTab(item));
-        public RelayCommand OpenSingalConfigWindowCmd => new RelayCommand(execute => OpenSignalConfigWindow());
+        public RelayCommand OpenDataAcquisitionConfigWindowCmd => new RelayCommand(execute => OpenDataAcquisitionConfigWindow());
         #endregion
         public MainWindowViewModel(Window window) : base(window)
         {
-            MeasurementTabs.Add(new MeasurementTabControlViewModel(window , "Untitled.gph"));
-            SelectedTab = MeasurementTabs.First();
+            _hub = new Hub();
+            MeasurementTabs.Add(new MeasurementTabControlVM(Window , "Untitled.gph" , ref _hub));
+            CurrentTab = MeasurementTabs.First();
         }
         #region METHODS
         private void NewMeasurementTab()
         {
-            SelectedTab = new MeasurementTabControlViewModel(base.Window, $"Untitled{MeasurementTabs.Count + 1}.gph");
-            MeasurementTabs.Add(SelectedTab);
+            CurrentTab = new MeasurementTabControlVM(Window , $"Untitled{MeasurementTabs.Count + 1}.gph", ref _hub);
+            MeasurementTabs.Add(CurrentTab);
         }
         private void CloseMeasurementTab(object item)
         {
-            if(item is MeasurementTabControlViewModel tab)
-            {
-                MeasurementTabs.Remove(tab);
-            }
+            if(item is MeasurementTabControlVM tab) { MeasurementTabs.Remove(tab); }
         }
-        private void OpenSignalConfigWindow()
+        private void OpenDataAcquisitionConfigWindow()
         {
-            SignalConfigWindow scw = new SignalConfigWindow();
-            scw.Owner = Window;
-            scw.ShowDialog();
+            if (CurrentTab == null)
+            {
+                MessageBox.Show(
+                    "No active measurement tab is selected.",
+                    "Warning",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
+                return;
+            }
+            var dacw = new DataAcquisitionConfigWindow();
+
+            if (dacw.GetViewModel() is DataAcquisitionConfigWindowVM vm)
+            {
+                vm.SignalConfigCloseRequested += (signals) =>
+                {
+                    CurrentTab.Signals = new ObservableCollection<SignalBase>(signals);
+                };
+            }
+            dacw.Owner = Window;
+            dacw.ShowDialog();
         }
         #endregion
     }

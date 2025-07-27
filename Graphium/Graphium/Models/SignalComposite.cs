@@ -14,20 +14,22 @@ namespace Graphium.Models
         #region PROPERTIES
         public override int Count => Signals.Count;
         public string? Name { get; set; }
-        public List<Signal> Signals = new List<Signal>();
+        public List<Signal> Signals { get; private set; } = new List<Signal>();
         public List<Graph> Graphs => Signals.Select(x => x.Graph).ToList();
         public List<Plot> Plots => Signals.Select(x => x.Plot).ToList();
         public List<DataStreamer> Streams => Signals.Select(x => x.Stream).ToList();
         #endregion
         #region METHODS
-        public SignalComposite(Type type) : base(type){}
-        public SignalComposite(Type type , List<Signal> signals , string name) : base(type)
+
+        public SignalComposite(Type type) : base(type) { }
+        public SignalComposite(Type type, List<Graph> graphs, string name) : base(type)
         {
             Name = name;
-            Signals = signals;
+            Signals = graphs.Select(graph => new Signal(type, graph)).ToList();
         }
         public void Add(Signal signal) => Signals.Add(signal);
         public void Remove(Signal signal) => Signals?.Remove(signal);
+
         public override void Update(Dictionary<int, List<object>> data)
         {
             foreach (var kvp in data)
@@ -39,7 +41,8 @@ namespace Graphium.Models
                 }
             }
         }
-        public override string ToString() => Name??string.Join(",", Graphs.Select(x => x.Label));
+
+        public override string ToString() => Name ?? string.Join(",", Graphs.Select(x => x.Label));
         #endregion
     }
 }

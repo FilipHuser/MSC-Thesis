@@ -5,7 +5,6 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Graphium"
         xmlns:controls="clr-namespace:Graphium.Controls"
-        xmlns:wpfui="clr-namespace:Wpf.Ui.Controls;assembly=Wpf.Ui"
         mc:Ignorable="d"
         Title="Graphium" Height="800" Width="1280"
         Icon="/Graphium;component/Assets/icon.ico"
@@ -21,9 +20,9 @@
                 <MenuItem Header="_Transform"/>
                 <MenuItem Header="_Analysis"/>
                 <MenuItem Header="_Display"/>
-                <MenuItem Header="_Signals">
-                    <MenuItem Header="_Setup Data Aquisition" Command="{Binding OpenSingalConfigWindowCmd}"/>
-                    <MenuItem Header="_New"/>
+                <MenuItem Header="_Data Acquisition">
+                    <MenuItem Header="_Setup..." 
+                              Command="{Binding OpenDataAcquisitionConfigWindowCmd}"/>
                 </MenuItem>
                 <MenuItem Header="_Window">
                     <MenuItem Header="_Select Next Tab"/>
@@ -35,28 +34,25 @@
 
             <TabControl Margin="10"
                         ItemsSource="{Binding MeasurementTabs}"
-                        SelectedItem="{Binding SelectedTab}">
+                        SelectedItem="{Binding CurrentTab}">
 
                 <TabControl.ItemTemplate>
                     <DataTemplate>
-                        <Grid
-                              VerticalAlignment="Center">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal">
 
-                            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" Grid.Column="0" Margin="0,0,10,0" />
+                            <TextBlock Text="{Binding Title}" Margin="0,0,5,0"/>
+                            <Button Content="×" Width="16" Height="16"
+                                    Command="{Binding DataContext.CloseMeasurementTabCmd, RelativeSource={RelativeSource AncestorType=TabControl}}"
+                                    CommandParameter="{Binding}"
+                                    Padding="0"
+                                    Margin="5,0,0,0"
+                                    FontWeight="Bold"
+                                    FontSize="12"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    BorderThickness="0"/>
 
-
-                            <wpfui:Button Grid.Column="1"
-                                          Style="{StaticResource TabCloseButtonStyle}"
-                                          Command="{Binding DataContext.CloseMeasurementTabCmd, RelativeSource={RelativeSource AncestorType=TabControl}}"
-                                          CommandParameter="{Binding}">
-                                <wpfui:SymbolIcon Symbol="Dismiss12"/>
-                            </wpfui:Button>
-                            
-                        </Grid>
+                        </StackPanel>
                     </DataTemplate>
                 </TabControl.ItemTemplate>
 

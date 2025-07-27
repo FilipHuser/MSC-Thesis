@@ -11,17 +11,21 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using Graphium.Interfaces;
+using Graphium.ViewModels;
 
 namespace Graphium.Views
 {
-    /// <summary>
-    /// Interaction logic for SignalConfigWindow.xaml
-    /// </summary>
-    public partial class SignalConfigWindow : Window
+    partial class DataAcquisitionConfigWindow : Window, IViewModelOwner
     {
-        public SignalConfigWindow()
+        private readonly DataAcquisitionConfigWindowVM _vm;
+        public DataAcquisitionConfigWindow()
         {
             InitializeComponent();
+            _vm = new DataAcquisitionConfigWindowVM(this);
+            DataContext = _vm;
         }
+
+        public ViewModelBase GetViewModel() => _vm;
     }
 }
