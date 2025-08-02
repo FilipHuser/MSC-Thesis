@@ -17,7 +17,7 @@ namespace Graphium.Models
         public List<Signal> Signals { get; private set; } = new List<Signal>();
         public List<Graph> Graphs => Signals.Select(x => x.Graph).ToList();
         public List<Plot> Plots => Signals.Select(x => x.Plot).ToList();
-        public List<DataStreamer> Streams => Signals.Select(x => x.Stream).ToList();
+        public List<DataStreamer?> Streams => Signals.Select(x => x.Stream).ToList();
         #endregion
         #region METHODS
 
@@ -37,7 +37,9 @@ namespace Graphium.Models
                 int index = kvp.Key;
                 if (index >= 0 && index < Signals.Count)
                 {
-                    Signals[index].Stream.AddRange(kvp.Value.Select(v => Convert.ToDouble(v)).ToList());
+                    var singleData = new Dictionary<int, List<object>> { { index, kvp.Value } };
+
+                    Signals[index].Update(singleData);
                 }
             }
         }

@@ -15,6 +15,9 @@
                     <Setter Property="Padding" Value="5"/>
                 </Style>
             </ToolBar.Resources>
+
+            <Button Content="Start"
+                    Command="{Binding StartMeasurementCmd}"/>
         </ToolBar>
 
         <Grid>

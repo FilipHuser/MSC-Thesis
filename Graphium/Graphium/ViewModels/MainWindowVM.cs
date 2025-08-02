@@ -1,9 +1,11 @@
 ﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Configuration;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using DataHub;
+using DataHub.Modules;
 using Graphium.Controls;
 using Graphium.Core;
 using Graphium.Models;
@@ -27,7 +29,22 @@ namespace Graphium.ViewModels
         #endregion
         public MainWindowViewModel(Window window) : base(window)
         {
-            _hub = new Hub();
+            _hub = new DataHub.Hub();
+            var getAppSetting = (string key) => ConfigurationManager.AppSettings[key];
+
+            int.TryParse(getAppSetting("CaptureDeviceIndex"), out int captureDeviceIndex);
+            int.TryParse(getAppSetting("PayloadSize"), out int payloadSize);
+            var ipAddr = getAppSetting("IPAddr");
+
+            string filter = $"udp and src host {ipAddr} and udp[4:2] > {payloadSize}"; // 8 + actuall size
+
+            var packetModule = new PacketModule(captureDeviceIndex, filter, 5);
+            var httpModule = new HTTPModule<string>(getAppSetting("URI"));
+
+            _hub.AddModule(packetModule);
+            _hub.AddModule(httpModule);
+
+
             MeasurementTabs.Add(new MeasurementTabControlVM(Window , "Untitled.gph" , ref _hub));
             CurrentTab = MeasurementTabs.First();
         }
