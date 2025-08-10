@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Graphium.Models;
+using Graphium.ViewModels;
 
 namespace Graphium.Core
 {
@@ -10,18 +11,16 @@ namespace Graphium.Core
     {
         private string? _filePath;
 
-        // Key: Signal, Value: latest value aligned by signal
         private Dictionary<Signal, object?> AlignedValues = new Dictionary<Signal, object?>();
 
         public delegate void AlignHandler();
         public event AlignHandler? OnAlignment;
 
-        public SignalStorage(List<SignalBase> signals)
+        public SignalStorage(MeasurementTabControlVM parent)
         {
-            // Flatten all Signals from Signal and SignalComposite
             var allSignals = new List<Signal>();
 
-            foreach (var signalBase in signals)
+            foreach (var signalBase in parent.Signals)
             {
                 switch (signalBase)
                 {
@@ -33,22 +32,18 @@ namespace Graphium.Core
                         break;
                 }
             }
-
-            // Initialize dictionary with signals and null values
             foreach (var signal in allSignals.Distinct())
             {
                 AlignedValues[signal] = null;
             }
-
             OnAlignment += Flush;
-            Init();
+            Init(parent.Title);
         }
 
         #region METHODS
         public void Add(Signal signal, object value)
         {
-            if (!AlignedValues.ContainsKey(signal))
-                throw new ArgumentException("Signal not found in storage.");
+            if (!AlignedValues.ContainsKey(signal)) { throw new ArgumentException("Signal not found in storage."); }
 
             AlignedValues[signal] = value;
             if (AlignedValues.All(x => x.Value != null))
@@ -59,12 +54,21 @@ namespace Graphium.Core
                     AlignedValues[key] = null;
             }
         }
-
-        private void Init()
+        public void Add(SignalComposite signalComposite, Dictionary<int, List<object>> values)
+        {
+            for (int i = 0; i < signalComposite.Signals.Count; i++)
+            {
+                if (values.TryGetValue(i, out var list) && list.Count > 0)
+                {
+                    Add(signalComposite.Signals[i], list.First());
+                }
+            }
+        }
+        private void Init(string fileName)
         {
             string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Graphium", "Measurements");
             if (!Directory.Exists(appDataPath)) Directory.CreateDirectory(appDataPath);
-            _filePath = Path.Combine(appDataPath, "tmpMeasurement.csv");
+            _filePath = Path.Combine(appDataPath, $"{fileName}_tmpMeasurement.csv");
             if (File.Exists(_filePath)) File.WriteAllText(_filePath, string.Empty);
         }
 
@@ -80,8 +84,6 @@ namespace Graphium.Core
         public string ToCsv(char delimiter)
         {
             var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-            // Write timestamp followed by aligned values in signal order
             return $"{timestamp}{delimiter}" + string.Join(delimiter, AlignedValues.Values);
         }
         #endregion

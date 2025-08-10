@@ -9,11 +9,12 @@ namespace Graphium.Core
 {
     static class DataProcessor
     {
-        public static Dictionary<int , List<object>> Process(ModuleBase moduleBase , int nChannels)
+        public static Dictionary<int , List<object>>? Process(ModuleBase moduleBase , int nChannels)
         {
             var output = new Dictionary<int , List<object>>();
+            if (nChannels == 0) { return null; }
 
-            switch(moduleBase)
+            switch (moduleBase)
             {
                 case PacketModule packetModule:
 
@@ -83,7 +84,7 @@ namespace Graphium.Core
                                 JsonValueKind.True => true,
                                 JsonValueKind.False => false,
                                 JsonValueKind.Null => null,
-                                _ => property.Value.GetRawText()  // fallback for complex types
+                                _ => property.Value.GetRawText()
                             };
 
                             if (!output.TryGetValue(index, out var list))

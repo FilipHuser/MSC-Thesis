@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Net.Sockets;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -16,38 +17,34 @@ namespace Graphium.ViewModels
     {
         #region PROPERTIES
         private readonly Hub _dh;
+        private SignalStorage? _signalStorage;
         private DispatcherTimer _updateTimer;
-        private DispatcherTimer _dataTimer;
         private ObservableCollection<SignalBase> _signals = [];
+        private Dictionary<Type, int> _signalCounts = [];
         public string Title { get; set; }
         public UserControl Tab { get; set; }
         public WpfPlot Plot { get; set; } = new WpfPlot();
         public ObservableCollection<SignalBase> Signals { get => _signals; set { SetProperty(ref _signals, value); OnSignalsUpdate(); } }
+        public bool IsMeasuring => _dh.IsCapturing;
         #region RELAY_COMMANDS
         public RelayCommand StartMeasurementCmd => new RelayCommand(execute => StartMeasurement(), canExecute => Signals.Count > 0 && !_dh.IsCapturing);
         #endregion
         #endregion
         public MeasurementTabControlVM(Window parent , string title , ref Hub dh) : base(parent)
         {
-            Plot.Multiplot.RemovePlot(Plot.Multiplot.GetPlot(0));
-
             _dh = dh;
             Title = title;
             Tab = new MeasurementTabControl(title);
+            Plot.Multiplot.RemovePlot(Plot.Multiplot.GetPlot(0));
+
             Signals.CollectionChanged += (s,e) => {
                 OnSignalsUpdate(); 
             };
 
             _updateTimer = new DispatcherTimer()
             {
-                Interval = TimeSpan.FromMilliseconds(10),
-                IsEnabled = true,
-            };
-
-            _dataTimer = new DispatcherTimer()
-            {
-                Interval = TimeSpan.FromMilliseconds(10),
-                IsEnabled = true,
+                Interval = TimeSpan.FromMilliseconds(16),
+                IsEnabled = false,
             };
 
             _updateTimer.Tick += (s, e) =>
@@ -55,53 +52,67 @@ namespace Graphium.ViewModels
                 Plot.Refresh();
             };
 
-            _dataTimer.Tick += (s, e) =>
+            _updateTimer.Tick += (s, e) =>
             {
                 var packetModule = (PacketModule)_dh.Modules[typeof(PacketModule)];
                 var httpModule = (HTTPModule<string>)_dh.Modules[typeof(HTTPModule<string>)];
 
-                var packetModuleSignals = Signals.Where(x => x.Source == packetModule.GetType());
-                var httpModuleSignals = Signals.Where(x => x.Source == httpModule.GetType());
+                _signalCounts.TryGetValue(packetModule.GetType(), out int packetCount);
+                _signalCounts.TryGetValue(httpModule.GetType(), out int httpCount);
 
-                var packetData = DataProcessor.Process(packetModule, packetModuleSignals.Sum(x => x.Count));
-                var httpData = DataProcessor.Process(httpModule, httpModuleSignals.Sum(x => x.Count));
+                var packetData = DataProcessor.Process(packetModule, packetCount);
+                var httpData = DataProcessor.Process(httpModule, httpCount);
 
-                int counter = 0;
+                if (packetData == null && httpData == null) { return; }
+
+                var moduleCounters = new Dictionary<Type, int>
+                {
+                    [typeof(PacketModule)] = 0,
+                    [typeof(HTTPModule<string>)] = 0
+                };
 
                 foreach (var signal in Signals)
                 {
-                    Dictionary<int, List<object>>? data = null;
-
-                    if (packetModuleSignals.Contains(signal))
+                    var sourceType = signal.Source;
+                    Dictionary<int, List<object>>? sourceData = sourceType switch
                     {
-                        if (packetData.Count == 0) continue;
-                        data = packetData;
-                    }
-                    else if (httpModuleSignals.Contains(signal))
-                    {
-                        if (httpData.Count == 0) continue;
-                        data = httpData;
-                    }
+                        var t when t == typeof(PacketModule) => packetData,
+                        var t when t == typeof(HTTPModule<string>) => httpData,
+                        _ => null
+                    };
 
-                    if (data == null) continue;
+                    if (sourceData == null) continue;
+                    var currentCounter = moduleCounters[sourceType];
 
                     switch (signal)
                     {
                         case Signal si:
-                            si.Update(new Dictionary<int, List<object>> { { counter, data[counter] } });
-                            counter++;
+                            if (!sourceData.TryGetValue(currentCounter, out var list)) 
+                            {
+                                continue;
+                            }
+
+                            _signalStorage?.Add(si, list.First());
+                            si.Update(new() { { 0, list } });
+
+                            currentCounter++;
                             break;
 
                         case SignalComposite sc:
                             int innerCount = sc.Signals.Count;
 
-                            var slice = data
-                                .Where(kv => kv.Key >= counter && kv.Key < counter + innerCount)
-                                .ToDictionary(kv => kv.Key, kv => kv.Value);
+                            var slice = new Dictionary<int, List<object>>(innerCount);
+                            for (int i = 0; i < innerCount; i++)
+                            {
+                                if (!sourceData.TryGetValue(currentCounter + i, out var item)) {
+                                    continue; 
+                                }
+                                slice.Add(i, item);
+                             }
 
+                            _signalStorage?.Add(sc, slice);
                             sc.Update(slice);
-
-                            counter += innerCount;
+                            currentCounter += innerCount;
                             break;
                     }
                 }
@@ -111,22 +122,47 @@ namespace Graphium.ViewModels
         private void StartMeasurement()
         {
             _dh.StartCapturing();
+            _updateTimer.Start();
         }
         private void OnSignalsUpdate()
         {
-            foreach(var signal in Signals)
+            _signalCounts = Signals.GroupBy(x => x.Source)
+                                   .ToDictionary(x => x.Key, g => g.Sum(s => s.Count));
+
+            foreach (var signal in Signals)
             {
                 switch (signal)
                 {
-                    case Signal s:
-                        Plot.Multiplot.AddPlot(s.Plot);
+                    case Signal si:
+                        Plot.Multiplot.AddPlot(si.Plot);
                         break;
                     case SignalComposite sc:
                         sc.Plots.ForEach(x => Plot.Multiplot.AddPlot(x));
                         break;
                 }
             }
-            Plot.Multiplot.CollapseVertically();
+
+            var palette = new ScottPlot.Palettes.Aurora();
+            var plots = Plot.Multiplot.GetPlots();
+            var colors = palette.GetColors(plots.Length);
+
+            for (int i = 0; i < plots.Length; i++)
+            {
+                var plot = plots[i];
+                var color = colors[i];
+
+                foreach (var plottable in plot.GetPlottables())
+                {
+                    if (plottable is ScottPlot.Plottables.DataLogger logger)
+                    {
+                        logger.Color = color;
+                    }
+                }
+            }
+
+            _signalStorage = new SignalStorage(this);
+
+            //Plot.Multiplot.CollapseVertically();
             Plot.UserInputProcessor.IsEnabled = false;
             Plot.Refresh();
         }

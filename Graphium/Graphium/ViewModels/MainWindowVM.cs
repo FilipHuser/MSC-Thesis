@@ -17,7 +17,7 @@ namespace Graphium.ViewModels
     internal class MainWindowViewModel : ViewModelBase
     {
         #region PROPERTIES
-        private Hub _hub;
+        private Hub _dh;
         private MeasurementTabControlVM? _currentTab;
         public MeasurementTabControlVM? CurrentTab { get => _currentTab; set => SetProperty(ref _currentTab, value); }
         public ObservableCollection<MeasurementTabControlVM> MeasurementTabs { get; set; } = [];
@@ -29,7 +29,7 @@ namespace Graphium.ViewModels
         #endregion
         public MainWindowViewModel(Window window) : base(window)
         {
-            _hub = new DataHub.Hub();
+            _dh = new DataHub.Hub();
             var getAppSetting = (string key) => ConfigurationManager.AppSettings[key];
 
             int.TryParse(getAppSetting("CaptureDeviceIndex"), out int captureDeviceIndex);
@@ -41,22 +41,26 @@ namespace Graphium.ViewModels
             var packetModule = new PacketModule(captureDeviceIndex, filter, 5);
             var httpModule = new HTTPModule<string>(getAppSetting("URI"));
 
-            _hub.AddModule(packetModule);
-            _hub.AddModule(httpModule);
+            _dh.AddModule(packetModule);
+            _dh.AddModule(httpModule);
 
 
-            MeasurementTabs.Add(new MeasurementTabControlVM(Window , "Untitled.gph" , ref _hub));
+            MeasurementTabs.Add(new MeasurementTabControlVM(Window , "Untitled" , ref _dh));
             CurrentTab = MeasurementTabs.First();
         }
         #region METHODS
         private void NewMeasurementTab()
         {
-            CurrentTab = new MeasurementTabControlVM(Window , $"Untitled{MeasurementTabs.Count + 1}.gph", ref _hub);
+            CurrentTab = new MeasurementTabControlVM(Window , $"Untitled{MeasurementTabs.Count + 1}", ref _dh);
             MeasurementTabs.Add(CurrentTab);
         }
         private void CloseMeasurementTab(object item)
         {
-            if(item is MeasurementTabControlVM tab) { MeasurementTabs.Remove(tab); }
+            if(item is MeasurementTabControlVM tab) {
+                _dh.StopCapturing();
+                MeasurementTabs.Remove(tab);
+                CurrentTab = null;
+            }
         }
         private void OpenDataAcquisitionConfigWindow()
         {

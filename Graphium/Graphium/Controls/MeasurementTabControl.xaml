@@ -18,6 +18,9 @@
 
             <Button Content="Start"
                     Command="{Binding StartMeasurementCmd}"/>
+            <Button Content="Stop"
+                    Command="{Binding StopMeasurementCmd}"/>
+
         </ToolBar>
 
         <Grid>

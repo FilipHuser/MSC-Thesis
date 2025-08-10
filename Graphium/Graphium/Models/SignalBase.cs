@@ -7,7 +7,7 @@ namespace Graphium.Models
     {
         #region PROPERTIES
 
-        public Type? Source;
+        public Type Source;
         public abstract int Count { get; }
         public bool IsPlotted { get; set; }
         public bool IsAcquired { get; set; }

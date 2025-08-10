@@ -36,14 +36,14 @@ namespace Graphium.ViewModels
                 DataContext = this
             };
 
-            var respSignal = new Signal(typeof(PacketModule), new Graph() { Label = "RESP", Capacity = 10000 });
-            var ecgSignal = new Signal(typeof(PacketModule), new Graph() { Label = "ECG", Capacity = 10000, LowerBound = -0.5, UpperBound = 0.5 });
-            var spiderCountSignal = new Signal(typeof(HTTPModule<string>), new Graph() { Label = "Number of Spiders" });
-            var spiderSizeSignal = new Signal(typeof(HTTPModule<string>), new Graph() { Label = "size" });
+            var respSignal = new Signal(typeof(PacketModule), new PlotProperties() { Label = "RESP", Capacity = 10000 });
+            var ecgSignal = new Signal(typeof(PacketModule), new PlotProperties() { Label = "ECG", Capacity = 5000, LowerBound = -0.5, UpperBound = 0.5 });
+            var spiderCountSignal = new Signal(typeof(HTTPModule<string>), new PlotProperties() { Label = "Number of Spiders" , Capacity = 10000 });
+            var spiderSizeSignal = new Signal(typeof(HTTPModule<string>), new PlotProperties() { Label = "size" , Capacity = 10000 });
 
 
-            var rsprCompound = new SignalComposite(typeof(PacketModule), new() { respSignal.Graph, ecgSignal.Graph }, "RSP-R");
-            var vrDataCompound = new SignalComposite(typeof(HTTPModule<string>), new() { spiderCountSignal.Graph, spiderSizeSignal.Graph }, "VR Data - Spiders");
+            var rsprCompound = new SignalComposite(typeof(PacketModule), new() { respSignal.Properties, ecgSignal.Properties }, "RSP-R");
+            var vrDataCompound = new SignalComposite(typeof(HTTPModule<string>), new() { spiderCountSignal.Properties, spiderSizeSignal.Properties }, "VR Data - Spiders");
 
             Signals.Add(respSignal);
             Signals.Add(ecgSignal);
