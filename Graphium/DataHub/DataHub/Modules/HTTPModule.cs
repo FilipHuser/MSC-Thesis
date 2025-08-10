@@ -13,14 +13,15 @@ namespace DataHub.Modules
     public class HTTPModule<S> : ModuleBase
     {
         #region PROPERTIES
+        private string _url;
         private ConcurrentQueue<CapturedData<S>> _dataQueue = [];
-        private readonly HttpListener _listener = new HttpListener();
-        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        private HttpListener _listener = new HttpListener();
+        private CancellationTokenSource _cts = new CancellationTokenSource();
         #endregion
         #region METHODS
         public HTTPModule(string URL)
         {
-            _listener.Prefixes.Add(URL);
+            _url = URL;
         }
         public override IEnumerable<CapturedData<T>> Get<T>(Func<CapturedData<T>, bool>? predicate = null, int? skip = null, int? take = null)
         {
@@ -47,8 +48,20 @@ namespace DataHub.Modules
                 if (take.HasValue && yielded >= take.Value) { yield break; }
             }
         }
+        private void Init()
+        {
+            if (_listener != null)
+            {
+                return;
+            }
+
+            _listener = new HttpListener();
+            _listener.Prefixes.Add(_url);
+            _cts = new CancellationTokenSource();
+        }
         public override void StartCapturing()
         {
+            Init();
             _listener.Start();
             var cancellationToken = _cts.Token;
 

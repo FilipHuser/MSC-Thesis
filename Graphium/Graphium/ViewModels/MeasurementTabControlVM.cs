@@ -28,6 +28,7 @@ namespace Graphium.ViewModels
         public bool IsMeasuring => _dh.IsCapturing;
         #region RELAY_COMMANDS
         public RelayCommand StartMeasurementCmd => new RelayCommand(execute => StartMeasurement(), canExecute => Signals.Count > 0 && !_dh.IsCapturing);
+        public RelayCommand StopMeasurementCmd => new RelayCommand(execute => StopMeasurement(), canExecute => _dh.IsCapturing);
         #endregion
         #endregion
         public MeasurementTabControlVM(Window parent , string title , ref Hub dh) : base(parent)
@@ -115,6 +116,7 @@ namespace Graphium.ViewModels
                             currentCounter += innerCount;
                             break;
                     }
+                    moduleCounters[sourceType] = currentCounter;
                 }
             };
         }
@@ -123,6 +125,10 @@ namespace Graphium.ViewModels
         {
             _dh.StartCapturing();
             _updateTimer.Start();
+        }
+        private void StopMeasurement()
+        {
+            _dh.StopCapturing();
         }
         private void OnSignalsUpdate()
         {
