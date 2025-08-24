@@ -20,19 +20,21 @@
                               SelectionMode="Extended"
                               GridLinesVisibility="None"
                               HeadersVisibility="Column">
+                        
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="Ackquire">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsAcquired, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Focusable="False"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
 
                             <DataGridTemplateColumn Header="Plot">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <CheckBox IsChecked="{Binding IsPlotted, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Focusable="False"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="Acquire">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsAcquired, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Focusable="False"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>

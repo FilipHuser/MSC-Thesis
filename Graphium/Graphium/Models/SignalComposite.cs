@@ -17,7 +17,7 @@ namespace Graphium.Models
         public List<Signal> Signals { get; private set; } = new List<Signal>();
         public List<PlotProperties> AllPlotProperties => Signals.Select(x => x.Properties).ToList();
         public List<Plot> Plots => Signals.Select(x => x.Plot).ToList();
-        public List<DataLogger?> Loggers => Signals.Select(x => x.Logger).ToList();
+        public List<DataStreamer?> Loggers => Signals.Select(x => x.Streamer).ToList();
         #endregion
         #region METHODS
 

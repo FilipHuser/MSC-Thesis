@@ -50,11 +50,6 @@ namespace DataHub.Modules
         }
         private void Init()
         {
-            if (_listener != null)
-            {
-                return;
-            }
-
             _listener = new HttpListener();
             _listener.Prefixes.Add(_url);
             _cts = new CancellationTokenSource();
@@ -72,7 +67,7 @@ namespace DataHub.Modules
                     HttpListenerContext? context = null;
                     try
                     {
-                        context = _listener.GetContext(); // blocking call
+                        context = _listener.GetContext();
 
                         if (context.Request.HttpMethod == "POST")
                         {

@@ -53,7 +53,7 @@ namespace Graphium.ViewModels
         #region METHODS
         private void Close()
         {
-            CloseRequested?.Invoke(Signals.Where(x => x.IsAcquired).ToList());
+            CloseRequested?.Invoke(Signals.Where(x => x.IsPlotted || x.IsAcquired).ToList());
             Window.Close();
         }
         #endregion

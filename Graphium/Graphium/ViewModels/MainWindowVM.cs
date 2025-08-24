@@ -44,7 +44,6 @@ namespace Graphium.ViewModels
             _dh.AddModule(packetModule);
             _dh.AddModule(httpModule);
 
-
             MeasurementTabs.Add(new MeasurementTabControlVM(Window , "Untitled" , ref _dh));
             CurrentTab = MeasurementTabs.First();
         }

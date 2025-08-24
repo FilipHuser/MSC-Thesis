@@ -7,7 +7,7 @@
         xmlns:controls="clr-namespace:Graphium.Controls"
         mc:Ignorable="d"
         Title="Graphium" Height="800" Width="1280"
-        Icon="/Graphium;component/Assets/icon.ico"
+        Icon="/Graphium;component/Assets/favicon.ico"
         WindowStartupLocation="CenterScreen">
 
     <Grid>
@@ -16,10 +16,6 @@
                 <MenuItem Header="_File">
                     <MenuItem Header="_New" Command="{Binding NewMeasurementTabCmd}"/>
                 </MenuItem>
-                <MenuItem Header="_Edit"/>
-                <MenuItem Header="_Transform"/>
-                <MenuItem Header="_Analysis"/>
-                <MenuItem Header="_Display"/>
                 <MenuItem Header="_Data Acquisition">
                     <MenuItem Header="_Setup..." 
                               Command="{Binding OpenDataAcquisitionConfigWindowCmd}"/>
@@ -28,8 +24,6 @@
                     <MenuItem Header="_Select Next Tab"/>
                     <MenuItem Header="_Select Previous Tab"/>
                 </MenuItem>
-                <MenuItem Header="_Help"/>
-                <MenuItem Header="_Media"/>
             </Menu>
 
             <TabControl Margin="10"

@@ -13,24 +13,24 @@ namespace Graphium.Models
         public override int Count => 1;
         public PlotProperties Properties { get; set; }
         public Plot Plot { get; set; } = new Plot();
-        public DataLogger? Logger { get; set; }
+        public DataStreamer? Streamer { get; set; }
+        public VerticalLine VLine;
         #endregion
         #region METHODS
         public Signal(Type source, PlotProperties? properties = null) : base(source)
         {
             Properties = properties ?? new PlotProperties();
-            Logger = Plot.Add.DataLogger();
-            Logger.ViewSlide(Properties.Capacity);
-            Logger.LegendText = this.ToString();
+            Streamer = Plot.Add.DataStreamer(Properties.Capacity);
+            Streamer.LegendText = this.ToString();
+            //Streamer.ManageAxisLimits = true;
+            Plot.Axes.SetLimitsY(Properties.LowerBound , Properties.UpperBound);
+            Plot.Axes.Bottom.TickLabelStyle.IsVisible = false;
+            VLine = Plot.Add.VerticalLine(0, 1, ScottPlot.Colors.Black);
         }
         public override void Update(Dictionary<int, List<object>> data)
         {
             var values = data.First().Value;
-
-            for (int i = 0; i < values.Count; i++)
-            {
-                Logger?.Add(Convert.ToDouble(values[i]));
-            }
+            Streamer?.AddRange(values.Select(x => Convert.ToDouble(x)));
         }
         public override string ToString() => Properties.Label??"~";
         #endregion

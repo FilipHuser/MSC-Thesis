@@ -20,7 +20,7 @@ namespace Graphium.Core
         {
             var allSignals = new List<Signal>();
 
-            foreach (var signalBase in parent.Signals)
+            foreach (var signalBase in parent.Signals.Where(x => x.IsAcquired))
             {
                 switch (signalBase)
                 {

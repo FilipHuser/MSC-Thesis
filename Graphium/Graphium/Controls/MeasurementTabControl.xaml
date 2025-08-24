@@ -15,12 +15,18 @@
                     <Setter Property="Padding" Value="5"/>
                 </Style>
             </ToolBar.Resources>
-
+            <Menu>
+                <MenuItem Header="Measurement">
+                    <MenuItem Header="Save As">
+                        <MenuItem Header="CSV" Command="{Binding SaveAsCSVCmd}" />
+                    </MenuItem>
+                </MenuItem>
+            </Menu>
+            <Separator />
             <Button Content="Start"
                     Command="{Binding StartMeasurementCmd}"/>
             <Button Content="Stop"
                     Command="{Binding StopMeasurementCmd}"/>
-
         </ToolBar>
 
         <Grid>
