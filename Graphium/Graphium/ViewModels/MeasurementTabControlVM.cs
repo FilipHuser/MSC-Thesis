@@ -27,6 +27,7 @@ namespace Graphium.ViewModels
         public UserControl Tab { get; set; }
         public WpfPlot Plot { get; set; } = new WpfPlot();
         public ObservableCollection<SignalBase> Signals { get => _signals; set { SetProperty(ref _signals, value); OnSignalsUpdate(); } }
+        public event Action? MeasurementStartRequested;
         public bool IsMeasuring { get; set; } = false;
         #region RELAY_COMMANDS
         public RelayCommand StartMeasurementCmd => new RelayCommand(execute => StartMeasurement(), canExecute => Signals.Count > 0 && !IsMeasuring);
@@ -68,11 +69,16 @@ namespace Graphium.ViewModels
 
                 if (packetData != null || httpData != null)
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    var dispatcher = Application.Current?.Dispatcher;
+
+                    if(dispatcher != null)
                     {
-                        UpdateSignals(packetData, httpData);
-                        Plot.Refresh();
-                    });
+                        dispatcher.Invoke(() =>
+                        {
+                            UpdateSignals(packetData, httpData);
+                            Plot.Refresh();
+                        });
+                    }
                 }
 
                 await Task.Delay(16, token); 
@@ -125,12 +131,13 @@ namespace Graphium.ViewModels
         }
         private void StartMeasurement()
         {
+            MeasurementStartRequested?.Invoke();
             IsMeasuring = true;
             _dh.StartCapturing();
             _cts = new CancellationTokenSource();
             Task.Run(() => MeasurementLoop(_cts.Token));
         }
-        private void StopMeasurement()
+        public void StopMeasurement()
         {
             IsMeasuring = false;
             _dh.StopCapturing();

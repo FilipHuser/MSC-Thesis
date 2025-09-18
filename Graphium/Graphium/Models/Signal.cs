@@ -14,7 +14,6 @@ namespace Graphium.Models
         public PlotProperties Properties { get; set; }
         public Plot Plot { get; set; } = new Plot();
         public DataStreamer? Streamer { get; set; }
-        public VerticalLine VLine;
         #endregion
         #region METHODS
         public Signal(Type source, PlotProperties? properties = null) : base(source)
@@ -25,7 +24,6 @@ namespace Graphium.Models
             //Streamer.ManageAxisLimits = true;
             Plot.Axes.SetLimitsY(Properties.LowerBound , Properties.UpperBound);
             Plot.Axes.Bottom.TickLabelStyle.IsVisible = false;
-            VLine = Plot.Add.VerticalLine(0, 1, ScottPlot.Colors.Black);
         }
         public override void Update(Dictionary<int, List<object>> data)
         {

@@ -10,7 +10,7 @@ namespace DataHub.Modules
         #region PROPERTIES
         private readonly int _captureDeviceIndex;
         private readonly string? _filter;
-        private readonly int? _readTimeout;
+        private readonly int? _readTimeout; 
         private ConcurrentQueue<CapturedData<RawCapture>> _dataQueue = [];
         private ILiveDevice? _captureDevice;
         #endregion
@@ -20,6 +20,7 @@ namespace DataHub.Modules
             _captureDeviceIndex = captureDeviceIndex;
             _filter = filter;
             _readTimeout = readTimeout;
+            Init();
         }
         public override IEnumerable<CapturedData<T>> Get<T>(Func<CapturedData<T>, bool>? predicate = null, int? skip = null, int? take = null)
         {
@@ -55,20 +56,29 @@ namespace DataHub.Modules
         }
         public override void StartCapturing()
         {
-            Init();
-            _capturingThread = new Thread(() => { _captureDevice?.StartCapture(); });
-            _capturingThread.IsBackground = true;
-            _capturingThread.Start();
+            _captureDevice?.StartCapture();
+            base.StartCapturing();
         }
         public override void StopCapturing()
         {
             _captureDevice?.StopCapture();
-            _captureDevice?.Close();
-            _capturingThread?.Join();
+            base.StopCapturing();
         }
         protected void device_OnPacketArrival(object sender, PacketCapture pc)
         {
             _dataQueue.Enqueue(new CapturedData<RawCapture> (DateTime.Now, pc.GetPacket() , this));
+        }
+
+        protected override Task CaptureTask(CancellationToken ct)
+        {
+            return Task.CompletedTask;
+        }
+
+        public override void Dispose()
+        {
+            StopCapturing();
+            _captureDevice?.Close();
+            _captureDevice?.Dispose();
         }
         #endregion
     }

@@ -37,20 +37,22 @@ namespace Graphium.ViewModels
             var ipAddr = getAppSetting("IPAddr");
 
             string filter = $"udp and src host {ipAddr} and udp[4:2] > {payloadSize}"; // 8 + actuall size
-
+             
             var packetModule = new PacketModule(captureDeviceIndex, filter, 5);
             var httpModule = new HTTPModule<string>(getAppSetting("URI"));
 
             _dh.AddModule(packetModule);
             _dh.AddModule(httpModule);
 
-            MeasurementTabs.Add(new MeasurementTabControlVM(Window , "Untitled" , ref _dh));
-            CurrentTab = MeasurementTabs.First();
+            NewMeasurementTab();
         }
         #region METHODS
         private void NewMeasurementTab()
         {
             CurrentTab = new MeasurementTabControlVM(Window , $"Untitled{MeasurementTabs.Count + 1}", ref _dh);
+            CurrentTab.MeasurementStartRequested += () => {
+                MeasurementTabs.ToList().ForEach(x => x.StopMeasurement());
+            };
             MeasurementTabs.Add(CurrentTab);
         }
         private void CloseMeasurementTab(object item)
