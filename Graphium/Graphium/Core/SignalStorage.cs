@@ -16,7 +16,7 @@ namespace Graphium.Core
         public delegate void AlignHandler();
         public event AlignHandler? OnAlignment;
 
-        public SignalStorage(MeasurementTabControlVM parent)
+        public SignalStorage(MTControlVM parent)
         {
             var allSignals = new List<Signal>();
 

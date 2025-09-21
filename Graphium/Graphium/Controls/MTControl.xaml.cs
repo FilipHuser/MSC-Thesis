@@ -8,8 +8,10 @@ namespace Graphium.Controls
     /// <summary>
     /// Interaction logic for MeasurementTabControl.xaml
     /// </summary>
-    public partial class MeasurementTabControl : UserControl
+
+    //MEASUREMENT TAB
+    public partial class MTControl : UserControl
     {
-        public MeasurementTabControl(string title) => InitializeComponent();
+        public MTControl(string title) => InitializeComponent();
     }
 }

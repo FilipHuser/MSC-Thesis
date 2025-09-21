@@ -15,7 +15,8 @@ using ScottPlot.WPF;
 
 namespace Graphium.ViewModels
 {
-    internal partial class MeasurementTabControlVM : ViewModelBase
+    //MEASUREMENT TAB
+    internal partial class MTControlVM : ViewModelBase
     {
         #region PROPERTIES
         private readonly Hub _dh;
@@ -35,11 +36,11 @@ namespace Graphium.ViewModels
         public RelayCommand SaveAsCSVCmd => new RelayCommand(execute => SaveAsCSV());
         #endregion
         #endregion
-        public MeasurementTabControlVM(Window parent, string title, ref Hub dh) : base(parent)
+        public MTControlVM(Window parent, string title, ref Hub dh) : base(parent)
         {
             _dh = dh;
             Title = title;
-            Tab = new MeasurementTabControl(title);
+            Tab = new MTControl(title);
             Plot.Multiplot.RemovePlot(Plot.Multiplot.GetPlot(0));
             Signals.CollectionChanged += (s, e) => { OnSignalsUpdate(); };
         }

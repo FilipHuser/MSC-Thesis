@@ -14,7 +14,8 @@ using Graphium.Models;
 using Graphium.Views; 
 namespace Graphium.ViewModels
 {
-    class SignalConfigControlVM : ViewModelBase, IMenuItemViewModel
+    //SIGNAL CONFIG
+    class SCControlVM : ViewModelBase, IMenuItemViewModel
     {
         #region PROPERTIES
         public string Header => "Signals";
@@ -28,9 +29,9 @@ namespace Graphium.ViewModels
         public RelayCommand CloseCmd => new RelayCommand(execute => Close());
         #endregion
 
-        public SignalConfigControlVM(Window parent, ObservableCollection<SignalBase> signals) : base(parent)  
+        public SCControlVM(Window parent, ObservableCollection<SignalBase> signals) : base(parent)  
         {
-            Content = new SignalsConfigControl(parent)
+            Content = new SCControl(parent)
             {
                 DataContext = this
             };

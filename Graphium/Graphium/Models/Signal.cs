@@ -22,10 +22,11 @@ namespace Graphium.Models
             Properties = properties ?? new PlotProperties();
             Streamer = Plot.Add.DataStreamer(Properties.Capacity);
             Streamer.LegendText = this.ToString();
-            //Streamer.ManageAxisLimits = true;
+            Streamer.ManageAxisLimits = true;
             Plot.Axes.SetLimitsY(Properties.LowerBound , Properties.UpperBound);
-            //Plot.Axes.Bottom.TickLabelStyle.IsVisible = false;
-            Plot.Axes.Left.TickLabelStyle.IsVisible = false;
+            Plot.Axes.Bottom.TickLabelStyle.IsVisible = false;
+            PixelPadding padding = new(50, 20, 30, 5);
+            Plot.Layout.Fixed(padding);
         }
         public override void Update(Dictionary<int, List<object>> data)
         {
