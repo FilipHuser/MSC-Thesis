@@ -68,12 +68,10 @@ namespace DataHub.Modules
         {
             _dataQueue.Enqueue(new CapturedData<RawCapture> (DateTime.Now, pc.GetPacket() , this));
         }
-
         protected override Task CaptureTask(CancellationToken ct)
         {
             return Task.CompletedTask;
         }
-
         public override void Dispose()
         {
             StopCapturing();

@@ -62,40 +62,44 @@ namespace DataHub.Modules
         protected override async Task CaptureTask(CancellationToken ct)
         {
             HttpListenerContext? context = null;
-            try
-            {
-                context = await _listener.GetContextAsync();
 
-                if (context.Request.HttpMethod == "POST")
-                {
-                    using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
-                    string postData = await reader.ReadToEndAsync();
-
-                    S data = (S)(object)postData;
-
-                    var capturedData = new CapturedData<S>(DateTime.Now, data, this);
-                    _dataQueue.Enqueue(capturedData);
-                    context.Response.StatusCode = (int)HttpStatusCode.Accepted; // 202
-                    context.Response.StatusDescription = "Accepted";
-                    context.Response.ContentLength64 = 0;
-                }
-                else
-                {
-                    context.Response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
-                    context.Response.StatusDescription = "Only POST requests allowed";
-                }
-            }
-            catch (Exception ex)
+            while(!ct.IsCancellationRequested)
             {
-                if (context != null)
+                try
                 {
-                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    context.Response.StatusDescription = "Internal Server Error";
+                    context = await _listener.GetContextAsync();
+
+                    if (context.Request.HttpMethod == "POST")
+                    {
+                        using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
+                        string postData = await reader.ReadToEndAsync();
+
+                        S data = (S)(object)postData;
+
+                        var capturedData = new CapturedData<S>(DateTime.Now, data, this);
+                        _dataQueue.Enqueue(capturedData);
+                        context.Response.StatusCode = (int)HttpStatusCode.Accepted; // 202
+                        context.Response.StatusDescription = "Accepted";
+                        context.Response.ContentLength64 = 0;
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
+                        context.Response.StatusDescription = "Only POST requests allowed";
+                    }
                 }
-            }
-            finally
-            {
-                context?.Response.Close();
+                catch (Exception ex)
+                {
+                    if (context != null)
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        context.Response.StatusDescription = "Internal Server Error";
+                    }
+                }
+                finally
+                {
+                    context?.Response.Close();
+                }
             }
         }
         #endregion

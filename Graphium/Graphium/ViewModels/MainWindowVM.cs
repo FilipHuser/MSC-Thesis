@@ -75,7 +75,14 @@ namespace Graphium.ViewModels
                 );
                 return;
             }
-            var dacw = new DataAcquisitionConfigWindow();
+
+            var dacw = new DataAcquisitionConfigWindow(CurrentTab.Signals);
+
+            if (CurrentTab.IsMeasuring)
+            {
+                dacw.Closed += (s, e) => { CurrentTab.StartMeasurement(); };
+                CurrentTab.StopMeasurement();
+            }
 
             if (dacw.GetViewModel() is DataAcquisitionConfigWindowVM vm)
             {

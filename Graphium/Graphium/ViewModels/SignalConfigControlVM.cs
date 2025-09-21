@@ -1,4 +1,4 @@
-﻿using System;
+﻿  using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -11,8 +11,7 @@ using Graphium.Controls;
 using Graphium.Core;
 using Graphium.Interfaces;
 using Graphium.Models;
-using Graphium.Views;
-
+using Graphium.Views; 
 namespace Graphium.ViewModels
 {
     class SignalConfigControlVM : ViewModelBase, IMenuItemViewModel
@@ -29,7 +28,7 @@ namespace Graphium.ViewModels
         public RelayCommand CloseCmd => new RelayCommand(execute => Close());
         #endregion
 
-        public SignalConfigControlVM(Window parent) : base(parent)  
+        public SignalConfigControlVM(Window parent, ObservableCollection<SignalBase> signals) : base(parent)  
         {
             Content = new SignalsConfigControl(parent)
             {
@@ -41,7 +40,6 @@ namespace Graphium.ViewModels
             var spiderCountSignal = new Signal(typeof(HTTPModule<string>), new PlotProperties() { Label = "Number of Spiders" , Capacity = 10000 });
             var spiderSizeSignal = new Signal(typeof(HTTPModule<string>), new PlotProperties() { Label = "size" , Capacity = 10000 });
 
-
             var rsprCompound = new SignalComposite(typeof(PacketModule), new() { respSignal.Properties, ecgSignal.Properties }, "RSP-R");
             var vrDataCompound = new SignalComposite(typeof(HTTPModule<string>), new() { spiderCountSignal.Properties, spiderSizeSignal.Properties }, "VR Data - Spiders");
 
@@ -49,6 +47,16 @@ namespace Graphium.ViewModels
             Signals.Add(ecgSignal);
             Signals.Add(vrDataCompound);
             Signals.Add(rsprCompound);
+
+            Signals.ToList().ForEach(x =>
+            {
+                var match = signals.FirstOrDefault(y => x.Name == y.Name);
+                if(match != null)
+                {
+                    x.IsAcquired = match.IsAcquired;
+                    x.IsPlotted = match.IsPlotted;
+                }
+            });
         }
         #region METHODS
         private void Close()

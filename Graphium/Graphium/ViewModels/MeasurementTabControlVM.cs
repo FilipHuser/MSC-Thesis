@@ -41,12 +41,7 @@ namespace Graphium.ViewModels
             Title = title;
             Tab = new MeasurementTabControl(title);
             Plot.Multiplot.RemovePlot(Plot.Multiplot.GetPlot(0));
-
-            Signals.CollectionChanged += (s, e) =>
-            {
-                OnSignalsUpdate();
-            };
-
+            Signals.CollectionChanged += (s, e) => { OnSignalsUpdate(); };
         }
         #region METHODS
         private async Task MeasurementLoop(CancellationToken token)
@@ -129,7 +124,7 @@ namespace Graphium.ViewModels
                 moduleCounters[sourceType] = currentCounter;
             }
         }
-        private void StartMeasurement()
+        public void StartMeasurement()
         {
             MeasurementStartRequested?.Invoke();
             IsMeasuring = true;
@@ -145,6 +140,8 @@ namespace Graphium.ViewModels
         }
         private void OnSignalsUpdate()
         {
+            Plot.Multiplot.Reset();
+            Plot.Multiplot.RemovePlot(Plot.Multiplot.GetPlot(0));
             _signalCounts = Signals.GroupBy(x => x.Source)
                                    .ToDictionary(x => x.Key, g => g.Sum(s => s.Count));
 
@@ -180,8 +177,6 @@ namespace Graphium.ViewModels
             }
 
             _signalStorage = new SignalStorage(this);
-
-            Plot.Multiplot.CollapseVertically();
             Plot.UserInputProcessor.IsEnabled = false;
             Plot.Refresh();
         }

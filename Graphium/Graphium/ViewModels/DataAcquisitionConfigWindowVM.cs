@@ -5,7 +5,7 @@ using Graphium.Models;
 
 namespace Graphium.ViewModels
 {
-    public class DataAcquisitionConfigWindowVM : ViewModelBase
+    internal class DataAcquisitionConfigWindowVM : ViewModelBase
     {
         #region PROPERTIES
         private IMenuItemViewModel? _selectedItem;
@@ -15,9 +15,9 @@ namespace Graphium.ViewModels
         public delegate void SignalConfigCloseEventHandler(List<SignalBase> signals);
         public event SignalConfigCloseEventHandler? SignalConfigCloseRequested;
         #endregion
-        public DataAcquisitionConfigWindowVM(Window window) : base(window)
+        public DataAcquisitionConfigWindowVM(Window window , ObservableCollection<SignalBase> signals) : base(window)
         {
-            var sccVM = new SignalConfigControlVM(window);
+            var sccVM = new SignalConfigControlVM(window , signals);
             sccVM.CloseRequested += signals => { SignalConfigCloseRequested?.Invoke(signals); };
 
             MenuItems.Add(sccVM);

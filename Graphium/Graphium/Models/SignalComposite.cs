@@ -13,7 +13,7 @@ namespace Graphium.Models
     {
         #region PROPERTIES
         public override int Count => Signals.Count;
-        public string? Name { get; set; }
+        public override string? Name { get; set; }
         public List<Signal> Signals { get; private set; } = new List<Signal>();
         public List<PlotProperties> AllPlotProperties => Signals.Select(x => x.Properties).ToList();
         public List<Plot> Plots => Signals.Select(x => x.Plot).ToList();
@@ -29,7 +29,6 @@ namespace Graphium.Models
         }
         public void Add(Signal signal) => Signals.Add(signal);
         public void Remove(Signal signal) => Signals?.Remove(signal);
-
         public override void Update(Dictionary<int, List<object>> data)
         {
             foreach (var kvp in data)
@@ -43,7 +42,6 @@ namespace Graphium.Models
                 }
             }
         }
-
         public override string ToString() => Name ?? string.Join(",", AllPlotProperties.Select(x => x.Label));
         #endregion
     }
