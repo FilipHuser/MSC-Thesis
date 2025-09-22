@@ -29,38 +29,29 @@ namespace Graphium.ViewModels
         #region RELAY_COMMANDS
         public RelayCommand CloseCmd => new RelayCommand(execute => Close());
         #endregion
-
         public SCControlVM(Window parent, ObservableCollection<SignalBase> signals) : base(parent)  
         {
             Content = new SCControl(parent)
             {
                 DataContext = this
             };
+            var storedSignals = SettingsManager.Load<List<SignalBase>>(SettingsCategory.SIGNALS);
 
-            var respSignal = new Signal(typeof(BiopacSourceModule), new PlotProperties() { Label = "RESP", Capacity = 10000 });
-            var ecgSignal = new Signal(typeof(BiopacSourceModule), new PlotProperties() { Label = "ECG", Capacity = 5000, LowerBound = -0.5, UpperBound = 0.5 });
-            var spiderCountSignal = new Signal(typeof(VRSourceModule), new PlotProperties() { Label = "Number of Spiders" , Capacity = 10000 });
-            var spiderSizeSignal = new Signal(typeof(VRSourceModule), new PlotProperties() { Label = "size" , Capacity = 10000 });
-
-            var rsprCompound = new SignalComposite(typeof(BiopacSourceModule), new() { respSignal.Properties, ecgSignal.Properties }, "RSP-R");
-            var vrDataCompound = new SignalComposite(typeof(VRSourceModule), new() { spiderCountSignal.Properties, spiderSizeSignal.Properties }, "VR Data - Spiders");
-
-            Signals.Add(respSignal);
-            Signals.Add(ecgSignal);
-            Signals.Add(vrDataCompound);
-            Signals.Add(rsprCompound);
-
-            SettingsManager.Save(Signals.ToList(), SettingsCategory.SIGNALS);
+            if(storedSignals != null)
+            {
+                Signals = new ObservableCollection<SignalBase>(storedSignals);
+            }
 
             Signals.ToList().ForEach(x =>
             {
                 var match = signals.FirstOrDefault(y => x.Name == y.Name);
-                if(match != null)
+                if (match != null)
                 {
                     x.IsAcquired = match.IsAcquired;
                     x.IsPlotted = match.IsPlotted;
                 }
             });
+
         }
         #region METHODS
         private void Close()

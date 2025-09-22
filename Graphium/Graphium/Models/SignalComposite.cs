@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
+﻿using System.Text.Json.Serialization;
 using ScottPlot;
 using ScottPlot.Plottables;
 
@@ -14,14 +9,17 @@ namespace Graphium.Models
         #region PROPERTIES
         public override int Count => Signals.Count;
         public override string? Name { get; set; }
-        public List<Signal> Signals { get; private set; } = new List<Signal>();
+        public List<Signal> Signals { get; set; } = new List<Signal>();
         public List<PlotProperties> AllPlotProperties => Signals.Select(x => x.Properties).ToList();
+        [JsonIgnore]
         public List<Plot> Plots => Signals.Select(x => x.Plot).ToList();
+        [JsonIgnore]
         public List<DataStreamer?> Loggers => Signals.Select(x => x.Streamer).ToList();
         public override List<PlotProperties> PlotProperties => AllPlotProperties;
         #endregion
         #region METHODS
-
+        [JsonConstructor]
+        protected SignalComposite() : base(typeof(object)){}
         public SignalComposite(Type type) : base(type) { }
         public SignalComposite(Type type, List<PlotProperties> graphs, string name) : base(type)
         {

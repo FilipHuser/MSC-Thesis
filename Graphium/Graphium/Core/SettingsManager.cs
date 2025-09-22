@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -20,7 +21,8 @@ namespace DataHub.Core
         private static readonly JsonSerializerOptions _options = new()
         {
             WriteIndented = true,
-            IncludeFields = true
+            IncludeFields = true,
+            NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
         };
         #endregion
         #region METHODS
@@ -28,10 +30,11 @@ namespace DataHub.Core
         {
             var fileName = $"{category.ToString().ToLower()}.json";
             var appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) , "Graphium");
+            var folderPath = Path.Combine(appDataPath, "Config");
 
-            if(!Directory.Exists(appDataPath)) { Directory.CreateDirectory(appDataPath); }
+            if(!Directory.Exists(folderPath)) { Directory.CreateDirectory(folderPath); }
 
-            return Path.Combine(appDataPath, fileName);
+            return Path.Combine(folderPath, fileName);
         }
         public static void Save<T>(T settings , SettingsCategory category)
         {

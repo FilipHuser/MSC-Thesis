@@ -1,13 +1,16 @@
-﻿using System.Xml.Linq;
+﻿using System.Text.Json.Serialization;
+using System.Xml.Linq;
 using Graphium.Models;
 
 namespace Graphium.Models
 {
+    [JsonDerivedType(typeof(Signal), "Signal")]
+    [JsonDerivedType(typeof(SignalComposite), "SignalComposite")]
     public abstract class SignalBase
     {
         #region PROPERTIES
 
-        public string SourceTypeName;
+        public string SourceTypeName { get; set; }
         public abstract string? Name { get; set; }
         public abstract int Count { get; }
         public bool IsPlotted { get; set; }
