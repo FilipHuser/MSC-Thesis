@@ -4,10 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DataHub.Interfaces;
 
 namespace DataHub.Core
 {
-    public abstract class ModuleBase : IDisposable
+    public abstract class ModuleBase<T> : IDisposable , IModule
     {
         #region PROPERTIES
         private CancellationTokenSource? _cts;
@@ -37,7 +38,7 @@ namespace DataHub.Core
             _cts?.Cancel();
             if (_capturingTask != null) { await _capturingTask; }
         }
-        public abstract IEnumerable<CapturedData<T>> Get<T>(Func<CapturedData<T>, bool>? predicate = null, int? skip = null, int? take = null);
+        public abstract IEnumerable<CapturedData<T>> Get(Func<CapturedData<T>, bool>? predicate = null, int? skip = null, int? take = null);
         public virtual void Dispose()
         {
             StopCapturing();

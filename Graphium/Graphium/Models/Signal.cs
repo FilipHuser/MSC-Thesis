@@ -15,6 +15,8 @@ namespace Graphium.Models
         public Plot Plot { get; set; } = new Plot();
         public DataStreamer? Streamer { get; set; }
         public override string? Name { get => Properties.Label; set => Properties.Label = value; }
+
+        public override List<PlotProperties> PlotProperties => new() { Properties };
         #endregion
         #region METHODS
         public Signal(Type source, PlotProperties? properties = null) : base(source)

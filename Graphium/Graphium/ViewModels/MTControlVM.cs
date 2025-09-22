@@ -49,57 +49,54 @@ namespace Graphium.ViewModels
         {
             while (!token.IsCancellationRequested)
             {
-                var (packetData, httpData) = await Task.Run(() =>
+                var dataByModule = await Task.Run(() =>
                 {
-                    var packetModule = (PacketModule)_dh.Modules[typeof(PacketModule)];
-                    var httpModule = (HTTPModule<string>)_dh.Modules[typeof(HTTPModule<string>)];
+                    var dict = new Dictionary<Type, Dictionary<int, List<object>>?>();
 
-                    _signalCounts.TryGetValue(packetModule.GetType(), out int packetCount);
-                    _signalCounts.TryGetValue(httpModule.GetType(), out int httpCount);
+                    foreach (var module in _dh.Modules.Values)
+                    {
+                        _signalCounts.TryGetValue(module.GetType(), out int channelCount);
+                        var data = DataProcessor.Process(module, channelCount);
+                        dict[module.GetType()] = data;
+                    }
 
-                    return (
-                        DataProcessor.Process(packetModule, packetCount),
-                        DataProcessor.Process(httpModule, httpCount)
-                    );
+                    return dict;
                 });
 
-                if (packetData != null || httpData != null)
+                if (dataByModule.Values.All(v => v == null))
                 {
-                    var dispatcher = Application.Current?.Dispatcher;
-
-                    if(dispatcher != null)
-                    {
-                        dispatcher.Invoke(() =>
-                        {
-                            UpdateSignals(packetData, httpData);
-                            Plot.Refresh();
-                        });
-                    }
+                    await Task.Delay(16, token);
+                    continue;
                 }
 
-                await Task.Delay(16, token); 
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher != null)
+                {
+                    dispatcher.Invoke(() =>
+                    {
+                        UpdateSignals(dataByModule);
+                        Plot.Refresh();
+                    });
+                }
+
+                await Task.Delay(16, token);
             }
         }
-        private void UpdateSignals(Dictionary<int, List<object>>? packetData, Dictionary<int, List<object>>? httpData)
-        {
-            if (packetData == null && httpData == null) return;
 
-            var moduleCounters = new Dictionary<Type, int>
-            {
-                [typeof(PacketModule)] = 0,
-                [typeof(HTTPModule<string>)] = 0
-            };
+        private void UpdateSignals(Dictionary<Type, Dictionary<int, List<object>>?> dataByModule)
+        {
+            var moduleCounters = new Dictionary<Type, int>();
 
             foreach (var signal in Signals)
             {
-                var sourceType = signal.Source;
-                var sourceData = sourceType == typeof(PacketModule) ? packetData
-                               : sourceType == typeof(HTTPModule<string>) ? httpData
-                               : null;
+                var sourceType = signal.GetSourceType();
+                if (sourceType == null || !dataByModule.ContainsKey(sourceType))
+                    continue;
 
+                var sourceData = dataByModule[sourceType];
                 if (sourceData == null) continue;
 
-                int currentCounter = moduleCounters[sourceType];
+                int currentCounter = moduleCounters.TryGetValue(sourceType, out int c) ? c : 0;
 
                 switch (signal)
                 {
@@ -114,7 +111,7 @@ namespace Graphium.ViewModels
                         var slice = new Dictionary<int, List<object>>();
                         for (int i = 0; i < sc.Signals.Count; i++)
                             if (sourceData.TryGetValue(currentCounter + i, out var item))
-                                slice.Add(i, item);
+                                slice[i] = item;
 
                         _signalStorage?.Add(sc, slice);
                         sc.Update(slice);
@@ -125,6 +122,7 @@ namespace Graphium.ViewModels
                 moduleCounters[sourceType] = currentCounter;
             }
         }
+
         public void StartMeasurement()
         {
             MeasurementStartRequested?.Invoke();
@@ -143,8 +141,10 @@ namespace Graphium.ViewModels
         {
             Plot.Multiplot.Reset();
             Plot.Multiplot.RemovePlot(Plot.Multiplot.GetPlot(0));
-            _signalCounts = Signals.GroupBy(x => x.Source)
-                                   .ToDictionary(x => x.Key, g => g.Sum(s => s.Count));
+            _signalCounts = Signals?.Where(s => s.GetSourceType() != null)
+                                    .GroupBy(s => s.GetSourceType()!)
+                                    .ToDictionary(g => g.Key, g => g.Sum(s => s.Count))  ?? new Dictionary<Type, int>();
+
 
             foreach (var signal in Signals.Where(x => x.IsPlotted))
             {

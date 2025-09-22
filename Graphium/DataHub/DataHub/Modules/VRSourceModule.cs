@@ -1,39 +1,31 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Concurrent;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using DataHub.Core;
 
 namespace DataHub.Modules
 {
-    public class HTTPModule<S> : ModuleBase
+    public class VRSourceModule : ModuleBase<string>
     {
         #region PROPERTIES
         private string _url;
-        private ConcurrentQueue<CapturedData<S>> _dataQueue = [];
+        private ConcurrentQueue<CapturedData<string>> _dataQueue = [];
         private HttpListener _listener = new HttpListener();
         #endregion
         #region METHODS
-        public HTTPModule(string URL) 
+        public VRSourceModule(string URL) 
         {
             _url = URL;
             Init();
         }
-        public override IEnumerable<CapturedData<T>> Get<T>(Func<CapturedData<T>, bool>? predicate = null, int? skip = null, int? take = null)
+        public override IEnumerable<CapturedData<string>> Get(Func<CapturedData<string>, bool>? predicate = null, int? skip = null, int? take = null)
         {
-            if (typeof(T) != typeof(S)) { yield break; }
-
             int skipped = 0;
             int yielded = 0;
 
             while (_dataQueue.TryDequeue(out var rawItem))
             {
-                var item = (CapturedData<T>)(object)rawItem;
-
-                if (predicate != null && !predicate(item)) { continue; }
+                if (predicate != null && !predicate(rawItem))
+                    continue;
 
                 if (skip.HasValue && skipped < skip.Value)
                 {
@@ -41,10 +33,11 @@ namespace DataHub.Modules
                     continue;
                 }
 
-                yield return item;
+                yield return rawItem;
                 yielded++;
 
-                if (take.HasValue && yielded >= take.Value) { yield break; }
+                if (take.HasValue && yielded >= take.Value)
+                    yield break;
             }
         }
         private void Init()
@@ -74,9 +67,7 @@ namespace DataHub.Modules
                         using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
                         string postData = await reader.ReadToEndAsync();
 
-                        S data = (S)(object)postData;
-
-                        var capturedData = new CapturedData<S>(DateTime.Now, data, this);
+                        var capturedData = new CapturedData<string>(DateTime.Now, postData, this);
                         _dataQueue.Enqueue(capturedData);
                         context.Response.StatusCode = (int)HttpStatusCode.Accepted; // 202
                         context.Response.StatusDescription = "Accepted";

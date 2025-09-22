@@ -5,7 +5,7 @@ using SharpPcap;
 
 namespace DataHub.Modules
 {
-    public class PacketModule : ModuleBase
+    public class BiopacSourceModule : ModuleBase<RawCapture>
     {
         #region PROPERTIES
         private readonly int _captureDeviceIndex;
@@ -15,25 +15,22 @@ namespace DataHub.Modules
         private ILiveDevice? _captureDevice;
         #endregion
         #region METHODS
-        public PacketModule(int captureDeviceIndex , string? filter = null , int? readTimeout = null)
+        public BiopacSourceModule(int captureDeviceIndex , string? filter = null , int? readTimeout = null)
         {
             _captureDeviceIndex = captureDeviceIndex;
             _filter = filter;
             _readTimeout = readTimeout;
             Init();
         }
-        public override IEnumerable<CapturedData<T>> Get<T>(Func<CapturedData<T>, bool>? predicate = null, int? skip = null, int? take = null)
-        {
-            if (typeof(T) != typeof(RawCapture)) { yield break; }            
-
+        public override IEnumerable<CapturedData<RawCapture>> Get(Func<CapturedData<RawCapture>, bool>? predicate = null, int? skip = null, int? take = null)
+        {       
             int skipped = 0;
             int yielded = 0;
 
             while (_dataQueue.TryDequeue(out var rawItem))
             {
-                var item = (CapturedData<T>)(object)rawItem;
-
-                if (predicate != null && !predicate(item)) { continue; }
+                if (predicate != null && !predicate(rawItem))
+                    continue;
 
                 if (skip.HasValue && skipped < skip.Value)
                 {
@@ -41,10 +38,11 @@ namespace DataHub.Modules
                     continue;
                 }
 
-                yield return item;
+                yield return rawItem;
                 yielded++;
 
-                if (take.HasValue && yielded >= take.Value) { yield break; }
+                if (take.HasValue && yielded >= take.Value)
+                    yield break;
             }
         }
         private void Init()

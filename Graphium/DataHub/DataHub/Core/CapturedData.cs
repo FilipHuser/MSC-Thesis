@@ -10,11 +10,11 @@ namespace DataHub.Core
     {
         #region PROPERTIES
         public DateTime Timestamp;
-        public ModuleBase? Caller;
+        public ModuleBase<T>? Caller;
         public T Data;
         #endregion
         #region METHODS
-        public CapturedData(DateTime timestamp, T data, ModuleBase caller)
+        public CapturedData(DateTime timestamp, T data, ModuleBase<T> caller)
         {
             Timestamp = timestamp;
             Caller = caller;

@@ -4,104 +4,87 @@ using PacketDotNet;
 using DataHub.Modules;
 using DataHub.Core;
 using System.Text.Json;
+using DataHub.Interfaces;
 
 namespace Graphium.Core
 {
     static class DataProcessor
     {
-        public static Dictionary<int , List<object>>? Process(ModuleBase moduleBase , int nChannels)
+        public static Dictionary<int, List<object>>? Process(IModule module, int nChannels)
         {
-            var output = new Dictionary<int , List<object>>();
-            if (nChannels == 0) { return null; }
+            if (nChannels <= 0) return null;
 
-            switch (moduleBase)
+            var output = new Dictionary<int, List<object>>();
+
+            switch (module)
             {
-                case PacketModule packetModule:
-
-                        var packets = packetModule.Get<RawCapture>(x => true).Select(x => x.Data).ToList();
-                        if (packets.Count == 0) { return output; }
-
-                    var convertFunc = ByteArrayConverter<short>.GetConvertFunction();
-
-                    foreach(var rc in packets)
+                case BiopacSourceModule bsm:
+                    foreach (var rc in bsm.Get())
                     {
-                        var udpPacket = Packet.ParsePacket(rc.LinkLayerType, rc.Data).Extract<UdpPacket>();
-                        if (udpPacket == null) { continue; }
+                        var udp = Packet.ParsePacket(rc.Data.LinkLayerType, rc.Data.Data).Extract<UdpPacket>();
+                        if (udp == null) continue;
 
-                        byte[] payload = udpPacket.PayloadData;
-                        int payloadLength = payload.Length;
-                        int payloadElementSize = sizeof(short);
-                        int useablePayload = payloadLength - 2;
-                        int nRepetitions = (useablePayload / payloadElementSize) / nChannels;
+                        byte[] payload = udp.PayloadData;
+                        if (payload.Length <= 2) continue;
+
+                        var convertFunc = ByteArrayConverter<short>.GetConvertFunction();
+                        int nRepetitions = ((payload.Length - 2) / sizeof(short)) / nChannels;
 
                         for (int i = 0; i < nRepetitions * nChannels; i++)
                         {
-                            int offset = 1 + (i * payloadElementSize);
+                            int offset = 1 + i * sizeof(short);
+                            var slice = payload.Skip(offset).Take(sizeof(short)).Reverse().ToArray();
+                            var value = convertFunc(slice, 0);
 
-                            var payloadSlice = payload.Skip(offset).Take(payloadElementSize).ToArray();
-
-                            Array.Reverse(payloadSlice);
-
-                            var value = convertFunc(payloadSlice, 0);
-
-                            if (!output.TryGetValue(i % nChannels, out var existingList))
+                            if (!output.TryGetValue(i % nChannels, out var list))
                             {
-                                existingList = new List<object>();
-                                output[i % nChannels] = existingList;
+                                list = new List<object>();
+                                output[i % nChannels] = list;
                             }
-                            existingList.Add(value);
+                            list.Add(value);
                         }
-                    }    
+                    }
                     break;
 
-                case HTTPModule<string> httpModule:
-
-                    var postRequests = httpModule.Get<string>(x => true).Select(x => x.Data).ToList();
-                    if (postRequests.Count() == 0) { return output; }
-
-                    var jsonOpts = new JsonSerializerOptions
+                case VRSourceModule vrsm:
+                    foreach (var post in vrsm.Get())
                     {
-                        PropertyNameCaseInsensitive = true
-                    };
-
-                    foreach (var pr in postRequests)
-                    {
-                        using var jsonDoc = JsonDocument.Parse(pr);
-                        var root = jsonDoc.RootElement;
-
-                        if (root.ValueKind != JsonValueKind.Object)
-                            continue;
+                        using var doc = JsonDocument.Parse(post.Data);
+                        var root = doc.RootElement;
+                        if (root.ValueKind != JsonValueKind.Object) continue;
 
                         int index = 0;
-                        foreach (var property in root.EnumerateObject())
+                        foreach (var prop in root.EnumerateObject())
                         {
-                            object? val = property.Value.ValueKind switch
+                            object? val = prop.Value.ValueKind switch
                             {
-                                JsonValueKind.String => property.Value.GetString(),
-                                JsonValueKind.Number => property.Value.TryGetInt64(out var l) ? l
-                                                        : property.Value.TryGetDouble(out var d) ? d
-                                                        : (object?)null,
+                                JsonValueKind.String => prop.Value.GetString(),
+                                JsonValueKind.Number => prop.Value.TryGetInt64(out var l) ? l
+                                                        : prop.Value.TryGetDouble(out var d) ? d
+                                                        : null,
                                 JsonValueKind.True => true,
                                 JsonValueKind.False => false,
                                 JsonValueKind.Null => null,
-                                _ => property.Value.GetRawText()
+                                _ => prop.Value.GetRawText()
                             };
 
-                            if (!output.TryGetValue(index, out var list))
+                            if (val != null)
                             {
-                                list = new List<object>();
-                                output[index] = list;
+                                if (!output.TryGetValue(index, out var list))
+                                {
+                                    list = new List<object>();
+                                    output[index] = list;
+                                }
+                                list.Add(val);
                             }
-
-                            if(val != null) { list.Add(val); }
                             index++;
                         }
                     }
-
                     break;
-            }    
+            }
 
             return output;
         }
+
     }
 }

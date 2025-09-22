@@ -38,8 +38,8 @@ namespace Graphium.ViewModels
 
             string filter = $"udp and src host {ipAddr} and udp[4:2] > {payloadSize}"; // 8 + actuall size
              
-            var packetModule = new PacketModule(captureDeviceIndex, filter, 5);
-            var httpModule = new HTTPModule<string>(getAppSetting("URI"));
+            var packetModule = new BiopacSourceModule(captureDeviceIndex, filter, 5);
+            var httpModule = new VRSourceModule(getAppSetting("URI"));
 
             _dh.AddModule(packetModule);
             _dh.AddModule(httpModule);
