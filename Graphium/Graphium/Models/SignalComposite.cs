@@ -1,4 +1,6 @@
 ﻿using System.Text.Json.Serialization;
+using DataHub.Core;
+using DataHub.Interfaces;
 using ScottPlot;
 using ScottPlot.Plottables;
 
@@ -14,17 +16,15 @@ namespace Graphium.Models
         [JsonIgnore]
         public List<Plot> Plots => Signals.Select(x => x.Plot).ToList();
         [JsonIgnore]
-        public List<DataStreamer?> Loggers => Signals.Select(x => x.Streamer).ToList();
         public override List<PlotProperties> PlotProperties => AllPlotProperties;
         #endregion
         #region METHODS
+        public SignalComposite(ModuleType source) : base(source) { }
         [JsonConstructor]
-        protected SignalComposite() : base(typeof(object)){}
-        public SignalComposite(Type type) : base(type) { }
-        public SignalComposite(Type type, List<PlotProperties> graphs, string name) : base(type)
+        public SignalComposite(ModuleType source, List<Signal> signals, string name) : base(source)
         {
+            Signals = signals ?? new List<Signal>();
             Name = name;
-            Signals = graphs.Select(graph => new Signal(type, graph)).ToList();
         }
         public void Add(Signal signal) => Signals.Add(signal);
         public void Remove(Signal signal) => Signals?.Remove(signal);

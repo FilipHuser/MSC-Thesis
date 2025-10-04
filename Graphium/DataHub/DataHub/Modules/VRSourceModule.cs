@@ -10,6 +10,7 @@ namespace DataHub.Modules
         private string _url;
         private ConcurrentQueue<CapturedData<string>> _dataQueue = [];
         private HttpListener _listener = new HttpListener();
+        public override ModuleType ModuleType => ModuleType.VR;
         #endregion
         #region METHODS
         public VRSourceModule(string URL) 

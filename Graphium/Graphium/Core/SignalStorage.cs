@@ -84,8 +84,19 @@ namespace Graphium.Core
         public string ToCsv(char delimiter)
         {
             var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            return $"{timestamp}{delimiter}" + string.Join(delimiter, AlignedValues.Values);
+            var valuesAsString = AlignedValues.Values.Select(v =>
+            {
+                if (v == null) return "";
+                if (v is List<object> list)
+                {
+                    return string.Join(',', list.Select(x => x?.ToString() ?? ""));
+                }
+                return v.ToString() ?? "";
+            });
+
+            return $"{timestamp}{delimiter}" + string.Join(delimiter, valuesAsString);
         }
+
         #endregion
     }
 }

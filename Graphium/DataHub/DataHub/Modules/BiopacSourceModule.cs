@@ -13,6 +13,7 @@ namespace DataHub.Modules
         private readonly int? _readTimeout; 
         private ConcurrentQueue<CapturedData<RawCapture>> _dataQueue = [];
         private ILiveDevice? _captureDevice;
+        public override ModuleType ModuleType => ModuleType.BIOPAC;
         #endregion
         #region METHODS
         public BiopacSourceModule(int captureDeviceIndex , string? filter = null , int? readTimeout = null)

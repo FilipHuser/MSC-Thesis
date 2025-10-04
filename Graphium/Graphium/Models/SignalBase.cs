@@ -1,5 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using System.Xml.Linq;
+using DataHub.Core;
+using DataHub.Interfaces;
 using Graphium.Models;
 
 namespace Graphium.Models
@@ -10,7 +12,7 @@ namespace Graphium.Models
     {
         #region PROPERTIES
 
-        public string SourceTypeName { get; set; }
+        public ModuleType Source { get; set; }
         public abstract string? Name { get; set; }
         public abstract int Count { get; }
         public bool IsPlotted { get; set; }
@@ -18,12 +20,11 @@ namespace Graphium.Models
         public abstract List<PlotProperties> PlotProperties { get; }  
         #endregion
         #region METHODS
-        public SignalBase(Type source)
+        public SignalBase(ModuleType source)
         {
-            SourceTypeName = source.AssemblyQualifiedName ?? source.FullName ?? source.Name;
+            Source = source;
         }
         public abstract void Update(Dictionary<int , List<object>> data);
-        public Type? GetSourceType() => Type.GetType(SourceTypeName);
         #endregion
     }
 }

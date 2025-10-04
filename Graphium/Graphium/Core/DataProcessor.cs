@@ -10,7 +10,54 @@ namespace Graphium.Core
 {
     static class DataProcessor
     {
-        public static Dictionary<int, List<object>>? Process(IModule module, int nChannels)
+        private static object? JsonElementToObject(JsonElement element)
+        {
+            return element.ValueKind switch
+            {
+                JsonValueKind.String => element.GetString(),
+
+                JsonValueKind.Number => element.TryGetInt64(out var l) ? l
+                                        : element.TryGetDouble(out var d) ? d
+                                        : null,
+
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+
+                JsonValueKind.Array => element.EnumerateArray()
+                                              .Select(JsonElementToObject)
+                                              .ToList(),
+
+                JsonValueKind.Object => element.EnumerateObject()
+                    .ToDictionary(p => p.Name, p => JsonElementToObject(p.Value)),
+
+                JsonValueKind.Null => null,
+                JsonValueKind.Undefined => null,
+
+                _ => element.GetRawText(),
+            };
+        }
+        public static Dictionary<ModuleType, Dictionary<int, List<object>>?>? ProcessAll(
+            IEnumerable<IModule> modules,
+            Dictionary<ModuleType, int> signalCounts)
+        {
+            var result = new Dictionary<ModuleType, Dictionary<int, List<object>>?>();
+
+            foreach (var module in modules)
+            {
+                if (!signalCounts.TryGetValue(module.ModuleType, out int channelCount) || channelCount <= 0)
+                {
+                    result[module.ModuleType] = null;
+                    continue;
+                }
+
+                var data = ProcessModule(module, channelCount);
+                result[module.ModuleType] = data;
+            }
+
+            return result;
+        }
+
+        private static Dictionary<int, List<object>>? ProcessModule(IModule module, int nChannels)
         {
             if (nChannels <= 0) return null;
 
@@ -36,10 +83,11 @@ namespace Graphium.Core
                             var slice = payload.Skip(offset).Take(sizeof(short)).Reverse().ToArray();
                             var value = convertFunc(slice, 0);
 
-                            if (!output.TryGetValue(i % nChannels, out var list))
+                            int channel = i % nChannels;
+                            if (!output.TryGetValue(channel, out var list))
                             {
                                 list = new List<object>();
-                                output[i % nChannels] = list;
+                                output[channel] = list;
                             }
                             list.Add(value);
                         }
@@ -64,8 +112,9 @@ namespace Graphium.Core
                                                         : null,
                                 JsonValueKind.True => true,
                                 JsonValueKind.False => false,
+                                JsonValueKind.Array => prop.Value.EnumerateArray().Select(JsonElementToObject).ToList(),
                                 JsonValueKind.Null => null,
-                                _ => prop.Value.GetRawText()
+                                _ => prop.Value.GetRawText(),
                             };
 
                             if (val != null)
@@ -83,8 +132,7 @@ namespace Graphium.Core
                     break;
             }
 
-            return output;
+            return output.Count > 0 ? output : null;
         }
-
     }
 }

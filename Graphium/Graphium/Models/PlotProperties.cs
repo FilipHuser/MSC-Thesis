@@ -11,7 +11,6 @@ namespace Graphium.Models
         public double LowerBound { get; set; } = -10;
         public double UpperBound { get; set; } = 10;
         public int Capacity { get; set; } = 1000;
-        public double SamplingRate { get; set; } = 2000; 
         #endregion  
         #region METHODS
         public object Clone() => this.MemberwiseClone();

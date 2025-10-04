@@ -9,10 +9,11 @@ using DataHub.Interfaces;
 namespace DataHub.Core
 {
     public abstract class ModuleBase<T> : IDisposable , IModule
-    {
+    { 
         #region PROPERTIES
         private CancellationTokenSource? _cts;
         private Task? _capturingTask;
+        public abstract ModuleType ModuleType { get; }
         public bool IsCapturing { get; set; }
         #endregion
         #region METHODS

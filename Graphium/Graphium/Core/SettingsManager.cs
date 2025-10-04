@@ -36,10 +36,32 @@ namespace DataHub.Core
 
             return Path.Combine(folderPath, fileName);
         }
-        public static void Save<T>(T settings , SettingsCategory category)
+        public static void Save<T>(T settings, SettingsCategory category, bool append = false)
         {
-            var json = JsonSerializer.Serialize(settings, _options);
-            File.WriteAllText(GetFilePath(category), json);
+            var filePath = GetFilePath(category);
+
+            if (append && File.Exists(filePath))
+            {
+                var existingJson = File.ReadAllText(filePath);
+                var existingData = JsonSerializer.Deserialize<List<T>>(existingJson, _options) ?? new List<T>();
+
+                if (settings is IEnumerable<T> newItems)
+                {
+                    existingData.AddRange(newItems);
+                }
+                else
+                {
+                    existingData.Add(settings);
+                }
+
+                var json = JsonSerializer.Serialize(existingData, _options);
+                File.WriteAllText(filePath, json);
+            }
+            else
+            {
+                var json = JsonSerializer.Serialize(settings, _options);
+                File.WriteAllText(filePath, json);
+            }
         }
         public static T? Load<T>(SettingsCategory category)
         {
