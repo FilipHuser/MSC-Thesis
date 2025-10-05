@@ -7,6 +7,7 @@ using Graphium.Core;
 using ScottPlot;
 using ScottPlot.AxisPanels;
 using ScottPlot.Plottables;
+using ScottPlot.WPF;
 
 namespace Graphium.Models
 {
@@ -16,7 +17,7 @@ namespace Graphium.Models
         public override int Count => 1;
         public PlotProperties Properties { get; set; }
         [JsonIgnore]
-        public Plot Plot { get; set; } = new Plot();
+        public WpfPlot PlotControl { get; set; } = new WpfPlot();
         [JsonIgnore]
         public List<DataStreamer?> Streamers { get; set; } = [];
         public override string? Name { get => Properties.Label; set => Properties.Label = value; }
@@ -29,29 +30,25 @@ namespace Graphium.Models
             Properties = properties ?? new PlotProperties();
             IsPlotted = isPlotted;
             IsAcquired = isAcquired;
-            InitializePlot();
+            Init();
         }
         public Signal(ModuleType source, PlotProperties? properties = null) : base(source)
         {
             Properties = properties ?? new PlotProperties();
-            InitializePlot();
+            Init();
         }
-        private void InitializePlot()
+        private void Init()
         {
+            var plot = PlotControl.Plot;
+            PlotControl.UserInputProcessor.IsEnabled = false;
             DataStreamer streamer;
-            streamer = Plot.Add.DataStreamer(Properties.Capacity);
-            streamer.LegendText = this.ToString();
+            streamer = plot.Add.DataStreamer(Properties.Capacity);
             streamer.ManageAxisLimits = true;
-            Plot.Axes.SetLimitsY(Properties.LowerBound, Properties.UpperBound);
-            Plot.Axes.Bottom.TickLabelStyle.IsVisible = false;
-
-
-            streamer.Axes.YAxis = Plot.Axes.Right;
-            Plot.Grid.YAxis = Plot.Axes.Right;
-            Plot.Axes.Left.RemoveTickGenerator();
+            plot.Axes.SetLimitsY(Properties.LowerBound, Properties.UpperBound);
         }
         public override void Update(Dictionary<int, List<object>> data)
         {
+            var plot = PlotControl.Plot;
             var values = data.First().Value;
 
             if (values.FirstOrDefault() is List<object>)
@@ -62,33 +59,25 @@ namespace Graphium.Models
                         continue;
 
                     int channelCount = nestedList.Count;
-
-                    // Ensure we have enough streamers
                     while (Streamers.Count < channelCount)
                     {
-                        var newStreamer = Plot.Add.DataStreamer(Properties.Capacity);
+                        var newStreamer = plot.Add.DataStreamer(Properties.Capacity);
                         newStreamer.LegendText = $"{Properties.Label} Ch{Streamers.Count}";
-                        newStreamer.ManageAxisLimits = true;  // crucial for live updates
+                        newStreamer.ManageAxisLimits = true;
                         newStreamer.LineWidth = 2;
                         newStreamer.LineColor = ScottPlot.Colors.Category10[Streamers.Count % 10];
                         Streamers.Add(newStreamer);
                     }
-
-                    // Add one value per channel
                     for (int ch = 0; ch < channelCount; ch++)
                     {
                         double value = Convert.ToDouble(nestedList[ch]);
                         Streamers[ch]?.Add(value);
                     }
                 }
-            }
-            else
-            {
-                // Single-channel case
+            } else {
                 if (Streamers.Count == 0)
                 {
-                    var streamer = Plot.Add.DataStreamer(Properties.Capacity);
-                    streamer.LegendText = Properties.Label;
+                    var streamer = plot.Add.DataStreamer(Properties.Capacity);
                     streamer.ManageAxisLimits = true;
                     streamer.LineWidth = 2;
                     Streamers.Add(streamer);
@@ -100,8 +89,6 @@ namespace Graphium.Models
                 }
             }
         }
-
-
         public override string ToString() => Properties.Label??"~";
         #endregion
     }

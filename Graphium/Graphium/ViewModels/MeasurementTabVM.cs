@@ -16,8 +16,7 @@ using ScottPlot.WPF;
 
 namespace Graphium.ViewModels
 {
-    //MEASUREMENT TAB
-    internal partial class MTControlVM : ViewModelBase
+    internal partial class MeasurementTabVM : ViewModelBase
     {
         #region PROPERTIES
         private readonly Hub _dh;
@@ -27,22 +26,21 @@ namespace Graphium.ViewModels
         private Dictionary<ModuleType, int> _signalCounts = new Dictionary<ModuleType, int>();
         public string Title { get; set; }
         public UserControl Tab { get; set; }
-        public WpfPlot Plot { get; set; } = new WpfPlot();
+        public bool IsMeasuring { get; set; } = false;
+        public ObservableCollection<PlotPanelVM> PlotPanelViewModels { get; set; } = [];
         public ObservableCollection<SignalBase> Signals { get => _signals; set { SetProperty(ref _signals, value); OnSignalsUpdate(); } }
         public event Action? MeasurementStartRequested;
-        public bool IsMeasuring { get; set; } = false;
         #region RELAY_COMMANDS
         public RelayCommand StartMeasurementCmd => new RelayCommand(execute => StartMeasurement(), canExecute => Signals.Count > 0 && !IsMeasuring);
         public RelayCommand StopMeasurementCmd => new RelayCommand(execute => StopMeasurement(), canExecute => IsMeasuring);
         public RelayCommand SaveAsCSVCmd => new RelayCommand(execute => SaveAsCSV());
         #endregion
         #endregion
-        public MTControlVM(Window parent, string title, ref Hub dh) : base(parent)
+        public MeasurementTabVM(Window parent, string title, ref Hub dh) : base(parent)
         {
             _dh = dh;
             Title = title;
-            Tab = new MTControl(title);
-            Plot.Multiplot.RemovePlot(Plot.Multiplot.GetPlot(0));
+            Tab = new MeasurementTabControl(title);
             Signals.CollectionChanged += (s, e) => { OnSignalsUpdate(); };
         }
         #region METHODS
@@ -60,7 +58,6 @@ namespace Graphium.ViewModels
                         dispatcher.Invoke(() =>
                         {
                             UpdateSignals(dataByModule);
-                            Plot.Refresh();
                         });
                     }
                 }
@@ -107,6 +104,10 @@ namespace Graphium.ViewModels
 
                 moduleCounters[sourceModuleType] = currentCounter;
             }
+            foreach (var vm in PlotPanelViewModels)
+            {
+                vm.PlotControl.Refresh();
+            }
         }
         public void StartMeasurement()
         {
@@ -124,8 +125,8 @@ namespace Graphium.ViewModels
         }
         private void OnSignalsUpdate()
         {
-            Plot.Multiplot.Reset();
-            Plot.Multiplot.RemovePlot(Plot.Multiplot.GetPlot(0));
+            PlotPanelViewModels.Clear();
+
             _signalCounts = Signals.GroupBy(s => s.Source)
                                    .ToDictionary(g => g.Key, g => g.Sum(s => s.Count)) ?? new Dictionary<ModuleType, int>();
 
@@ -134,36 +135,33 @@ namespace Graphium.ViewModels
                 switch (signal)
                 {
                     case Signal si:
-                        Plot.Multiplot.AddPlot(si.Plot);
+                        var signalVM = new PlotPanelVM(Window, si);
+                        PlotPanelViewModels.Add(signalVM);
                         break;
+
                     case SignalComposite sc:
-                        sc.Plots.ForEach(x => Plot.Multiplot.AddPlot(x));
+                        foreach (var innerSignal in sc.Signals)
+                        {
+                            var innerVM = new PlotPanelVM(Window, innerSignal);
+                            PlotPanelViewModels.Add(innerVM);
+                        }
                         break;
                 }
             }
-
             var palette = new ScottPlot.Palettes.Aurora();
-            var plots = Plot.Multiplot.GetPlots();
-            var colors = palette.GetColors(plots.Length);
-
-            for (int i = 0; i < plots.Length; i++)
+            for (int i = 0; i < PlotPanelViewModels.Count; i++)
             {
-                var plot = plots[i];
-                var color = colors[i];
-
-                foreach (var plottable in plot.GetPlottables())
+                var plotVM = PlotPanelViewModels[i];
+                var color = palette.GetColor(i);
+                foreach (var plottable in plotVM.PlotControl.Plot.GetPlottables())
                 {
                     if (plottable is ScottPlot.Plottables.DataStreamer streamer)
-                    {
                         streamer.Color = color;
-                    }
                 }
+                plotVM.PlotControl.Refresh();
             }
 
             _signalStorage = new SignalStorage(this);
-            Plot.UserInputProcessor.IsEnabled = false;
-            Plot.Multiplot.CollapseVertically();
-            Plot.Refresh();
         }
         private void SaveAsCSV()
         {

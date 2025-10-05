@@ -10,8 +10,8 @@ namespace Graphium.Controls
     /// </summary>
 
     //MEASUREMENT TAB
-    public partial class MTControl : UserControl
+    public partial class MeasurementTabControl : UserControl
     {
-        public MTControl(string title) => InitializeComponent();
+        public MeasurementTabControl(string title) => InitializeComponent();
     }
 }

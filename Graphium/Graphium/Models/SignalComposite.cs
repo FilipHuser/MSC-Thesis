@@ -14,7 +14,7 @@ namespace Graphium.Models
         public List<Signal> Signals { get; set; } = new List<Signal>();
         public List<PlotProperties> AllPlotProperties => Signals.Select(x => x.Properties).ToList();
         [JsonIgnore]
-        public List<Plot> Plots => Signals.Select(x => x.Plot).ToList();
+        public List<Plot> Plots => Signals.Select(x => x.PlotControl.Plot).ToList();
         [JsonIgnore]
         public override List<PlotProperties> PlotProperties => AllPlotProperties;
         #endregion

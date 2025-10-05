@@ -19,13 +19,13 @@ using Graphium.ViewModels;
 namespace Graphium.Views
 {
     //DATA ACQUISITION CONFIG
-    partial class DACWindow : Window, IViewModelOwner
+    partial class DataAcquisitionWindow : Window, IViewModelOwner
     {
-        private readonly DACWindowVM _vm;
-        public DACWindow(ObservableCollection<SignalBase> signals)
+        private readonly DataAcquisitionWindowVM _vm;
+        public DataAcquisitionWindow(ObservableCollection<SignalBase> signals)
         {
             InitializeComponent();
-            _vm = new DACWindowVM(this , signals);
+            _vm = new DataAcquisitionWindowVM(this , signals);
             DataContext = _vm;
         }
 

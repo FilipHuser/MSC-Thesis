@@ -18,9 +18,9 @@ namespace Graphium.ViewModels
     {
         #region PROPERTIES
         private Hub _dh;
-        private MTControlVM? _currentTab;
-        public MTControlVM? CurrentTab { get => _currentTab; set => SetProperty(ref _currentTab, value); }
-        public ObservableCollection<MTControlVM> MeasurementTabs { get; set; } = [];
+        private MeasurementTabVM? _currentTab;
+        public MeasurementTabVM? CurrentTab { get => _currentTab; set => SetProperty(ref _currentTab, value); }
+        public ObservableCollection<MeasurementTabVM> MeasurementTabs { get; set; } = [];
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand NewMeasurementTabCmd => new RelayCommand(execute => NewMeasurementTab());
@@ -49,7 +49,7 @@ namespace Graphium.ViewModels
         #region METHODS
         private void NewMeasurementTab()
         {
-            CurrentTab = new MTControlVM(Window , $"Untitled{MeasurementTabs.Count + 1}", ref _dh);
+            CurrentTab = new MeasurementTabVM(Window , $"Untitled{MeasurementTabs.Count + 1}", ref _dh);
             CurrentTab.MeasurementStartRequested += () => {
                 MeasurementTabs.ToList().ForEach(x => x.StopMeasurement());
             };
@@ -57,7 +57,7 @@ namespace Graphium.ViewModels
         }
         private void CloseMeasurementTab(object item)
         {
-            if(item is MTControlVM tab) {
+            if(item is MeasurementTabVM tab) {
                 _dh.StopCapturing();
                 MeasurementTabs.Remove(tab);
                 CurrentTab = null;
@@ -76,7 +76,7 @@ namespace Graphium.ViewModels
                 return;
             }
 
-            var dacw = new DACWindow(CurrentTab.Signals);
+            var dacw = new DataAcquisitionWindow(CurrentTab.Signals);
 
             if (CurrentTab.IsMeasuring)
             {
@@ -84,7 +84,7 @@ namespace Graphium.ViewModels
                 CurrentTab.StopMeasurement();
             }
 
-            if (dacw.GetViewModel() is DACWindowVM vm)
+            if (dacw.GetViewModel() is DataAcquisitionWindowVM vm)
             {
                 vm.SignalConfigCloseRequested += (signals) =>
                 {

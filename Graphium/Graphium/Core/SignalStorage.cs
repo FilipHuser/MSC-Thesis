@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Graphium.Models;
@@ -16,7 +17,7 @@ namespace Graphium.Core
         public delegate void AlignHandler();
         public event AlignHandler? OnAlignment;
 
-        public SignalStorage(MTControlVM parent)
+        public SignalStorage(MeasurementTabVM parent)
         {
             var allSignals = new List<Signal>();
 
@@ -89,8 +90,16 @@ namespace Graphium.Core
                 if (v == null) return "";
                 if (v is List<object> list)
                 {
-                    return string.Join(',', list.Select(x => x?.ToString() ?? ""));
+                    return string.Join(',', list.Select(x =>
+                    {
+                        if (x == null) return "";
+                        if (x is IFormattable f) return f.ToString(null, CultureInfo.InvariantCulture);
+                        return x.ToString() ?? "";
+                    }));
                 }
+
+                if (v is IFormattable formattable) return formattable.ToString(null, CultureInfo.InvariantCulture);
+
                 return v.ToString() ?? "";
             });
 
