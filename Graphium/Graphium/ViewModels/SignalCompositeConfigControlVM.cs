@@ -9,13 +9,13 @@ using Graphium.Interfaces;
 
 namespace Graphium.ViewModels
 {
-    internal class SignalCompositeConfigVM : ViewModelBase, IMenuItemViewModel
+    internal class SignalCompositeConfigControlVM : ViewModelBase, IMenuItemViewModel
     {
         #region PROPERTIES
         public string Header => "Composite Signals";
         public UserControl Content { get; }
         #endregion
-        public SignalCompositeConfigVM(Window parent) : base(parent)
+        public SignalCompositeConfigControlVM(Window parent) : base(parent)
         {
             Content = new SignalCompositeConfigControl(parent)
             {

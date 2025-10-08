@@ -19,7 +19,7 @@ namespace Graphium.Models
         [JsonIgnore]
         public WpfPlot PlotControl { get; set; } = new WpfPlot();
         [JsonIgnore]
-        public List<DataStreamer?> Streamers { get; set; } = [];
+        public List<DataLogger?> DataLoggers { get; set; } = [];
         public override string? Name { get => Properties.Label; set => Properties.Label = value; }
         public override List<PlotProperties> PlotProperties => new() { Properties };
         #endregion
@@ -40,7 +40,7 @@ namespace Graphium.Models
         private void Init()
         {
             var plot = PlotControl.Plot;
-            PlotControl.UserInputProcessor.IsEnabled = false;
+            //PlotControl.UserInputProcessor.IsEnabled = false;
             DataStreamer streamer;
             streamer = plot.Add.DataStreamer(Properties.Capacity);
             streamer.ManageAxisLimits = true;
@@ -59,33 +59,33 @@ namespace Graphium.Models
                         continue;
 
                     int channelCount = nestedList.Count;
-                    while (Streamers.Count < channelCount)
+                    while (DataLoggers.Count < channelCount)
                     {
-                        var newStreamer = plot.Add.DataStreamer(Properties.Capacity);
-                        newStreamer.LegendText = $"{Properties.Label} Ch{Streamers.Count}";
-                        newStreamer.ManageAxisLimits = true;
-                        newStreamer.LineWidth = 2;
-                        newStreamer.LineColor = ScottPlot.Colors.Category10[Streamers.Count % 10];
-                        Streamers.Add(newStreamer);
+                        var logger = plot.Add.DataLogger();
+                        logger.LegendText = $"CH{DataLoggers.Count}";
+                        logger.ManageAxisLimits = true;
+                        logger.LineWidth = 2;
+                        logger.LineColor = ScottPlot.Colors.Category10[DataLoggers.Count % 10];
+                        DataLoggers.Add(logger);
                     }
                     for (int ch = 0; ch < channelCount; ch++)
                     {
                         double value = Convert.ToDouble(nestedList[ch]);
-                        Streamers[ch]?.Add(value);
+                        DataLoggers[ch]?.Add(value);
                     }
                 }
             } else {
-                if (Streamers.Count == 0)
+                if (DataLoggers.Count == 0)
                 {
-                    var streamer = plot.Add.DataStreamer(Properties.Capacity);
-                    streamer.ManageAxisLimits = true;
-                    streamer.LineWidth = 2;
-                    Streamers.Add(streamer);
+                    var logger = plot.Add.DataLogger();
+                    logger.ManageAxisLimits = true;
+                    logger.LineWidth = 2;
+                    DataLoggers.Add(logger);
                 }
 
                 foreach (var v in values)
                 {
-                    Streamers[0]?.Add(Convert.ToDouble(v));
+                    DataLoggers[0]?.Add(Convert.ToDouble(v));
                 }
             }
         }

@@ -17,7 +17,7 @@ using Graphium.Views;
 namespace Graphium.ViewModels
 {
     //SIGNAL CONFIG
-    class SignalConfigVM : ViewModelBase, IMenuItemViewModel
+    class SignalConfigControlVM : ViewModelBase, IMenuItemViewModel
     {
         #region PROPERTIES
         private ModuleType? _selectedSource;
@@ -39,7 +39,7 @@ namespace Graphium.ViewModels
             if (obj is Signal signal) { RemoveSignal(signal); }
         });
         #endregion
-        public SignalConfigVM(Window window, ObservableCollection<SignalBase> signals) : base(window)  
+        public SignalConfigControlVM(Window window, ObservableCollection<SignalBase> signals) : base(window)  
         {
             Content = new SignalConfigControl(window)
             {

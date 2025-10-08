@@ -10,14 +10,27 @@ using ScottPlot.WPF;
 
 namespace Graphium.ViewModels
 {
-    internal class PlotPanelVM : ViewModelBase
+    internal class PlotPanelControlVM : ViewModelBase
     {
         #region PROPERTIES
-        private readonly Signal _signal;
         private int _height = 250;
-        public int Height { get => _height; set { SetProperty(ref _height, value); } }  
+        private string _plotMax = "";
+        private string _plotMin = "";
+        private readonly Signal _signal;
         public string Name => _signal.ToString();
+        public int Height { get => _height; set { SetProperty(ref _height, value); } }  
         public WpfPlot PlotControl => _signal.PlotControl;
+        public string PlotMax
+        {
+            get => _plotMax;
+            private set => SetProperty(ref _plotMax, value);
+        }
+        public string PlotMin
+        {
+            get => _plotMin;
+            private set => SetProperty(ref _plotMin, value);
+        }
+
         #region RELAY_COMMANDS
         public RelayCommand ResizeCmd => new RelayCommand(execute => {
             if (execute is System.Windows.Controls.Primitives.DragDeltaEventArgs args)
@@ -27,10 +40,17 @@ namespace Graphium.ViewModels
         });
         #endregion  
         #endregion
-        public PlotPanelVM(Window window , Signal signal) : base(window)
+        public PlotPanelControlVM(Window window , Signal signal) : base(window)
         {
             _signal = signal;
             PlotControl.Plot.Layout.Frameless();
+
+            PlotControl.Plot.RenderManager.RenderStarting += (s, e) =>
+            {
+                var yLimits = PlotControl.Plot.Axes.GetLimits().YRange;
+                PlotMax = yLimits.Max.ToString("0.00");
+                PlotMin = yLimits.Min.ToString("0.00");
+            };
         }
         #region METHODS
         private void OnResize(double deltaY)

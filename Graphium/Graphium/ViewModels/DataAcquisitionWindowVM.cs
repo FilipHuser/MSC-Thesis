@@ -18,10 +18,10 @@ namespace Graphium.ViewModels
         #endregion
         public DataAcquisitionWindowVM(Window window , ObservableCollection<SignalBase> signals) : base(window)
         {
-            var sccVM = new SignalConfigVM(window , signals);
+            var sccVM = new SignalConfigControlVM(window , signals);
             sccVM.CloseRequested += signals => { SignalConfigCloseRequested?.Invoke(signals); };
 
-            var scccVM = new SignalCompositeConfigVM(window);
+            var scccVM = new SignalCompositeConfigControlVM(window);
 
             MenuItems.Add(sccVM);
             MenuItems.Add(scccVM);

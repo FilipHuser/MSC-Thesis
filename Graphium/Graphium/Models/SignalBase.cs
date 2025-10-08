@@ -15,7 +15,9 @@ namespace Graphium.Models
         public ModuleType Source { get; set; }
         public abstract string? Name { get; set; }
         public abstract int Count { get; }
+        [JsonIgnore]
         public bool IsPlotted { get; set; }
+        [JsonIgnore]
         public bool IsAcquired { get; set; }
         public abstract List<PlotProperties> PlotProperties { get; }  
         #endregion

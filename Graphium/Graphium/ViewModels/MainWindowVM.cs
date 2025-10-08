@@ -18,14 +18,15 @@ namespace Graphium.ViewModels
     {
         #region PROPERTIES
         private Hub _dh;
-        private MeasurementTabVM? _currentTab;
-        public MeasurementTabVM? CurrentTab { get => _currentTab; set => SetProperty(ref _currentTab, value); }
-        public ObservableCollection<MeasurementTabVM> MeasurementTabs { get; set; } = [];
+        private MeasurementTabControlVM? _currentTab;
+        public MeasurementTabControlVM? CurrentTab { get => _currentTab; set => SetProperty(ref _currentTab, value); }
+        public ObservableCollection<MeasurementTabControlVM> MeasurementTabs { get; set; } = [];
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand NewMeasurementTabCmd => new RelayCommand(execute => NewMeasurementTab());
         public RelayCommand CloseMeasurementTabCmd => new RelayCommand((item) => CloseMeasurementTab(item));
         public RelayCommand OpenDataAcquisitionConfigWindowCmd => new RelayCommand(execute => OpenDataAcquisitionConfigWindow());
+        public RelayCommand PreferencesCmd => new RelayCommand(execute => OpenPreferencesWindow());
         #endregion
         public MainWindowViewModel(Window window) : base(window)
         {
@@ -49,7 +50,7 @@ namespace Graphium.ViewModels
         #region METHODS
         private void NewMeasurementTab()
         {
-            CurrentTab = new MeasurementTabVM(Window , $"Untitled{MeasurementTabs.Count + 1}", ref _dh);
+            CurrentTab = new MeasurementTabControlVM(Window , $"Untitled{MeasurementTabs.Count + 1}", ref _dh);
             CurrentTab.MeasurementStartRequested += () => {
                 MeasurementTabs.ToList().ForEach(x => x.StopMeasurement());
             };
@@ -57,7 +58,7 @@ namespace Graphium.ViewModels
         }
         private void CloseMeasurementTab(object item)
         {
-            if(item is MeasurementTabVM tab) {
+            if(item is MeasurementTabControlVM tab) {
                 _dh.StopCapturing();
                 MeasurementTabs.Remove(tab);
                 CurrentTab = null;
@@ -94,6 +95,13 @@ namespace Graphium.ViewModels
             dacw.Owner = Window;
             dacw.ShowDialog();
         }
+        public void OpenPreferencesWindow()
+        {
+            var pw = new PreferencesWindow();
+            pw.Owner = Window;
+            pw.ShowDialog(); // modal
+        }
+
         #endregion
     }
 }

@@ -29,6 +29,12 @@ namespace DataHub
             Modules.Values.ToList().ForEach(m => m.StopCapturing());
             IsCapturing = false;
         }
+        public void ClearModules()
+        {
+            if (IsCapturing)
+                StopCapturing();
+            Modules.Clear();
+        }
         #endregion
     };
 }

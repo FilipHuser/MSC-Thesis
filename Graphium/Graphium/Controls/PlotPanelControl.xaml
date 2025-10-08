@@ -7,15 +7,21 @@
              xmlns:local="clr-namespace:Graphium.Controls"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800"
-             HorizontalAlignment="Stretch">
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
 
     <Border BorderBrush="Black" BorderThickness="1" Height="{Binding Height, Mode=TwoWay}">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
+                <!-- Rotated name -->
                 <ColumnDefinition Width="*"/>
+                <!-- Plot -->
+                <ColumnDefinition Width="50"/>
+                <!-- Tick panel -->
             </Grid.ColumnDefinitions>
 
+            <!-- Rotated Name -->
             <Border Grid.Column="0" Background="#f0f0f0" Padding="2">
                 <TextBlock Text="{Binding Name}" 
                            Foreground="Black" 
@@ -30,14 +36,38 @@
                 </TextBlock>
             </Border>
 
+            <!-- ScottPlot Control -->
+            <ContentControl Grid.Column="1" 
+                            HorizontalAlignment="Stretch" 
+                            VerticalAlignment="Stretch"
+                            Content="{Binding PlotControl}" />
 
-            <ContentControl Grid.Column="1" HorizontalAlignment="Stretch" Content="{Binding PlotControl}" />
+            <Border Grid.Column="2" Background="#e0e0e0" Padding="4">
+                <Grid VerticalAlignment="Stretch">
+                    <!-- Top Max -->
+                    <TextBlock Text="{Binding PlotMax}" 
+                   FontSize="12"
+                   FontWeight="Bold"
+                   Foreground="Black"
+                   VerticalAlignment="Top"
+                   HorizontalAlignment="Center"/>
 
+                    <!-- Bottom Min -->
+                    <TextBlock Text="{Binding PlotMin}" 
+                   FontSize="12"
+                   FontWeight="Bold"
+                   Foreground="Black"
+                   VerticalAlignment="Bottom"
+                   HorizontalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- Resize Thumb -->
             <Thumb Height="2" 
                    VerticalAlignment="Bottom" 
                    HorizontalAlignment="Stretch" 
-                   Cursor="SizeNS" 
-                   Grid.ColumnSpan="2">
+                   Grid.ColumnSpan="3"
+                   Cursor="SizeNS">
                 <i:Interaction.Triggers>
                     <i:EventTrigger EventName="DragDelta">
                         <i:InvokeCommandAction Command="{Binding ResizeCmd}" PassEventArgsToCommand="True"/>

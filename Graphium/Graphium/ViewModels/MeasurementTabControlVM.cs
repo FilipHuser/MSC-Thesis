@@ -16,7 +16,7 @@ using ScottPlot.WPF;
 
 namespace Graphium.ViewModels
 {
-    internal partial class MeasurementTabVM : ViewModelBase
+    internal partial class MeasurementTabControlVM : ViewModelBase
     {
         #region PROPERTIES
         private readonly Hub _dh;
@@ -27,7 +27,7 @@ namespace Graphium.ViewModels
         public string Title { get; set; }
         public UserControl Tab { get; set; }
         public bool IsMeasuring { get; set; } = false;
-        public ObservableCollection<PlotPanelVM> PlotPanelViewModels { get; set; } = [];
+        public ObservableCollection<PlotPanelControlVM> PlotPanelViewModels { get; set; } = [];
         public ObservableCollection<SignalBase> Signals { get => _signals; set { SetProperty(ref _signals, value); OnSignalsUpdate(); } }
         public event Action? MeasurementStartRequested;
         #region RELAY_COMMANDS
@@ -36,7 +36,7 @@ namespace Graphium.ViewModels
         public RelayCommand SaveAsCSVCmd => new RelayCommand(execute => SaveAsCSV());
         #endregion
         #endregion
-        public MeasurementTabVM(Window parent, string title, ref Hub dh) : base(parent)
+        public MeasurementTabControlVM(Window parent, string title, ref Hub dh) : base(parent)
         {
             _dh = dh;
             Title = title;
@@ -135,19 +135,20 @@ namespace Graphium.ViewModels
                 switch (signal)
                 {
                     case Signal si:
-                        var signalVM = new PlotPanelVM(Window, si);
+                        var signalVM = new PlotPanelControlVM(Window, si);
                         PlotPanelViewModels.Add(signalVM);
                         break;
 
                     case SignalComposite sc:
                         foreach (var innerSignal in sc.Signals)
                         {
-                            var innerVM = new PlotPanelVM(Window, innerSignal);
+                            var innerVM = new PlotPanelControlVM(Window, innerSignal);
                             PlotPanelViewModels.Add(innerVM);
                         }
                         break;
                 }
             }
+
             var palette = new ScottPlot.Palettes.Aurora();
             for (int i = 0; i < PlotPanelViewModels.Count; i++)
             {
@@ -160,9 +161,9 @@ namespace Graphium.ViewModels
                 }
                 plotVM.PlotControl.Refresh();
             }
-
             _signalStorage = new SignalStorage(this);
         }
+
         private void SaveAsCSV()
         {
             StopMeasurement();
