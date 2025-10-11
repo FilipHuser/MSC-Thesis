@@ -2,31 +2,33 @@
 using System.Xml.Linq;
 using DataHub.Core;
 using DataHub.Interfaces;
+using Graphium.Interfaces;
 using Graphium.Models;
 
 namespace Graphium.Models
 {
     [JsonDerivedType(typeof(Signal), "Signal")]
     [JsonDerivedType(typeof(SignalComposite), "SignalComposite")]
-    public abstract class SignalBase
+    public abstract class SignalBase : ISignalSource
     {
         #region PROPERTIES
-
+        [JsonIgnore]
+        public string? Name { get; set; }
+        public int? Channel { get; set; }
         public ModuleType Source { get; set; }
-        public abstract string? Name { get; set; }
-        public abstract int Count { get; }
         [JsonIgnore]
         public bool IsPlotted { get; set; }
         [JsonIgnore]
         public bool IsAcquired { get; set; }
-        public abstract List<PlotProperties> PlotProperties { get; }  
         #endregion
         #region METHODS
-        public SignalBase(ModuleType source)
+        public SignalBase(string name, ModuleType source)
         {
+            Name = name;
             Source = source;
         }
         public abstract void Update(Dictionary<int , List<object>> data);
+        public abstract IEnumerable<Signal> GetSignals();
         #endregion
     }
 }

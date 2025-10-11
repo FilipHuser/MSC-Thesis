@@ -68,7 +68,8 @@ namespace DataHub.Core
             var filePath = GetFilePath(category);
             if (!File.Exists(filePath)) { return default; }
             var json = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<T>(json, _options);
+            
+            return string.IsNullOrEmpty(json) ? default : JsonSerializer.Deserialize<T>(json, _options);
         }   
         #endregion
     }

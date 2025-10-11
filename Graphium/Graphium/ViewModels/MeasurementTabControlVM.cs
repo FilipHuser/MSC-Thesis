@@ -27,7 +27,7 @@ namespace Graphium.ViewModels
         public string Title { get; set; }
         public UserControl Tab { get; set; }
         public bool IsMeasuring { get; set; } = false;
-        public ObservableCollection<PlotPanelControlVM> PlotPanelViewModels { get; set; } = [];
+        public WpfPlot PlotControl { get; set; } = new WpfPlot();
         public ObservableCollection<SignalBase> Signals { get => _signals; set { SetProperty(ref _signals, value); OnSignalsUpdate(); } }
         public event Action? MeasurementStartRequested;
         #region RELAY_COMMANDS
@@ -42,8 +42,15 @@ namespace Graphium.ViewModels
             Title = title;
             Tab = new MeasurementTabControl(title);
             Signals.CollectionChanged += (s, e) => { OnSignalsUpdate(); };
+            Init();
         }
         #region METHODS
+        private void Init()
+        {
+            var multiplot = PlotControl.Multiplot;
+            multiplot.Reset();
+            multiplot.RemovePlot(multiplot.GetPlot(0));
+        }
         private async Task MeasurementLoop(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -104,10 +111,6 @@ namespace Graphium.ViewModels
 
                 moduleCounters[sourceModuleType] = currentCounter;
             }
-            foreach (var vm in PlotPanelViewModels)
-            {
-                vm.PlotControl.Refresh();
-            }
         }
         public void StartMeasurement()
         {
@@ -125,45 +128,22 @@ namespace Graphium.ViewModels
         }
         private void OnSignalsUpdate()
         {
-            PlotPanelViewModels.Clear();
+            var multiplot = PlotControl.Multiplot;
+            multiplot.Reset();
+            multiplot.RemovePlot(multiplot.GetPlot(0));
 
-            _signalCounts = Signals.GroupBy(s => s.Source)
-                                   .ToDictionary(g => g.Key, g => g.Sum(s => s.Count)) ?? new Dictionary<ModuleType, int>();
+            var signals = Signals.SelectMany(x => x.GetSignals()).ToList();
 
-            foreach (var signal in Signals.Where(x => x.IsPlotted))
+            foreach (var s in signals)
             {
-                switch (signal)
-                {
-                    case Signal si:
-                        var signalVM = new PlotPanelControlVM(Window, si);
-                        PlotPanelViewModels.Add(signalVM);
-                        break;
-
-                    case SignalComposite sc:
-                        foreach (var innerSignal in sc.Signals)
-                        {
-                            var innerVM = new PlotPanelControlVM(Window, innerSignal);
-                            PlotPanelViewModels.Add(innerVM);
-                        }
-                        break;
-                }
+                var plot = multiplot.AddPlot();
+                plot.Title("ketamin");
             }
 
-            var palette = new ScottPlot.Palettes.Aurora();
-            for (int i = 0; i < PlotPanelViewModels.Count; i++)
-            {
-                var plotVM = PlotPanelViewModels[i];
-                var color = palette.GetColor(i);
-                foreach (var plottable in plotVM.PlotControl.Plot.GetPlottables())
-                {
-                    if (plottable is ScottPlot.Plottables.DataStreamer streamer)
-                        streamer.Color = color;
-                }
-                plotVM.PlotControl.Refresh();
-            }
-            _signalStorage = new SignalStorage(this);
+            multiplot.SharedAxes.ShareX(multiplot.GetPlots());
+            multiplot.CollapseVertically();
+            PlotControl.Refresh();
         }
-
         private void SaveAsCSV()
         {
             StopMeasurement();

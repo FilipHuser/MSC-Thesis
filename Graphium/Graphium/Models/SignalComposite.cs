@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using DataHub.Core;
 using DataHub.Interfaces;
 using ScottPlot;
@@ -9,22 +10,28 @@ namespace Graphium.Models
     internal class SignalComposite : SignalBase
     {
         #region PROPERTIES
-        public override int Count => Signals.Count;
-        public override string? Name { get; set; }
-        public List<Signal> Signals { get; set; } = new List<Signal>();
-        public List<PlotProperties> AllPlotProperties => Signals.Select(x => x.Properties).ToList();
-        [JsonIgnore]
-        public List<Plot> Plots => Signals.Select(x => x.PlotControl.Plot).ToList();
-        [JsonIgnore]
-        public override List<PlotProperties> PlotProperties => AllPlotProperties;
+        private List<Signal> _signals = []; 
+        public List<Signal> Signals 
+        { 
+            get => _signals;
+            set
+            {
+                if (value != null && value.Any(s => s.Source != Source))
+                    throw new InvalidOperationException("All signals must have the same ModuleType as the composite.");
+                _signals = value ?? new List<Signal>();
+            }
+        }
         #endregion
         #region METHODS
-        public SignalComposite(ModuleType source) : base(source) { }
-        [JsonConstructor]
-        public SignalComposite(ModuleType source, List<Signal> signals, string name) : base(source)
+        public SignalComposite(string name , ModuleType source) : base(name, source) { }
+        public SignalComposite(string name, List<Signal> signals) : base(name, GetModuleType(signals))
         {
-            Signals = signals ?? new List<Signal>();
-            Name = name;
+            Signals = signals;
+        }
+        private static ModuleType GetModuleType(List<Signal> signals)
+        {
+            if (signals == null || signals.Count == 0) { throw new ArgumentException("Signals cannot be null or empty"); }
+            return signals[0].Source;
         }
         public void Add(Signal signal) => Signals.Add(signal);
         public void Remove(Signal signal) => Signals?.Remove(signal);
@@ -41,7 +48,7 @@ namespace Graphium.Models
                 }
             }
         }
-        public override string ToString() => Name ?? string.Join(",", AllPlotProperties.Select(x => x.Label));
+        public override IEnumerable<Signal> GetSignals() => Signals;
         #endregion
     }
 }

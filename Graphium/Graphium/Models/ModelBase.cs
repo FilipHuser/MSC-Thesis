@@ -14,8 +14,11 @@ namespace Graphium.Models
         #region METHODS
         protected void SetProperty<T>(ref T prop, T value, [CallerMemberName] string name = null!)
         {
-            if (!EqualityComparer<T>.Default.Equals(prop, value)) { prop = value; }
-            OnPropertyChanged(name);
+            if (!EqualityComparer<T>.Default.Equals(prop, value))
+            {
+                prop = value;
+                OnPropertyChanged(name);
+            }
         }
         protected void OnPropertyChanged(string name)
         {

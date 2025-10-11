@@ -7,9 +7,8 @@ namespace Graphium.Controls
     /// <summary>
     /// Interaction logic for ChannelsConfigControl.xaml
     /// </summary>
-    //SIGNAL CONFIG
-    public partial class SignalConfigControl : UserControl
+    public partial class ChannelsConfigControl : UserControl
     {
-        public SignalConfigControl(Window window) => InitializeComponent();
+        public ChannelsConfigControl(Window window) => InitializeComponent();
     }
 }

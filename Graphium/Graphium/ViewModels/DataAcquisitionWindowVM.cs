@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
+using Graphium.Controls;
 using Graphium.Interfaces;
 using Graphium.Models;
 
@@ -18,13 +19,13 @@ namespace Graphium.ViewModels
         #endregion
         public DataAcquisitionWindowVM(Window window , ObservableCollection<SignalBase> signals) : base(window)
         {
-            var sccVM = new SignalConfigControlVM(window , signals);
+            var sccVM = new ChannelsConfigControlVM(window)
+            {
+                //ConfiguredChannels = signals
+            };
             sccVM.CloseRequested += signals => { SignalConfigCloseRequested?.Invoke(signals); };
 
-            var scccVM = new SignalCompositeConfigControlVM(window);
-
             MenuItems.Add(sccVM);
-            MenuItems.Add(scccVM);
             SelectedItem = MenuItems.FirstOrDefault();
         }
         #region METHODS

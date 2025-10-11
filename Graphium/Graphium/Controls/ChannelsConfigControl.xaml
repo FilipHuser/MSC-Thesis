@@ -1,0 +1,90 @@
+﻿<UserControl x:Class="Graphium.Controls.ChannelsConfigControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800">
+
+    <DockPanel>
+        <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+            <DataGrid ItemsSource="{Binding ConfiguredChannels}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserResizeColumns="True"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="None"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Channel" Width="Auto">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Number}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding DataContext.AvailableChannelNumbers, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                          SelectedItem="{Binding Number, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          Width="50"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="Signal" Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding DataContext.ChannelOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                          SelectedItem="{Binding Signal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          DisplayMemberPath="Name"
+                                          HorizontalAlignment="Stretch"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Actions" Width="Auto">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="x"
+                                        Command="{Binding DataContext.RemoveChannelCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip="Delete this channel"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch"
+                                        Padding="0"
+                                        Margin="0"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <Grid Grid.Row="1" 
+                  Margin="0,5,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" 
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Left">
+                    <Button Content="Save Configuration"
+                            Padding="5"
+                            Margin="0,0,5,0"/>
+                    <Button Content="Load Configuration"
+                            Padding="5"/>
+                </StackPanel>
+                <Button Grid.Column="2"
+                        Content="Setup" 
+                        Padding="5"
+                        Width="80"/>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</UserControl>
