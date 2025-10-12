@@ -1,4 +1,5 @@
 ﻿  using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -22,35 +23,20 @@ namespace Graphium.ViewModels
     {
         #region PROPERTIES
         private ModuleType? _selectedSource;
+        private int _channelCount;
         public string Header => "Channels";
         public UserControl Content { get; }
-        public ObservableCollection<int> AvailableChannelNumbers { get; } = new ObservableCollection<int>();
-
-        public ObservableCollection<ChannelSlot> ConfiguredChannels { get; set; } = new ObservableCollection<ChannelSlot>();
-        public ObservableCollection<SignalBase> ChannelOptions { get; set; } = new ObservableCollection<SignalBase>();
+        public ObservableCollection<int> Channels { get; set; } = [];
+        public ObservableCollection<ChannelSlot> ConfiguredChannels { get; } = [];
+        public ObservableCollection<SignalBase> ChannelOptions { get; set; } = [];
         public delegate void CloseEventHandler(List<SignalBase> signals);
         public event CloseEventHandler? CloseRequested;
         #endregion
         #region RELAY_COMMANDS
-        public RelayCommand RemoveChannelCmd => new RelayCommand(execute =>
-        {
-            if (execute is ChannelSlot slot)
-                RemoveChannel(slot);
-        },
-        canExecute =>
-        {
-            if (canExecute is not ChannelSlot slot)
-                return false;
-
-            if (ConfiguredChannels.Count <= 1)
-                return false;
-
-            if (slot == ConfiguredChannels.Last() && slot.Signal == null)
-                return false;
-
-            return true;
-        });
-
+        public RelayCommand AddChannelCmd => new RelayCommand(execute => Add());
+        public RelayCommand RemoveChannelCmd => new RelayCommand(param => Remove(param));
+        public RelayCommand SetupCmd => new RelayCommand(execute => Setup(), canExecute => ConfiguredChannels.Any(x => x.Signal != null));
+        public RelayCommand SignalChangedCmd => new RelayCommand(param => OnSignalChanged(param));
         #endregion
         public ChannelsConfigControlVM(Window window) : base(window)  
         {
@@ -59,8 +45,6 @@ namespace Graphium.ViewModels
                 DataContext = this
             };
 
-            AddChannel();
-
             //TBD => Load available channels from xml
             var ecg = new Signal("ECG", ModuleType.BIOPAC);
             var rsp = new Signal("RESP", ModuleType.BIOPAC);
@@ -68,51 +52,86 @@ namespace Graphium.ViewModels
             new List<SignalBase> { ecg, rsp, rspr }.ForEach(s => ChannelOptions.Add(s));
         }
         #region METHODS
-        private void AddChannel()
+        private void Add()
         {
-            var slot = new ChannelSlot() { Number = ConfiguredChannels.Count + 1, Signal = null };
+            var usedNumbers = ConfiguredChannels
+                .Select(c => c.Number)
+                .ToHashSet();
 
-            slot.PropertyChanged += (s, e) =>
+            int nextNumber = 1;
+            while (usedNumbers.Contains(nextNumber))
+                nextNumber++;
+
+            var slot = new ChannelSlot
             {
-                switch(e.PropertyName)
-                {
-                    case nameof(ChannelSlot.Number):
-                        var duplicate = ConfiguredChannels.Any(c => c != slot && c.Number == slot.Number);
-                        if (duplicate)
-                        {
-                            MessageBox.Show("This channel number is already used. Please select another one.", "Duplicate Channel");
-                            slot.Number = ConfiguredChannels.IndexOf(slot) + 1;
-                        }
-                        break;
-                        
-                    case nameof(ChannelSlot.Signal):
-                        if (slot.Signal is SignalComposite sc)
-                        {
-                            //TBD => DIALOG HERE TO SET THE CHANNELS OF THE COMPOSITE
-                        }
-                        if (slot == ConfiguredChannels.Last() && slot.Signal != null)
-                        {
-                            AddChannel();
-                        }
-                        break;
-                }
+                Number = nextNumber
             };
 
             ConfiguredChannels.Add(slot);
+
+            RefreshAvailableNumbers();
         }
-        private void RemoveChannel(ChannelSlot slot)
+        private void Remove(object? param)
         {
-            ConfiguredChannels.Remove(slot);
-            for (int i = 0; i < ConfiguredChannels.Count; i++)
+            if (param is not ChannelSlot cs) return;
+
+            int? removedNumber = cs.Number;
+
+            ConfiguredChannels.Remove(cs);
+
+            if (removedNumber.HasValue)
             {
-                ConfiguredChannels[i].Number = i + 1;
+                foreach (var channel in ConfiguredChannels)
+                {
+                    if (channel.Number > removedNumber.Value)
+                        channel.Number--;
+                }
             }
-            CommandManager.InvalidateRequerySuggested();
+
+            RefreshAvailableNumbers();
         }
-        private void Close()
+        private void RefreshAvailableNumbers()
         {
-            //CloseRequested?.Invoke(ConfiguredChannels.Where(x => x.IsPlotted || x.IsAcquired).ToList());
+            for (int i = 1; i <= ConfiguredChannels.Count; i++)
+            {
+                if (!Channels.Contains(i))
+                    Channels.Add(i);
+            }
+
+            for (int i = Channels.Count; i > ConfiguredChannels.Count; i--)
+                Channels.Remove(i);
+        }
+        private void Setup()
+        {
+            // Check for duplicate numbers
+            var duplicates = ConfiguredChannels
+                .GroupBy(c => c.Number)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            if (duplicates.Any())
+            {
+                string duplicateList = string.Join(", ", duplicates);
+                MessageBox.Show($"Duplicate channel numbers detected: {duplicateList}. Please fix before proceeding.",
+                                "Duplicate Channels",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Warning);
+                return;
+            }
+
+            CloseRequested?.Invoke(ConfiguredChannels.Where(c => c.Signal != null).Select(c => c.Signal!).ToList());
             Window.Close();
+        }
+        private void OnSignalChanged(object? param)
+        {
+            if (param is not ChannelSlot channelSlot || channelSlot.Signal == null)
+                return;
+
+            if (channelSlot.Signal is SignalComposite composite)
+            {
+                //TBD => COMPOSITE SIGNAL CHANNEL SETUP
+            }
         }
         #endregion
     }

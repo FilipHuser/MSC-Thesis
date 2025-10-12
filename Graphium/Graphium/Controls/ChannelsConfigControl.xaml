@@ -3,47 +3,76 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
-
     <DockPanel>
         <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-            <DataGrid ItemsSource="{Binding ConfiguredChannels}"
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0"
+                        Command="{Binding AddChannelCmd}"
+                        Content="Add Channel"
+                        Padding="5"
+                        HorizontalAlignment="Right"/>
+
+                <Label Grid.Column="2"
+                        Content="{Binding Path=ConfiguredChannels.Count}" 
+                        ContentStringFormat="Channels: {0}" />
+            </Grid>
+
+            <DataGrid Grid.Row="1"
+                      Margin="0,10,0,0"
+                      ItemsSource="{Binding ConfiguredChannels}"
                       AutoGenerateColumns="False"
                       CanUserAddRows="False"
-                      CanUserResizeColumns="True"
+                      CanUserResizeColumns="False"
                       HeadersVisibility="Column"
                       GridLinesVisibility="None"
                       HorizontalAlignment="Stretch"
-                      VerticalAlignment="Stretch">
+                      VerticalAlignment="Stretch"
+                      SelectionMode="Single"
+                      SelectionUnit="Cell">
+                <DataGrid.Resources>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black"/>
+                </DataGrid.Resources>
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="Channel" Width="Auto">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Number}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-
-                        <DataGridTemplateColumn.CellEditingTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding DataContext.AvailableChannelNumbers, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                <ComboBox ItemsSource="{Binding DataContext.Channels, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                           SelectedItem="{Binding Number, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           Width="50"/>
                             </DataTemplate>
-                        </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-
                     <DataGridTemplateColumn Header="Signal" Width="*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <ComboBox ItemsSource="{Binding DataContext.ChannelOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                           SelectedItem="{Binding Signal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           DisplayMemberPath="Name"
-                                          HorizontalAlignment="Stretch"/>
+                                          HorizontalAlignment="Stretch">
+                                    <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="SelectionChanged">
+                                            <i:InvokeCommandAction Command="{Binding DataContext.SignalChangedCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                               CommandParameter="{Binding}"/>
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>
+                                </ComboBox>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -64,8 +93,8 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-            <Grid Grid.Row="1" 
-                  Margin="0,5,0,0">
+            <Grid Grid.Row="2" 
+                  Margin="0,10,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -76,12 +105,15 @@
                             HorizontalAlignment="Left">
                     <Button Content="Save Configuration"
                             Padding="5"
-                            Margin="0,0,5,0"/>
+                            Margin="0,0,5,0"
+                            IsEnabled="False"/>
                     <Button Content="Load Configuration"
-                            Padding="5"/>
+                            Padding="5"
+                            IsEnabled="False"/>
                 </StackPanel>
                 <Button Grid.Column="2"
-                        Content="Setup" 
+                        Command="{Binding SetupCmd}"
+                        Content="Setup"
                         Padding="5"
                         Width="80"/>
             </Grid>
