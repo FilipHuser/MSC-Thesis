@@ -15,6 +15,10 @@ namespace Graphium.Models
     public class Signal : SignalBase
     {
         #region PROPERTIES
+        [JsonIgnore]
+        public List<double> X { get; set; } = new();
+        [JsonIgnore]
+        public List<double> Y { get; set; } = new();
         public PlotProperties Properties { get; set; }
         #endregion
         #region METHODS

@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Sockets;
+using System.Security;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -12,6 +13,7 @@ using Graphium.Core;
 using Graphium.Models;
 using Microsoft.Win32;
 using ScottPlot;
+using ScottPlot.Plottables;
 using ScottPlot.WPF;
 
 namespace Graphium.ViewModels
@@ -133,15 +135,33 @@ namespace Graphium.ViewModels
             multiplot.RemovePlot(multiplot.GetPlot(0));
 
             var signals = Signals.SelectMany(x => x.GetSignals()).ToList();
-
+          
             foreach (var s in signals)
             {
                 var plot = multiplot.AddPlot();
-                plot.Title("ketamin");
+                plot.Axes.Left.Label.Text = s.Name;
+                var scatter = plot.Add.Scatter(s.X, s.Y);
+                scatter.Axes.YAxis = plot.Axes.Right;
+            }
+
+            multiplot.CollapseVertically();
+
+            var plots = multiplot.GetPlots();
+            var bottomPlot = plots.Last();
+
+            foreach (var plot in plots)
+            {
+                plot.Axes.Left.LockSize(32);
+                plot.Axes.Right.LockSize(64);
+
+                plot.Grid.XAxis = bottomPlot.Axes.Bottom;
+                plot.Grid.YAxis = plot.Axes.Right;
             }
 
             multiplot.SharedAxes.ShareX(multiplot.GetPlots());
-            multiplot.CollapseVertically();
+
+            multiplot.Layout = new ScottPlot.MultiplotLayouts.DraggableRows();
+
             PlotControl.Refresh();
         }
         private void SaveAsCSV()

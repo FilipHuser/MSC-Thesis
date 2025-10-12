@@ -13,7 +13,7 @@ namespace Graphium.Models
     {
         #region PROPERTIES
         [JsonIgnore]
-        public string? Name { get; set; }
+        public string Name { get; set; }
         public ModuleType Source { get; set; }
         [JsonIgnore]
         public bool IsPlotted { get; set; }
