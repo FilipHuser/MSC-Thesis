@@ -36,9 +36,7 @@ namespace Graphium.Core
                 _ => element.GetRawText(),
             };
         }
-        public static Dictionary<ModuleType, Dictionary<int, List<object>>?>? ProcessAll(
-            IEnumerable<IModule> modules,
-            Dictionary<ModuleType, int> signalCounts)
+        public static Dictionary<ModuleType, Dictionary<int, List<object>>?>? ProcessAll(IEnumerable<IModule> modules, Dictionary<ModuleType, int> signalCounts)
         {
             var result = new Dictionary<ModuleType, Dictionary<int, List<object>>?>();
 

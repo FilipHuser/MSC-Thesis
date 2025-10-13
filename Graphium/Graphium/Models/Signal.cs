@@ -32,6 +32,21 @@ namespace Graphium.Models
         }
         public override void Update(Dictionary<int, List<object>> data)
         {
+            // Assuming you want to **accumulate** data rather than overwrite
+            if (data.TryGetValue(0, out var list))
+            {
+                foreach (var item in list)
+                {
+                    double value;
+                    if (item is double d)
+                        value = d;
+                    else if (!double.TryParse(item.ToString(), out value))
+                        continue; // skip invalid entries
+
+                    X.Add(value);                     // measurement value on X-axis
+                    Y.Add(DateTime.Now.Subtract(DateTime.Today).TotalSeconds); // time in seconds today
+                }
+            }
         }
         public override IEnumerable<Signal> GetSignals()
         {

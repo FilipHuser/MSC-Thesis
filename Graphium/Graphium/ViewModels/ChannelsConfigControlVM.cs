@@ -125,8 +125,7 @@ namespace Graphium.ViewModels
         }
         private void OnSignalChanged(object? param)
         {
-            if (param is not ChannelSlot channelSlot || channelSlot.Signal == null)
-                return;
+            if (param is not ChannelSlot channelSlot || channelSlot.Signal == null) { return; }
 
             if (channelSlot.Signal is SignalComposite composite)
             {

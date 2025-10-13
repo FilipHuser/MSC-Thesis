@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Security;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Threading;
 using DataHub;
 using DataHub.Core;
@@ -12,7 +13,9 @@ using Graphium.Controls;
 using Graphium.Core;
 using Graphium.Models;
 using Microsoft.Win32;
+using NLog.Layouts;
 using ScottPlot;
+using ScottPlot.MultiplotLayouts;
 using ScottPlot.Plottables;
 using ScottPlot.WPF;
 
@@ -26,26 +29,58 @@ namespace Graphium.ViewModels
         private CancellationTokenSource? _cts;
         private ObservableCollection<SignalBase> _signals = [];
         private Dictionary<ModuleType, int> _signalCounts = new Dictionary<ModuleType, int>();
+        private DraggableRows? _layout;
+        private int? _dividerBeingDragged;
+        private bool _isMeasuring = false;
+        private readonly object _measurementLock = new object();
+
         public string Title { get; set; }
         public UserControl Tab { get; set; }
-        public bool IsMeasuring { get; set; } = false;
+
+        public bool IsMeasuring
+        {
+            get => _isMeasuring;
+            set => SetProperty(ref _isMeasuring, value);
+        }
+
         public WpfPlot PlotControl { get; set; } = new WpfPlot();
-        public ObservableCollection<SignalBase> Signals { get => _signals; set { SetProperty(ref _signals, value); OnSignalsUpdate(); } }
+
+        public ObservableCollection<SignalBase> Signals
+        {
+            get => _signals;
+            set
+            {
+                SetProperty(ref _signals, value);
+                OnSignalsUpdate();
+            }
+        }
+
         public event Action? MeasurementStartRequested;
+
         #region RELAY_COMMANDS
-        public RelayCommand StartMeasurementCmd => new RelayCommand(execute => StartMeasurement(), canExecute => Signals.Count > 0 && !IsMeasuring);
-        public RelayCommand StopMeasurementCmd => new RelayCommand(execute => StopMeasurement(), canExecute => IsMeasuring);
-        public RelayCommand SaveAsCSVCmd => new RelayCommand(execute => SaveAsCSV());
+        public RelayCommand StartMeasurementCmd => new RelayCommand(
+            execute => StartMeasurement(),
+            canExecute => Signals.Count > 0 && !IsMeasuring);
+
+        public RelayCommand StopMeasurementCmd => new RelayCommand(
+            execute => StopMeasurement(),
+            canExecute => IsMeasuring);
+
+        public RelayCommand SaveAsCSVCmd => new RelayCommand(
+            execute => SaveAsCSV());
         #endregion
         #endregion
+
         public MeasurementTabControlVM(Window parent, string title, ref Hub dh) : base(parent)
         {
             _dh = dh;
             Title = title;
             Tab = new MeasurementTabControl(title);
+            _signalStorage = new SignalStorage(this);
             Signals.CollectionChanged += (s, e) => { OnSignalsUpdate(); };
             Init();
         }
+
         #region METHODS
         private void Init()
         {
@@ -53,89 +88,140 @@ namespace Graphium.ViewModels
             multiplot.Reset();
             multiplot.RemovePlot(multiplot.GetPlot(0));
         }
+
         private async Task MeasurementLoop(CancellationToken token)
         {
-            while (!token.IsCancellationRequested)
+            try
             {
-                var dataByModule = DataProcessor.ProcessAll(_dh.Modules.Values, _signalCounts);
-
-                if (dataByModule != null && dataByModule.Values.Any(v => v != null))
+                while (!token.IsCancellationRequested)
                 {
-                    var dispatcher = Application.Current?.Dispatcher;
-                    if (dispatcher != null)
-                    {
-                        dispatcher.Invoke(() =>
-                        {
-                            UpdateSignals(dataByModule);
-                        });
-                    }
-                }
+                    Dictionary<ModuleType, Dictionary<int, List<object>>?> dataByModule;
 
-                await Task.Delay(16, token);
+                    lock (_measurementLock)
+                    {
+                        dataByModule = DataProcessor.ProcessAll(_dh.Modules.Values, _signalCounts);
+                    }
+
+                    if (dataByModule != null && dataByModule.Values.Any(v => v != null))
+                    {
+                        var dispatcher = Application.Current?.Dispatcher;
+                        if (dispatcher != null)
+                        {
+                            await dispatcher.InvokeAsync(() =>
+                            {
+                                UpdateSignals(dataByModule);
+                            });
+                        }
+                    }
+
+                    await Task.Delay(16, token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancellation is requested
+            }
+            catch (Exception ex)
+            {
+                Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    MessageBox.Show($"Measurement error: {ex.Message}",
+                                    "Error",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Error);
+                    StopMeasurement();
+                });
             }
         }
+
         private void UpdateSignals(Dictionary<ModuleType, Dictionary<int, List<object>>?> dataByModule)
         {
-            var moduleCounters = new Dictionary<ModuleType, int>();
-
-            foreach (var signal in Signals)
+            try
             {
-                var sourceModuleType = signal.Source;
+                var moduleCounters = new Dictionary<ModuleType, int>();
 
-                if (!dataByModule.ContainsKey(sourceModuleType)) { continue; }
-
-                var sourceData = dataByModule[sourceModuleType];
-                if (sourceData == null) continue;
-
-                int currentCounter = moduleCounters.TryGetValue(sourceModuleType, out int c) ? c : 0;
-
-                switch (signal)
+                foreach (var signal in Signals)
                 {
-                    case Signal si:
-                        if (!sourceData.TryGetValue(currentCounter, out var list)) break;
-                        _signalStorage?.Add(si, list.First());
-                        si.Update(new() { { 0, list } });
-                        currentCounter++;
-                        break;
+                    var sourceModuleType = signal.Source;
 
-                    case SignalComposite sc:
-                        var slice = new Dictionary<int, List<object>>();
-                        for (int i = 0; i < sc.Signals.Count; i++)
-                        {
-                            if (sourceData.TryGetValue(currentCounter + i, out var item))
-                                slice[i] = item;
-                        }
-                        _signalStorage?.Add(sc, slice);
-                        sc.Update(slice);
-                        currentCounter += sc.Signals.Count;
-                        break;
+                    if (!dataByModule.ContainsKey(sourceModuleType)) { continue; }
+
+                    var sourceData = dataByModule[sourceModuleType];
+                    if (sourceData == null) continue;
+
+                    int currentCounter = moduleCounters.TryGetValue(sourceModuleType, out int c) ? c : 0;
+
+                    switch (signal)
+                    {
+                        case Models.Signal si:
+                            if (!sourceData.TryGetValue(currentCounter, out var list)) break;
+                            _signalStorage?.Add(si, list.First());
+                            si.Update(new() { { 0, list } });
+                            currentCounter++;
+                            break;
+
+                        case SignalComposite sc:
+                            var slice = new Dictionary<int, List<object>>();
+                            for (int i = 0; i < sc.Signals.Count; i++)
+                            {
+                                if (sourceData.TryGetValue(currentCounter + i, out var item))
+                                    slice[i] = item;
+                            }
+                            _signalStorage?.Add(sc, slice);
+                            sc.Update(slice);
+                            currentCounter += sc.Signals.Count;
+                            break;
+                    }
+
+                    moduleCounters[sourceModuleType] = currentCounter;
                 }
-
-                moduleCounters[sourceModuleType] = currentCounter;
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't crash the measurement loop
+                System.Diagnostics.Debug.WriteLine($"Error updating signals: {ex.Message}");
             }
         }
+
         public void StartMeasurement()
         {
-            MeasurementStartRequested?.Invoke();
-            IsMeasuring = true;
-            _dh.StartCapturing();
-            _cts = new CancellationTokenSource();
-            Task.Run(() => MeasurementLoop(_cts.Token));
+            lock (_measurementLock)
+            {
+                if (IsMeasuring) return;
+
+                MeasurementStartRequested?.Invoke();
+                IsMeasuring = true;
+                _dh.StartCapturing();
+                _cts = new CancellationTokenSource();
+                Task.Run(() => MeasurementLoop(_cts.Token));
+            }
         }
+
         public void StopMeasurement()
         {
-            IsMeasuring = false;
-            _dh.StopCapturing();
-            _cts?.Cancel();
+            lock (_measurementLock)
+            {
+                if (!IsMeasuring) return;
+
+                IsMeasuring = false;
+                _dh.StopCapturing();
+                _cts?.Cancel();
+                _cts?.Dispose();
+                _cts = null;
+            }
         }
+
         private void OnSignalsUpdate()
         {
+            // Unsubscribe old event handlers to prevent memory leaks
+            UnsubscribePlotEvents();
+
+            PlotControl.Reset();
             var multiplot = PlotControl.Multiplot;
-            multiplot.Reset();
             multiplot.RemovePlot(multiplot.GetPlot(0));
 
             var signals = Signals.SelectMany(x => x.GetSignals()).ToList();
-          
+
             foreach (var s in signals)
             {
                 var plot = multiplot.AddPlot();
@@ -160,13 +246,73 @@ namespace Graphium.ViewModels
 
             multiplot.SharedAxes.ShareX(multiplot.GetPlots());
 
-            multiplot.Layout = new ScottPlot.MultiplotLayouts.DraggableRows();
+            _layout = new DraggableRows();
+            multiplot.Layout = _layout;
+            _dividerBeingDragged = null;
+
+            // Subscribe new event handlers
+            SubscribePlotEvents();
 
             PlotControl.Refresh();
         }
+
+        private void SubscribePlotEvents()
+        {
+            PlotControl.MouseDown += OnPlotMouseDown;
+            PlotControl.MouseUp += OnPlotMouseUp;
+            PlotControl.MouseMove += OnPlotMouseMove;
+        }
+
+        private void UnsubscribePlotEvents()
+        {
+            PlotControl.MouseDown -= OnPlotMouseDown;
+            PlotControl.MouseUp -= OnPlotMouseUp;
+            PlotControl.MouseMove -= OnPlotMouseMove;
+        }
+
+        private void OnPlotMouseDown(object s, MouseButtonEventArgs e)
+        {
+            if (_layout == null) return;
+
+            double mouseY = e.GetPosition(PlotControl).Y;
+            _dividerBeingDragged = _layout.GetDivider((float)mouseY);
+            PlotControl.UserInputProcessor.IsEnabled = _dividerBeingDragged is null;
+        }
+
+        private void OnPlotMouseUp(object s, MouseButtonEventArgs e)
+        {
+            if (_dividerBeingDragged is not null)
+            {
+                _dividerBeingDragged = null;
+                PlotControl.UserInputProcessor.IsEnabled = true;
+            }
+        }
+
+        private void OnPlotMouseMove(object s, MouseEventArgs e)
+        {
+            if (_layout == null) return;
+
+            if (_dividerBeingDragged is not null)
+            {
+                double mouseY = e.GetPosition(PlotControl).Y;
+                _layout.SetDivider(_dividerBeingDragged.Value, (float)mouseY);
+                PlotControl.Refresh();
+            }
+
+            Mouse.OverrideCursor = _layout.GetDivider((float)e.GetPosition(PlotControl).Y) != null
+                ? Cursors.SizeNS
+                : Cursors.Arrow;
+        }
+
         private void SaveAsCSV()
         {
-            StopMeasurement();
+            bool wasRunning = IsMeasuring;
+
+            if (wasRunning)
+            {
+                StopMeasurement();
+            }
+
             try
             {
                 string sourceFile = Path.Combine(
@@ -196,6 +342,10 @@ namespace Graphium.ViewModels
                 if (dialog.ShowDialog() == true)
                 {
                     File.Copy(sourceFile, dialog.FileName, overwrite: true);
+                    MessageBox.Show("CSV file saved successfully.",
+                                    "Success",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
@@ -205,7 +355,21 @@ namespace Graphium.ViewModels
                                 MessageBoxButton.OK,
                                 MessageBoxImage.Error);
             }
-            StartMeasurement();
+            finally
+            {
+                // Optionally restart measurement if it was running
+                if (wasRunning)
+                {
+                    var result = MessageBox.Show("Resume measurement?",
+                                                  "Continue",
+                                                  MessageBoxButton.YesNo,
+                                                  MessageBoxImage.Question);
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        StartMeasurement();
+                    }
+                }
+            }
         }
         #endregion
     }

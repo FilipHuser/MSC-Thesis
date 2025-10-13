@@ -1,2 +1,5 @@
-load / save DA setups => +model
-dialog window for setting channels order inside compound signal
+- load / save DA setups => +model
+- dialog window for setting channels order inside compound signal
+
+- create user control for Multiplot => move ploting logic outside meassurementsTab
+- fix data updating (ProcessAll method => _signalCounts)

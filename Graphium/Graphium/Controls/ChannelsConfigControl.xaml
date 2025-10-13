@@ -53,9 +53,9 @@
                     <DataGridTemplateColumn Header="Channel" Width="Auto">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <ComboBox ItemsSource="{Binding DataContext.Channels, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                          SelectedItem="{Binding Number, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          Width="50"/>
+                                <TextBlock Text="{Binding Number}" 
+                                           VerticalAlignment="Center" 
+                                           HorizontalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
