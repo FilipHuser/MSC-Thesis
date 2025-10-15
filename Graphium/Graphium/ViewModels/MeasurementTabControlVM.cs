@@ -87,6 +87,7 @@ namespace Graphium.ViewModels
             var multiplot = PlotControl.Multiplot;
             multiplot.Reset();
             multiplot.RemovePlot(multiplot.GetPlot(0));
+            PlotControl.Plot.Axes.AutoScaleY();
         }
 
         private async Task MeasurementLoop(CancellationToken token)
@@ -167,13 +168,14 @@ namespace Graphium.ViewModels
                                 if (sourceData.TryGetValue(currentCounter + i, out var item))
                                     slice[i] = item;
                             }
-                            _signalStorage?.Add(sc, slice);
+                            //_signalStorage?.Add(sc, slice);
                             sc.Update(slice);
                             currentCounter += sc.Signals.Count;
                             break;
                     }
 
                     moduleCounters[sourceModuleType] = currentCounter;
+                    PlotControl.Refresh();
                 }
             }
             catch (Exception ex)
@@ -213,6 +215,9 @@ namespace Graphium.ViewModels
 
         private void OnSignalsUpdate()
         {
+            _signalCounts = Signals.GroupBy(x => x.Source)
+                                   .ToDictionary(g => g.Key, g => g.Sum(x => x.GetSignals().Count()));
+
             // Unsubscribe old event handlers to prevent memory leaks
             UnsubscribePlotEvents();
 
