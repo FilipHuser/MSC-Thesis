@@ -10,24 +10,19 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Graphium.Interfaces;
 
-namespace Graphium.ViewModels
+namespace Graphium.Controls
 {
     /// <summary>
-    /// Interaction logic for PreferencesWindow.xaml
+    /// Interaction logic for DataPlotterControl.xaml
     /// </summary>
-    public partial class PreferencesWindow : Window, IViewModelOwner
+    public partial class DataPlotterControl : UserControl
     {
-        private readonly PreferencesWindowVM _vm;
-        public PreferencesWindow()
+        public DataPlotterControl()
         {
             InitializeComponent();
-            _vm = new PreferencesWindowVM(this);
-            DataContext = _vm;
         }
-
-        public ViewModelBase GetViewModel() => _vm;
     }
 }

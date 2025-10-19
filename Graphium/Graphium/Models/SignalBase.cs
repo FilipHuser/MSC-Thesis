@@ -28,6 +28,12 @@ namespace Graphium.Models
         }
         public abstract void Update(Dictionary<int , List<object>> data);
         public abstract IEnumerable<Signal> GetSignals();
+        public override bool Equals(object? obj)
+        {
+            if (obj is not SignalBase other) return false;
+            return Name == other.Name && Source == other.Source;
+        }
+        public override int GetHashCode() => HashCode.Combine(Name, Source);
         #endregion
     }
 }

@@ -10,16 +10,17 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace Graphium.Views
+namespace Graphium.Controls
 {
     /// <summary>
-    /// Interaction logic for DataAcquisitionWindow.xaml
+    /// Interaction logic for MeasurementControl.xaml
     /// </summary>
-    public partial class DataAcquisitionWindow : Window
+    public partial class MeasurementControl : UserControl
     {
-        public DataAcquisitionWindow()
+        public MeasurementControl()
         {
             InitializeComponent();
         }

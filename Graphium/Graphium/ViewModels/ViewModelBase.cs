@@ -7,11 +7,9 @@ namespace Graphium.ViewModels
 {
     public class ViewModelBase : ModelBase
     {
-        public Window Window { get; set; }
-        public ViewModelBase(Window window)
-        {
-            Window = window;
-        }
+        #region PROPERTIES
+        public delegate TViewModel Create<TViewModel>() where TViewModel : ViewModelBase;
+        #endregion
         #region METHODS
         #endregion
     }

@@ -1,18 +1,18 @@
-﻿<UserControl x:Class="Graphium.Controls.ChannelsConfigControl"
+﻿<UserControl x:Class="Graphium.Controls.ChannelConfigControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-             mc:Ignorable="d"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Graphium.Controls"
+             mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <DockPanel>
         <Grid Grid.Column="1">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
@@ -22,7 +22,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Button Grid.Column="0"
-                        Command="{Binding AddChannelCmd}"
+                        Command="{Binding AddChannelSlotCmd}"
                         Content="Add Channel"
                         Padding="5"
                         HorizontalAlignment="Right"/>
@@ -66,12 +66,6 @@
                                           SelectedItem="{Binding Signal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           DisplayMemberPath="Name"
                                           HorizontalAlignment="Stretch">
-                                    <i:Interaction.Triggers>
-                                        <i:EventTrigger EventName="SelectionChanged">
-                                            <i:InvokeCommandAction Command="{Binding DataContext.SignalChangedCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                               CommandParameter="{Binding}"/>
-                                        </i:EventTrigger>
-                                    </i:Interaction.Triggers>
                                 </ComboBox>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
@@ -80,7 +74,7 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="x"
-                                        Command="{Binding DataContext.RemoveChannelCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        Command="{Binding DataContext.RemoveChannelSlotCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
                                         ToolTip="Delete this channel"
                                         HorizontalAlignment="Stretch"

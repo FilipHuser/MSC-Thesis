@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Graphium"
-        xmlns:controls="clr-namespace:Graphium.Controls"
+        xmlns:c="clr-namespace:Graphium.Controls"
         mc:Ignorable="d"
         Title="Graphium" Height="800" Width="1280"
         Icon="/Graphium;component/Assets/favicon.ico"
@@ -14,12 +14,11 @@
         <DockPanel>
             <Menu DockPanel.Dock="Top">
                 <MenuItem Header="_File">
-                    <MenuItem Header="_New" Command="{Binding NewMeasurementTabCmd}"/>
-                    <MenuItem Header="_Preferences" Command="{Binding PreferencesCmd}"/>
+                    <MenuItem Header="_New" Command="{Binding NewTabCmd}"/>
+                    <MenuItem Header="_Preferences"/>
                 </MenuItem>
                 <MenuItem Header="_Data Acquisition">
-                    <MenuItem Header="_Setup..." 
-                              Command="{Binding OpenDataAcquisitionConfigWindowCmd}"/>
+                    <MenuItem Header="_Setup..." Command="{Binding DataAcquisitionSetupCmd}"/>
                 </MenuItem>
                 <MenuItem Header="_Window">
                     <MenuItem Header="_Select Next Tab"/>
@@ -28,16 +27,16 @@
             </Menu>
 
             <TabControl Margin="10"
-                        ItemsSource="{Binding MeasurementTabs}"
+                        ItemsSource="{Binding Tabs}"
                         SelectedItem="{Binding CurrentTab}">
 
                 <TabControl.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
 
-                            <TextBlock Text="{Binding Title}" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding Name}" Margin="0,0,5,0"/>
                             <Button Content="×" Width="16" Height="16"
-                                    Command="{Binding DataContext.CloseMeasurementTabCmd, RelativeSource={RelativeSource AncestorType=TabControl}}"
+                                    Command="{Binding DataContext.CloseTabCmd, RelativeSource={RelativeSource AncestorType=TabControl}}"
                                     CommandParameter="{Binding}"
                                     Padding="0"
                                     Margin="5,0,0,0"
@@ -53,7 +52,7 @@
 
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <ContentControl Content="{Binding Tab}"/>
+                        <c:MeasurementControl DataContext="{Binding}"/>
                     </DataTemplate>
                 </TabControl.ContentTemplate>
 

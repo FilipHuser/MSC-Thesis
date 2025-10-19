@@ -9,12 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\favicon.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Extended.Wpf.Toolkit" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
     <PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
   </ItemGroup>
 
@@ -22,12 +17,7 @@
     <ProjectReference Include="..\DataHub\DataHub\DataHub.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Resource Include="Assets\favicon.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Converters\" />
-  </ItemGroup>
-
+	<ItemGroup>
+		<Resource Include="Assets\favicon.ico" />
+	</ItemGroup>
 </Project>

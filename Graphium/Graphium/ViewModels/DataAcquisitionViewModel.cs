@@ -1,0 +1,28 @@
+﻿using System.Collections.ObjectModel;
+using Graphium.Interfaces;
+
+namespace Graphium.ViewModels
+{
+    internal class DataAcquisitionViewModel : ViewModelBase
+    {
+        #region PROPERTIES
+        private readonly ISignalService _signalService;
+        private readonly IViewModelFactory _viewModelFactory;
+        private ViewModelBase? _currentMenuItem;
+        public ViewModelBase? CurrentMenuItem { get => _currentMenuItem; set => SetProperty(ref _currentMenuItem, value); }
+        public ObservableCollection<ViewModelBase> MenuItems { get; set; }
+        #endregion
+        #region METHODS
+        public DataAcquisitionViewModel(ISignalService signalService , IViewModelFactory viewModelFactory)
+        {
+            _signalService = signalService;
+            _viewModelFactory = viewModelFactory;
+            MenuItems = new ObservableCollection<ViewModelBase>()
+            {
+                _viewModelFactory.Create<ChannelsConfigViewModel>(),
+            };
+            _currentMenuItem = MenuItems.First();
+        }
+        #endregion
+    }
+}
