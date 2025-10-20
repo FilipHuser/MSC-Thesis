@@ -4,6 +4,7 @@ using Graphium.Core;
 using Graphium.Controls;
 using Graphium.Services;
 using Graphium.Views;
+using HarfBuzzSharp;
 
 
 namespace Graphium.ViewModels
@@ -17,16 +18,27 @@ namespace Graphium.ViewModels
         #endregion
         #region PROPERTIES
         private MeasurementViewModel? _currentTab;
-        public MeasurementViewModel? CurrentTab 
-        { 
+        public MeasurementViewModel? CurrentTab
+        {
             get => _currentTab;
             set
             {
+                if (_currentTab == value) return;
+
+                _signalService.SignalsChanged -= OnSignalsChanged;
+
                 SetProperty(ref _currentTab, value);
-                _signalService.SetCurrentSignals(_currentTab!.Signals);
-            } 
+
+                if (_currentTab != null)
+                {
+                    _signalService.SetCurrentSignals(_currentTab.Signals);
+                    _signalService.SignalsChanged += OnSignalsChanged;
+                }
+            }
         }
+
         public ObservableCollection<MeasurementViewModel> Tabs { get; set; } = [];
+        public event EventHandler? CurrentTabChanged; 
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand NewTabCmd => new RelayCommand(execute => NewTab());
@@ -47,8 +59,7 @@ namespace Graphium.ViewModels
             int newId = maxId + 1;
             var tab = _viewModelFactory.Create<MeasurementViewModel>();
             tab.TabId = newId;
-            tab.Name = string.Format("Untitled_{0}.gra", tab.TabId);
-
+            tab.Name = string.Format("Untitled{0}.gra", tab.TabId);
             Tabs.Add(tab);
             CurrentTab = tab;
         }
@@ -61,6 +72,10 @@ namespace Graphium.ViewModels
         private void DataAcquisitionSetup()
         {
             _viewManager.Show<DataAcquisitionViewModel>(this,true);
+        }
+        private void OnSignalsChanged(object? sender, EventArgs e)
+        {
+            _currentTab?.DataPlotter.OnSignalsChanged();
         }
         #endregion
     }

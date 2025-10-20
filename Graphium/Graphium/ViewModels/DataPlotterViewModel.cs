@@ -19,9 +19,6 @@ namespace Graphium.ViewModels
         {
             _signalService = signalService;
             _multiplot = PlotControl.Multiplot;
-
-            _signalService.SignalsChanged += (s, e) => OnSignalsChanged();
-
             Init();
         }
         private void Init() => _multiplot.RemovePlot(_multiplot.GetPlot(0)); 

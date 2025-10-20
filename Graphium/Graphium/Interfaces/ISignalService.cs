@@ -3,17 +3,11 @@ using Graphium.Models;
 
 namespace Graphium.Interfaces
 {
-    public class SignalChangedEventArgs : EventArgs
-    {
-        public SignalBase? Added { get; set; }
-        public SignalBase? Removed { get; set; }
-    }
-
     interface ISignalService
     {
         #region PROPERTIES
         public IReadOnlyCollection<SignalBase>? Signals { get; }
-        event EventHandler<SignalChangedEventArgs> SignalsChanged;
+        event EventHandler? SignalsChanged;
         #endregion
         #region METHODS
         public void SetCurrentSignals(ObservableCollection<SignalBase> signals);

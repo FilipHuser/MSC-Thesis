@@ -29,7 +29,6 @@ namespace Graphium.ViewModels
             _createDataPlotterViewModel = createDataPlotterViewModel;
             DataPlotter = _createDataPlotterViewModel();
         }
-
         #endregion
     }
 }

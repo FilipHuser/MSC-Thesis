@@ -55,7 +55,6 @@
                         <c:MeasurementControl DataContext="{Binding}"/>
                     </DataTemplate>
                 </TabControl.ContentTemplate>
-
             </TabControl>
         </DockPanel>
     </Grid>
