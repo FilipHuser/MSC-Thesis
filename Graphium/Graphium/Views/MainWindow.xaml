@@ -21,8 +21,8 @@
                     <MenuItem Header="_Setup..." Command="{Binding DataAcquisitionSetupCmd}"/>
                 </MenuItem>
                 <MenuItem Header="_Window">
-                    <MenuItem Header="_Select Next Tab"/>
-                    <MenuItem Header="_Select Previous Tab"/>
+                    <MenuItem Header="_Select Next Tab" Command="{Binding NextTabCmd}"/>
+                    <MenuItem Header="_Select Previous Tab" Command="{Binding PreviousTabCmd}"/>
                 </MenuItem>
             </Menu>
 

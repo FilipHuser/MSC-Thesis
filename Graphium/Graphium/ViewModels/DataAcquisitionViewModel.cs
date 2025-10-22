@@ -5,9 +5,11 @@ namespace Graphium.ViewModels
 {
     internal class DataAcquisitionViewModel : ViewModelBase
     {
-        #region PROPERTIES
+        #region SERVICES
         private readonly ISignalService _signalService;
         private readonly IViewModelFactory _viewModelFactory;
+        #endregion
+        #region PROPERTIES
         private ViewModelBase? _currentMenuItem;
         public ViewModelBase? CurrentMenuItem { get => _currentMenuItem; set => SetProperty(ref _currentMenuItem, value); }
         public ObservableCollection<ViewModelBase> MenuItems { get; set; }

@@ -1,14 +1,5 @@
-﻿using System.Data;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using DataHub.Core;
-using DataHub.Interfaces;
-using Graphium.Core;
-using ScottPlot;
-using ScottPlot.AxisPanels;
-using ScottPlot.Plottables;
-using ScottPlot.WPF;
 
 namespace Graphium.Models
 {
@@ -28,14 +19,11 @@ namespace Graphium.Models
             Init();
         }
         private void Init()
-        {
+        { 
         }
-        private readonly DateTime _startTime = DateTime.Now;
-
         public override void Update(Dictionary<int, List<object>> data)
         {
         }
-
         public override IEnumerable<Signal> GetSignals()
         {
             yield return this;

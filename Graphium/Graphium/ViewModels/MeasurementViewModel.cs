@@ -9,10 +9,12 @@ namespace Graphium.ViewModels
 {
     internal class MeasurementViewModel : ViewModelBase
     {
-        #region PROPERTIES
+        #region SERVICES
         private readonly ISignalService _signalService;
         private readonly IDataHubService _dataHubService;
-        private readonly Create<DataPlotterViewModel> _createDataPlotterViewModel;
+        private readonly IViewModelFactory _viewModelFactory;
+        #endregion
+        #region PROPERTIES
         private string? _name;
         public int TabId { get; set; } = -1;
         public string? Name { get => _name; set => SetProperty(ref _name, value); }
@@ -22,12 +24,12 @@ namespace Graphium.ViewModels
         #region RELAY_COMMANDS
         #endregion
         #region METHODS
-        public MeasurementViewModel(ISignalService signalService, IDataHubService dataHubService, Create<DataPlotterViewModel> createDataPlotterViewModel)
+        public MeasurementViewModel(ISignalService signalService, IDataHubService dataHubService, IViewModelFactory viewModelFactory)
         {
             _signalService = signalService;
             _dataHubService = dataHubService;
-            _createDataPlotterViewModel = createDataPlotterViewModel;
-            DataPlotter = _createDataPlotterViewModel();
+            _viewModelFactory = viewModelFactory;
+            DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
         }
         #endregion
     }

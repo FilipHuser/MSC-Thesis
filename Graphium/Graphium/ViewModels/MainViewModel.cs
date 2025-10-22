@@ -5,6 +5,7 @@ using Graphium.Controls;
 using Graphium.Services;
 using Graphium.Views;
 using HarfBuzzSharp;
+using System.Runtime.CompilerServices;
 
 
 namespace Graphium.ViewModels
@@ -36,13 +37,14 @@ namespace Graphium.ViewModels
                 }
             }
         }
-
         public ObservableCollection<MeasurementViewModel> Tabs { get; set; } = [];
         public event EventHandler? CurrentTabChanged; 
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand NewTabCmd => new RelayCommand(execute => NewTab());
         public RelayCommand CloseTabCmd => new RelayCommand(item => CloseTab(item));
+        public RelayCommand NextTabCmd => new RelayCommand(execute => NextTab(), canExecute => CurrentTab != null && Tabs.Count > 1);
+        public RelayCommand PreviousTabCmd => new RelayCommand(execute => PreviousTab(), canExecute => CurrentTab != null && Tabs.Count > 1);
         public RelayCommand DataAcquisitionSetupCmd => new RelayCommand(execute => DataAcquisitionSetup() , canExecute => CurrentTab is not null);
         #endregion
         public MainViewModel(IViewManager viewManager, IViewModelFactory viewModelFactory , ISignalService signalServicem)
@@ -68,6 +70,18 @@ namespace Graphium.ViewModels
             if(item is not MeasurementViewModel mvm) { return; }
             Tabs.Remove(mvm);
             CurrentTab = !Tabs.Any() ? null : Tabs.Last();
+        }
+        private void NextTab()
+        {
+            int currentIndex = Tabs.IndexOf(CurrentTab!);
+            int nextIndex = (currentIndex + 1) % Tabs.Count;
+            CurrentTab = Tabs[nextIndex];
+        }
+        private void PreviousTab()
+        {
+            int currentIndex = Tabs.IndexOf(CurrentTab!);
+            int prevIndex = (currentIndex - 1 + Tabs.Count) % Tabs.Count;
+            CurrentTab = Tabs[prevIndex];
         }
         private void DataAcquisitionSetup()
         {

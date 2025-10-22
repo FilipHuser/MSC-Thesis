@@ -1,4 +1,5 @@
-﻿using Graphium.Interfaces;
+﻿using System.Windows.Input;
+using Graphium.Interfaces;
 using ScottPlot;
 using ScottPlot.MultiplotLayouts;
 using ScottPlot.WPF;
@@ -7,10 +8,12 @@ namespace Graphium.ViewModels
 {
     internal class DataPlotterViewModel : ViewModelBase
     {
-        #region PROPERTIES
+        #region SERVICES
         private readonly ISignalService _signalService;
+        #endregion
+        #region PROPERTIES
         private DraggableRows? _layout;
-        private bool? _dividerBeingDragged;
+        private int? _dividerBeingDragged;
         public WpfPlot PlotControl { get; } = new WpfPlot();
         private readonly IMultiplot _multiplot;
         #endregion
@@ -26,6 +29,7 @@ namespace Graphium.ViewModels
         {
             PlotControl.Reset();
             _multiplot.RemovePlot(_multiplot.GetPlot(0));
+            UnsubscribePlotEvents();
 
             var signals = _signalService.Signals?.SelectMany(x => x.GetSignals());
 
@@ -40,8 +44,6 @@ namespace Graphium.ViewModels
             }
 
             _multiplot.CollapseVertically();
-            PlotControl.Refresh();
-
             var plots = _multiplot.GetPlots();
             var bottomPlot = plots.Last();
 
@@ -59,9 +61,62 @@ namespace Graphium.ViewModels
             _multiplot.Layout = _layout;
             _dividerBeingDragged = null;
 
+            SubscribePlotEvents();
+
             PlotControl.Refresh();
         }
+        private void SubscribePlotEvents()
+        {
+            PlotControl.MouseDown += OnPlotMouseDown;
+            PlotControl.MouseUp += OnPlotMouseUp;
+            PlotControl.MouseMove += OnPlotMouseMove;
+        }
+        private void UnsubscribePlotEvents()
+        {
+            PlotControl.MouseDown -= OnPlotMouseDown;
+            PlotControl.MouseUp -= OnPlotMouseUp;
+            PlotControl.MouseMove -= OnPlotMouseMove;
+        }
+        private void OnPlotMouseDown(object s, MouseButtonEventArgs e)
+        {
+            if (_layout == null) return;
 
+            double mouseY = e.GetPosition(PlotControl).Y;
+            _dividerBeingDragged = _layout.GetDivider((float)mouseY);
+            PlotControl.UserInputProcessor.IsEnabled = _dividerBeingDragged is null;
+        }
+        private void OnPlotMouseUp(object s, MouseButtonEventArgs e)
+        {
+            if (_dividerBeingDragged is not null)
+            {
+                _dividerBeingDragged = null;
+                PlotControl.UserInputProcessor.IsEnabled = true;
+            }
+        }
+        private void OnPlotMouseMove(object s, MouseEventArgs e)
+        {
+            if (_layout == null) return;
+
+            double mouseY = e.GetPosition(PlotControl).Y;
+
+            if (_dividerBeingDragged is not null)
+            {
+                _layout.SetDivider(_dividerBeingDragged.Value, (float)mouseY);
+                PlotControl.Refresh();
+            }
+
+            UpdateCursor(mouseY);
+        }
+        private void OnPlotMouseLeave(object s, MouseEventArgs e)
+        {
+            Mouse.OverrideCursor = null;
+        }
+        private void UpdateCursor(double mouseY)
+        {
+            Mouse.OverrideCursor = _layout?.GetDivider((float)mouseY) != null
+                ? Cursors.SizeNS
+                : Cursors.Arrow;
+        }
         #endregion
     }
 }

@@ -34,7 +34,7 @@ namespace Graphium
                 return () => new MeasurementViewModel(
                     x.GetRequiredService<ISignalService>(),
                     x.GetRequiredService<IDataHubService>(),
-                    x.GetRequiredService<Create<DataPlotterViewModel>>());
+                    x.GetRequiredService<IViewModelFactory>());
             });
 
             services.AddSingleton<Create<DataPlotterViewModel>>(x => 

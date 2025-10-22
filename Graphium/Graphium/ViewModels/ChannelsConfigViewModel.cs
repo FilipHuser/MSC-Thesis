@@ -8,8 +8,10 @@ namespace Graphium.ViewModels
 {
     internal class ChannelsConfigViewModel : ViewModelBase, IMenuItem
     {
-        #region PROPERTIES
+        #region SERVICES
         private readonly ISignalService _signalService;
+        #endregion
+        #region PROPERTIES
         public string Header => "Channels";
         public ObservableCollection<int> Channels { get; set; } = [];
         public ObservableCollection<SignalBase> ChannelOptions { get; set; } = [];
