@@ -22,6 +22,7 @@ namespace Graphium
             services.AddSingleton<IViewManager, ViewManagerService>();
             services.AddSingleton<IViewFactory , ViewFactoryService>();
             services.AddSingleton<IViewModelFactory, ViewModelFactoryService>();
+            services.AddSingleton<ILoggingService, LoggingService>();
 
             services.AddSingleton<ISignalService, SignalService>();
             services.AddSingleton<IDataHubService, DataHubService>();

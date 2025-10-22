@@ -16,6 +16,7 @@ namespace Graphium.ViewModels
         private readonly IViewManager _viewManager;
         private readonly ISignalService _signalService;
         private readonly IViewModelFactory _viewModelFactory;
+        private readonly ILoggingService _loggingService;
         #endregion
         #region PROPERTIES
         private MeasurementViewModel? _currentTab;
@@ -47,11 +48,13 @@ namespace Graphium.ViewModels
         public RelayCommand PreviousTabCmd => new RelayCommand(execute => PreviousTab(), canExecute => CurrentTab != null && Tabs.Count > 1);
         public RelayCommand DataAcquisitionSetupCmd => new RelayCommand(execute => DataAcquisitionSetup() , canExecute => CurrentTab is not null);
         #endregion
-        public MainViewModel(IViewManager viewManager, IViewModelFactory viewModelFactory , ISignalService signalServicem)
+        public MainViewModel(IViewManager viewManager, IViewModelFactory viewModelFactory , ISignalService signalService, ILoggingService loggingService)
         {
             _viewManager = viewManager;
             _viewModelFactory = viewModelFactory;
-            _signalService = signalServicem;
+            _signalService = signalService;
+            _loggingService = loggingService;
+            _loggingService.LogDebug("Application started");
             NewTab();
         }
         #region METHODS
@@ -64,28 +67,33 @@ namespace Graphium.ViewModels
             tab.Name = string.Format("Untitled{0}.gra", tab.TabId);
             Tabs.Add(tab);
             CurrentTab = tab;
+            _loggingService.LogDebug($"Measurement Tab added: Name='{tab.Name}'");
         }
         private void CloseTab(object item)
         {
             if(item is not MeasurementViewModel mvm) { return; }
             Tabs.Remove(mvm);
             CurrentTab = !Tabs.Any() ? null : Tabs.Last();
+            _loggingService.LogDebug($"Measurement Tab closed: Name='{mvm.Name}'");
         }
         private void NextTab()
         {
             int currentIndex = Tabs.IndexOf(CurrentTab!);
             int nextIndex = (currentIndex + 1) % Tabs.Count;
             CurrentTab = Tabs[nextIndex];
+            _loggingService.LogDebug($"Switched to next Measurement tab: Current='{CurrentTab?.Name}'");
         }
         private void PreviousTab()
         {
             int currentIndex = Tabs.IndexOf(CurrentTab!);
             int prevIndex = (currentIndex - 1 + Tabs.Count) % Tabs.Count;
             CurrentTab = Tabs[prevIndex];
+            _loggingService.LogDebug($"Switched to previous Measurement tab: Current='{CurrentTab?.Name}'");
         }
         private void DataAcquisitionSetup()
         {
             _viewManager.Show<DataAcquisitionViewModel>(this,true);
+            _loggingService.LogInfo("Opening Data Acquisition Setup view.");
         }
         private void OnSignalsChanged(object? sender, EventArgs e)
         {

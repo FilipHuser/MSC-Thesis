@@ -16,9 +16,9 @@ namespace Graphium.Models
         public string Name { get; set; }
         public ModuleType Source { get; set; }
         [JsonIgnore]
-        public bool IsPlotted { get; set; }
+        public bool IsPlotted { get; set; } = true;
         [JsonIgnore]
-        public bool IsAcquired { get; set; }
+        public bool IsAcquired { get; set; } = true;
         #endregion
         #region METHODS
         public SignalBase(string name, ModuleType source)

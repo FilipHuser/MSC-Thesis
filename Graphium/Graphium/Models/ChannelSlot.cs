@@ -12,7 +12,16 @@ namespace Graphium.Models
         private int _number;
         private SignalBase? _signal;
         public int Number { get => _number; set => SetProperty(ref _number, value); }
-        public SignalBase? Signal { get => _signal; set => SetProperty(ref _signal, value); }
+        public SignalBase? Signal 
+        { 
+            get => _signal;
+            set
+            { 
+                SetProperty(ref _signal, value);
+                OnPropertyChanged(nameof(IsSignalAssigned));
+            }
+        }
+        public bool IsSignalAssigned => Signal != null;
         #endregion
         #region METHODS
         #endregion

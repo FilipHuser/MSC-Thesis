@@ -77,12 +77,10 @@ namespace Graphium.ViewModels
             PlotControl.MouseUp -= OnPlotMouseUp;
             PlotControl.MouseMove -= OnPlotMouseMove;
         }
-        private void OnPlotMouseDown(object s, MouseButtonEventArgs e)
+        private void OnPlotMouseDown(object s, MouseButtonEventArgs e) 
         {
-            if (_layout == null) return;
-
-            double mouseY = e.GetPosition(PlotControl).Y;
-            _dividerBeingDragged = _layout.GetDivider((float)mouseY);
+            if (_layout == null) return; double mouseY = e.GetPosition(PlotControl).Y;
+            _dividerBeingDragged = _layout.GetDivider((float)mouseY); 
             PlotControl.UserInputProcessor.IsEnabled = _dividerBeingDragged is null;
         }
         private void OnPlotMouseUp(object s, MouseButtonEventArgs e)
