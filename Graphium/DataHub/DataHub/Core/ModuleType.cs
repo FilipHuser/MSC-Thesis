@@ -10,5 +10,6 @@ namespace DataHub.Core
     {
         BIOPAC,
         VR,
+        NONE,
     }
 }

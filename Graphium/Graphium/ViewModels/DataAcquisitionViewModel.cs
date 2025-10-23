@@ -22,6 +22,7 @@ namespace Graphium.ViewModels
             MenuItems = new ObservableCollection<ViewModelBase>()
             {
                 _viewModelFactory.Create<ChannelsConfigViewModel>(),
+                _viewModelFactory.Create<SignalManagerViewModel>(),
             };
             _currentMenuItem = MenuItems.First();
         }

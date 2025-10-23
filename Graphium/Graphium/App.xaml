@@ -12,6 +12,9 @@
             <DataTemplate DataType="{x:Type vm:ChannelsConfigViewModel}">
                 <c:ChannelConfigControl/>
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SignalManagerViewModel}">
+                <c:SignalManagerControl/>
+            </DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

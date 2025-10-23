@@ -10,6 +10,7 @@ namespace Graphium.ViewModels
     {
         #region SERVICES
         private readonly ISignalService _signalService;
+        private readonly ILoggingService _loggingService;
         #endregion
         #region PROPERTIES
         private DraggableRows? _layout;
@@ -18,9 +19,10 @@ namespace Graphium.ViewModels
         private readonly IMultiplot _multiplot;
         #endregion
         #region METHODS
-        public DataPlotterViewModel(ISignalService signalService)
+        public DataPlotterViewModel(ISignalService signalService, ILoggingService loggingService)
         {
             _signalService = signalService;
+            _loggingService = loggingService;
             _multiplot = PlotControl.Multiplot;
             Init();
         }
@@ -64,6 +66,7 @@ namespace Graphium.ViewModels
             SubscribePlotEvents();
 
             PlotControl.Refresh();
+            _loggingService.LogDebug($"Refreshed plot with {signals.Count()} signals.");
         }
         private void SubscribePlotEvents()
         {

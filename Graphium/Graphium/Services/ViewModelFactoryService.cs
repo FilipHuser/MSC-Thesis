@@ -16,13 +16,15 @@ namespace Graphium.Services
         public ViewModelFactoryService(Create<MeasurementViewModel> measurementViewModelCreator, 
                                        Create<DataPlotterViewModel> dataPlotterViewModelCreator,
                                        Create<DataAcquisitionViewModel> dataAcquisitionViewModelCreator,
-                                       Create<ChannelsConfigViewModel> channelsConfigViewModelCreator)
+                                       Create<ChannelsConfigViewModel> channelsConfigViewModelCreator,
+                                       Create<SignalManagerViewModel> signalManagerViewModelCreator)
         {
             _creators = new Dictionary<Type, Func<ViewModelBase>> {
                 { typeof(MeasurementViewModel), () => measurementViewModelCreator() },
                 { typeof(DataPlotterViewModel), () => dataPlotterViewModelCreator() },
                 { typeof(DataAcquisitionViewModel), () => dataAcquisitionViewModelCreator() },
                 { typeof(ChannelsConfigViewModel), () => channelsConfigViewModelCreator() },
+                { typeof(SignalManagerViewModel), () => signalManagerViewModelCreator()}
             };
         }
         public TViewModel Create<TViewModel>() where TViewModel : ViewModelBase => (TViewModel)_creators[typeof(TViewModel)]();

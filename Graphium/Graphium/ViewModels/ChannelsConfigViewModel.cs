@@ -3,6 +3,7 @@ using DataHub.Core;
 using Graphium.Core;
 using Graphium.Interfaces;
 using Graphium.Models;
+using Graphium.Services;
 
 namespace Graphium.ViewModels
 {
@@ -10,6 +11,7 @@ namespace Graphium.ViewModels
     {
         #region SERVICES
         private readonly ISignalService _signalService;
+        private readonly ILoggingService _loggingService;
         #endregion
         #region PROPERTIES
         public string Header => "Channels";
@@ -23,9 +25,10 @@ namespace Graphium.ViewModels
         public RelayCommand SetupCmd => new RelayCommand(execute => Setup());
         #endregion
         #region METHODS
-        public ChannelsConfigViewModel(ISignalService signalService)
+        public ChannelsConfigViewModel(ISignalService signalService, ILoggingService loggingService)
         {
             _signalService = signalService;
+            _loggingService = loggingService;
             Init();
         }
         private void Init() 
@@ -65,6 +68,7 @@ namespace Graphium.ViewModels
             ConfiguredChannels.Add(slot);
 
             RefreshAvailableNumbers();
+            _loggingService.LogDebug($"Channel slot added");
         }
         private void RemoveChannelSlot(object? param)
         {
@@ -84,6 +88,7 @@ namespace Graphium.ViewModels
             }
 
             RefreshAvailableNumbers();
+            _loggingService.LogDebug($"Channel slot removed");
         }
         private void RefreshAvailableNumbers()
         {

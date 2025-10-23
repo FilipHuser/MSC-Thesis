@@ -1,9 +1,6 @@
-﻿using System.Text.Json.Serialization;
-using System.Xml.Linq;
-using DataHub.Core;
-using DataHub.Interfaces;
+﻿using DataHub.Core;
 using Graphium.Interfaces;
-using Graphium.Models;
+using System.Text.Json.Serialization;
 
 namespace Graphium.Models
 {
@@ -12,13 +9,10 @@ namespace Graphium.Models
     public abstract class SignalBase : ISignalSource
     {
         #region PROPERTIES
-        [JsonIgnore]
         public string Name { get; set; }
         public ModuleType Source { get; set; }
-        [JsonIgnore]
-        public bool IsPlotted { get; set; } = true;
-        [JsonIgnore]
-        public bool IsAcquired { get; set; } = true;
+        [JsonIgnore] public bool IsPlotted { get; set; } = true;
+        [JsonIgnore] public bool IsAcquired { get; set; } = true;
         #endregion
         #region METHODS
         public SignalBase(string name, ModuleType source)

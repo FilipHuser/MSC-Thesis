@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Windows;
 using Graphium.Interfaces;
 using Graphium.Services;
 using Graphium.ViewModels;
@@ -23,7 +24,7 @@ namespace Graphium
             services.AddSingleton<IViewFactory , ViewFactoryService>();
             services.AddSingleton<IViewModelFactory, ViewModelFactoryService>();
             services.AddSingleton<ILoggingService, LoggingService>();
-
+            services.AddSingleton<ISettingsService, SettingsService>();
             services.AddSingleton<ISignalService, SignalService>();
             services.AddSingleton<IDataHubService, DataHubService>();
 
@@ -41,7 +42,8 @@ namespace Graphium
             services.AddSingleton<Create<DataPlotterViewModel>>(x => 
             {
                 return () => new DataPlotterViewModel(
-                    x.GetRequiredService<ISignalService>());
+                    x.GetRequiredService<ISignalService>(),
+                    x.GetRequiredService<ILoggingService>());
             });
 
             services.AddSingleton<Create<DataAcquisitionViewModel>>(x =>
@@ -53,7 +55,14 @@ namespace Graphium
 
             services.AddSingleton<Create<ChannelsConfigViewModel>>(x => 
             {
-                return () => new ChannelsConfigViewModel(x.GetRequiredService<ISignalService>());
+                return () => new ChannelsConfigViewModel(
+                    x.GetRequiredService<ISignalService>(),
+                    x.GetRequiredService<ILoggingService>());
+            });
+
+            services.AddSingleton <Create<SignalManagerViewModel>>(x =>
+            {
+                return () => new SignalManagerViewModel(x.GetRequiredService<ISettingsService>());
             });
 
             services.AddScoped<MainWindow>(x => new MainWindow(x.GetRequiredService<MainViewModel>()));

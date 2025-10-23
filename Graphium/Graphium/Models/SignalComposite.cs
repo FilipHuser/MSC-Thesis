@@ -1,37 +1,36 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
-using DataHub.Core;
-using DataHub.Interfaces;
-using ScottPlot;
-using ScottPlot.Plottables;
+﻿using DataHub.Core;
 
 namespace Graphium.Models
 {
     internal class SignalComposite : SignalBase
     {
         #region PROPERTIES
-        private List<Signal> _signals = []; 
-        public List<Signal> Signals 
-        { 
+        private List<Signal> _signals = [];
+        public List<Signal> Signals
+        {
             get => _signals;
             set
             {
-                if (value != null && value.Any(s => s.Source != Source))
+                if (value == null)
+                {
+                    _signals = new List<Signal>();
+                    return;
+                }
+
+                if (Source == ModuleType.NONE && value.Count > 0) { Source = value[0].Source; }
+
+                if (value.Any(s => s.Source != Source))
                     throw new InvalidOperationException("All signals must have the same ModuleType as the composite.");
-                _signals = value ?? new List<Signal>();
+
+                _signals = value;
             }
         }
         #endregion
         #region METHODS
-        public SignalComposite(string name , ModuleType source) : base(name, source) { }
+        public SignalComposite() : base(string.Empty, ModuleType.NONE) { }
         public SignalComposite(string name, List<Signal> signals) : base(name, GetModuleType(signals))
         {
             Signals = signals;
-        }
-        private static ModuleType GetModuleType(List<Signal> signals)
-        {
-            if (signals == null || signals.Count == 0) { throw new ArgumentException("Signals cannot be null or empty"); }
-            return signals[0].Source;
         }
         public void Add(Signal signal) => Signals.Add(signal);
         public void Remove(Signal signal) => Signals?.Remove(signal);
@@ -49,6 +48,11 @@ namespace Graphium.Models
             }
         }
         public override IEnumerable<Signal> GetSignals() => Signals;
+        private static ModuleType GetModuleType(List<Signal> signals)
+        {
+            if (signals == null || signals.Count == 0) { throw new ArgumentException("Signals cannot be null or empty"); }
+            return signals[0].Source;
+        }
         #endregion
     }
 }
