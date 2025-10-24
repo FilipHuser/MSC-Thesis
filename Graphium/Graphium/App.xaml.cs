@@ -57,7 +57,8 @@ namespace Graphium
             {
                 return () => new ChannelsConfigViewModel(
                     x.GetRequiredService<ISignalService>(),
-                    x.GetRequiredService<ILoggingService>());
+                    x.GetRequiredService<ILoggingService>(),
+                    x.GetRequiredService<ISettingsService>());
             });
 
             services.AddSingleton <Create<SignalManagerViewModel>>(x =>

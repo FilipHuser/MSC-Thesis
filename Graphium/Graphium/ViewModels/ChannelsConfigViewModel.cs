@@ -1,6 +1,8 @@
 ﻿using System.Collections.ObjectModel;
+using System.Threading.Channels;
 using DataHub.Core;
 using Graphium.Core;
+using Graphium.Enums;
 using Graphium.Interfaces;
 using Graphium.Models;
 using Graphium.Services;
@@ -12,6 +14,7 @@ namespace Graphium.ViewModels
         #region SERVICES
         private readonly ISignalService _signalService;
         private readonly ILoggingService _loggingService;
+        private readonly ISettingsService _settingsService;
         #endregion
         #region PROPERTIES
         public string Header => "Channels";
@@ -25,19 +28,17 @@ namespace Graphium.ViewModels
         public RelayCommand SetupCmd => new RelayCommand(execute => Setup());
         #endregion
         #region METHODS
-        public ChannelsConfigViewModel(ISignalService signalService, ILoggingService loggingService)
+        public ChannelsConfigViewModel(ISignalService signalService, ILoggingService loggingService, ISettingsService settingsService)
         {
             _signalService = signalService;
             _loggingService = loggingService;
+            _settingsService = settingsService;
             Init();
         }
         private void Init() 
         {
-            //TBD => Load available channels from xml *service
-            var ecg = new Signal("ECG", ModuleType.BIOPAC);
-            var rsp = new Signal("RESP", ModuleType.BIOPAC);
-            var rspr = new SignalComposite("RSP-R", new List<Signal>() { ecg, rsp });
-            new List<SignalBase> { ecg, rsp, rspr }.ForEach(s => ChannelOptions.Add(s));
+            var availableSignals = _settingsService.Load<List<SignalBase>>(SettingsCategory.SIGNALS_CONFIGURATION) ?? new List<SignalBase>();
+            ChannelOptions = new ObservableCollection<SignalBase>(availableSignals);
 
             var currentConfiguration = _signalService.Signals;
             if(currentConfiguration == null) { return; }

@@ -10,7 +10,7 @@
         <DataGrid Grid.Row="1"
           Margin="0,10,0,0"
           ItemsSource="{Binding Signals}"
-          AutoGenerateColumns="True"
+          AutoGenerateColumns="False"
           CanUserAddRows="False"
           CanUserResizeColumns="False"
           HeadersVisibility="Column"
@@ -30,6 +30,17 @@
                     <Setter Property="BorderThickness" Value="0"/>
                 </Style>
             </DataGrid.CellStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Name" 
+                                    Binding="{Binding Name}"/>
+                <DataGridTextColumn Header="Unit" 
+                    Binding="{Binding PlotProperties.Unit}"/>
+                <DataGridTextColumn Header="Lower Bound" 
+                    Binding="{Binding PlotProperties.LowerBound}"/>
+                <DataGridTextColumn Header="Upper Bound" 
+                    Binding="{Binding PlotProperties.UpperBound}"/>
+                
+            </DataGrid.Columns>
         </DataGrid>
     </Grid>
 </UserControl>
