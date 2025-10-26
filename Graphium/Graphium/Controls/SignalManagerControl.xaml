@@ -3,14 +3,26 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:Graphium.Controls"
+             xmlns:local="clr-namespace:Graphium"
+             xmlns:conv="clr-namespace:Graphium.Converters"
+             xmlns:cont="clr-namespace:Graphium.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <conv:TypeConverter x:Key="TypeNameConverter"/>
+    </UserControl.Resources>
     <Grid>
-        <DataGrid Grid.Row="1"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        
+        <DataGrid Grid.Row="0"
           Margin="0,10,0,0"
           ItemsSource="{Binding Signals}"
           AutoGenerateColumns="False"
+          IsReadOnly="True"
           CanUserAddRows="False"
           CanUserResizeColumns="False"
           HeadersVisibility="Column"
@@ -32,15 +44,48 @@
             </DataGrid.CellStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Name" 
-                                    Binding="{Binding Name}"/>
-                <DataGridTextColumn Header="Unit" 
-                    Binding="{Binding PlotProperties.Unit}"/>
-                <DataGridTextColumn Header="Lower Bound" 
-                    Binding="{Binding PlotProperties.LowerBound}"/>
-                <DataGridTextColumn Header="Upper Bound" 
-                    Binding="{Binding PlotProperties.UpperBound}"/>
-                
+                                    Binding="{Binding Name}"
+                                    Width="*"/>
+                <DataGridTextColumn Header="Source" 
+                                    Binding="{Binding Source}"
+                                    Width="*"/>
+                <DataGridTextColumn Header="Type" 
+                                    Binding="{Binding ., Converter={StaticResource TypeNameConverter}}"
+                                    Width="*"/>
+
+                <DataGridTemplateColumn Header="Actions" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="x"
+                                        Command="{Binding RemoveSignal}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip="Remove this Signal"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch"
+                                        Padding="0"
+                                        Margin="0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
+
+        <Grid Grid.Row="1" 
+              Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Content="Creati"
+                    Padding="5" 
+                    Margin="0,0,5,0"/>
+            <Button Grid.Column="2"
+                    Command="{Binding SetupCmd}"
+                    Content="Setup"
+                    Padding="5"
+                    Width="80"/>
+        </Grid>
+
     </Grid>
 </UserControl>

@@ -103,7 +103,7 @@
                                 <Button Content="x"
                                         Command="{Binding DataContext.RemoveChannelSlotCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
-                                        ToolTip="Delete this channel"
+                                        ToolTip="Remove this channel"
                                         HorizontalAlignment="Stretch"
                                         VerticalAlignment="Stretch"
                                         Padding="0"

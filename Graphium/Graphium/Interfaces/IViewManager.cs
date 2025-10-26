@@ -11,7 +11,9 @@ namespace Graphium.Interfaces
     internal interface IViewManager
     {
         #region METHODS
-        void Show<TViewModel>(ViewModelBase owner, bool modal = false) where TViewModel : ViewModelBase;
+        void Show<TViewModel>(ViewModelBase owner) where TViewModel : ViewModelBase;
+        void ShowDialog<TViewModel>(ViewModelBase owner) where TViewModel: ViewModelBase;
+        TResult ShowDialog<TViewModel, TResult>(ViewModelBase owner, Func<TViewModel, TResult> resultSelector) where TViewModel : ViewModelBase;
         #endregion
     }
 }

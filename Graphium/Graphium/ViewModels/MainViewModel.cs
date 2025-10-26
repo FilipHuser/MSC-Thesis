@@ -92,10 +92,10 @@ namespace Graphium.ViewModels
         }
         private void DataAcquisitionSetup()
         {
-            _viewManager.Show<DataAcquisitionViewModel>(this,true);
+            _viewManager.ShowDialog<DataAcquisitionViewModel>(this);
             _loggingService.LogInfo("Opening Data Acquisition Setup view.");
         }
-        private void OnSignalsChanged(object? sender, EventArgs e)
+        private void OnSignalsChanged(object? sender, EventArgs e)  
         {
             _currentTab?.DataPlotter.OnSignalsChanged();
         }
