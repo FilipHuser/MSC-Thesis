@@ -58,12 +58,20 @@ namespace Graphium
                 return () => new ChannelsConfigViewModel(
                     x.GetRequiredService<ISignalService>(),
                     x.GetRequiredService<ILoggingService>(),
+                    x.GetRequiredService<ISettingsService>(),
+                    x.GetRequiredService<IViewManager>());
+            });
+
+            services.AddSingleton<Create<SignalManagerViewModel>>(x =>
+            {
+                return () => new SignalManagerViewModel(
+                    x.GetRequiredService<IViewManager>(),
                     x.GetRequiredService<ISettingsService>());
             });
 
-            services.AddSingleton <Create<SignalManagerViewModel>>(x =>
-            {
-                return () => new SignalManagerViewModel(x.GetRequiredService<ISettingsService>());
+            services.AddSingleton<Create<SignalCreatorViewModel>>(x => {
+                return () => new SignalCreatorViewModel(
+                    x.GetRequiredService<IViewManager>());
             });
 
             services.AddScoped<MainWindow>(x => new MainWindow(x.GetRequiredService<MainViewModel>()));

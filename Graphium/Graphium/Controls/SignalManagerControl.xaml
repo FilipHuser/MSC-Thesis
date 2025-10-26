@@ -57,7 +57,7 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button Content="x"
-                                        Command="{Binding RemoveSignal}"
+                                        Command="{Binding DataContext.RemoveSignalCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
                                         ToolTip="Remove this Signal"
                                         HorizontalAlignment="Stretch"
@@ -70,22 +70,16 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <Grid Grid.Row="1" 
-              Margin="0,10,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Button Content="Creati"
+        <StackPanel Grid.Row="1"
+                    Margin="0,10,0,0"
+                    Orientation="Horizontal">
+            <Button Content="Create Signal"
+                    Command="{Binding CreateSignalCmd}"
                     Padding="5" 
                     Margin="0,0,5,0"/>
             <Button Grid.Column="2"
-                    Command="{Binding SetupCmd}"
-                    Content="Setup"
-                    Padding="5"
-                    Width="80"/>
-        </Grid>
-
+                    Content="Create Signal Compound"
+                    Padding="5"/>
+        </StackPanel>
     </Grid>
 </UserControl>

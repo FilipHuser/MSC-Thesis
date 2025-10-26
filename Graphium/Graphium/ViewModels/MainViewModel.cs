@@ -67,34 +67,31 @@ namespace Graphium.ViewModels
             tab.Name = string.Format("Untitled{0}.gra", tab.TabId);
             Tabs.Add(tab);
             CurrentTab = tab;
-            _loggingService.LogDebug($"Measurement Tab added: Name='{tab.Name}'");
+            _loggingService.LogDebug($"Measurement Tab added: '{tab.Name}'");
         }
         private void CloseTab(object item)
         {
             if(item is not MeasurementViewModel mvm) { return; }
             Tabs.Remove(mvm);
             CurrentTab = !Tabs.Any() ? null : Tabs.Last();
-            _loggingService.LogDebug($"Measurement Tab closed: Name='{mvm.Name}'");
+            _loggingService.LogDebug($"Measurement Tab closed: '{mvm.Name}'");
         }
         private void NextTab()
         {
             int currentIndex = Tabs.IndexOf(CurrentTab!);
             int nextIndex = (currentIndex + 1) % Tabs.Count;
             CurrentTab = Tabs[nextIndex];
-            _loggingService.LogDebug($"Switched to next Measurement tab: Current='{CurrentTab?.Name}'");
+            _loggingService.LogDebug($"Switched to next Measurement tab, current: '{CurrentTab?.Name}'");
         }
         private void PreviousTab()
         {
             int currentIndex = Tabs.IndexOf(CurrentTab!);
             int prevIndex = (currentIndex - 1 + Tabs.Count) % Tabs.Count;
             CurrentTab = Tabs[prevIndex];
-            _loggingService.LogDebug($"Switched to previous Measurement tab: Current='{CurrentTab?.Name}'");
+            _loggingService.LogDebug($"Switched to previous Measurement tab, current: '{CurrentTab?.Name}'");
         }
-        private void DataAcquisitionSetup()
-        {
-            _viewManager.ShowDialog<DataAcquisitionViewModel>(this);
-            _loggingService.LogInfo("Opening Data Acquisition Setup view.");
-        }
+        private void DataAcquisitionSetup() => _viewManager.ShowDialog<MainViewModel, DataAcquisitionViewModel>();
+
         private void OnSignalsChanged(object? sender, EventArgs e)  
         {
             _currentTab?.DataPlotter.OnSignalsChanged();

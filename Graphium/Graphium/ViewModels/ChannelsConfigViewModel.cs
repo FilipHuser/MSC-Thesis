@@ -15,6 +15,7 @@ namespace Graphium.ViewModels
         private readonly ISignalService _signalService;
         private readonly ILoggingService _loggingService;
         private readonly ISettingsService _settingsService;
+        private readonly IViewManager _viewManager;
         #endregion
         #region PROPERTIES
         public string Header => "Channels";
@@ -28,18 +29,39 @@ namespace Graphium.ViewModels
         public RelayCommand SetupCmd => new RelayCommand(execute => Setup());
         #endregion
         #region METHODS
-        public ChannelsConfigViewModel(ISignalService signalService, ILoggingService loggingService, ISettingsService settingsService)
+        public ChannelsConfigViewModel(ISignalService signalService, ILoggingService loggingService, ISettingsService settingsService, IViewManager viewManager)
         {
             _signalService = signalService;
             _loggingService = loggingService;
             _settingsService = settingsService;
+            _viewManager = viewManager;
             Init();
+        }
+        public void LoadSignals()
+        {
+            var availableSignals = _settingsService.Load<List<SignalBase>>(SettingsCategory.SIGNALS_CONFIGURATION) ?? new List<SignalBase>();
+            var currentSelections = ConfiguredChannels
+                .Where(slot => slot.Signal != null)
+                .ToDictionary(slot => slot.Number, slot => slot.Signal!.Name);
+
+            ChannelOptions.Clear();
+            foreach (var signal in availableSignals)
+            {
+                ChannelOptions.Add(signal);
+            }
+
+            foreach (var slot in ConfiguredChannels)
+            {
+                if (currentSelections.TryGetValue(slot.Number, out var signalName))
+                {
+                    var matchingSignal = ChannelOptions.FirstOrDefault(s => s.Name == signalName);
+                    slot.Signal = matchingSignal;
+                }
+            }
         }
         private void Init() 
         {
-            var availableSignals = _settingsService.Load<List<SignalBase>>(SettingsCategory.SIGNALS_CONFIGURATION) ?? new List<SignalBase>();
-            ChannelOptions = new ObservableCollection<SignalBase>(availableSignals);
-
+            LoadSignals();
             var currentConfiguration = _signalService.Signals;
             if(currentConfiguration == null) { return; }
 
@@ -104,14 +126,13 @@ namespace Graphium.ViewModels
         private void Setup()
         {
             if (_signalService.Signals == null) return;
-
             _signalService.Clear();
-
             foreach (var slot in ConfiguredChannels)
             {
                 if (slot.Signal != null)
                     _signalService.AddSignal(slot.Signal);
             }
+            _viewManager.Close<DataAcquisitionViewModel>();
         }
         #endregion
     }

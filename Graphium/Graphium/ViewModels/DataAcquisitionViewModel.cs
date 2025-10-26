@@ -19,11 +19,16 @@ namespace Graphium.ViewModels
         {
             _signalService = signalService;
             _viewModelFactory = viewModelFactory;
-            MenuItems = new ObservableCollection<ViewModelBase>()
+
+            var ccvm = _viewModelFactory.Create<ChannelsConfigViewModel>();
+            var smvm = _viewModelFactory.Create<SignalManagerViewModel>();
+
+            smvm.Signals.CollectionChanged += (s, e) =>
             {
-                _viewModelFactory.Create<ChannelsConfigViewModel>(),
-                _viewModelFactory.Create<SignalManagerViewModel>(),
+                ccvm.LoadSignals();
             };
+
+            MenuItems = new ObservableCollection<ViewModelBase>() { ccvm, smvm };
             _currentMenuItem = MenuItems.First();
         }
         #endregion
