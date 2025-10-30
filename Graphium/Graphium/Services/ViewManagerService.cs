@@ -56,7 +56,7 @@ namespace Graphium.Services
 
             if (modal)
             {
-                _loggingService.LogDebug($"Showing {win.GetType().Name} modally");
+                _loggingService.LogDebug($"Showing {win.GetType().Name} modally");  
                 win.ShowDialog();
             }
             else

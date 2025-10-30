@@ -23,8 +23,16 @@ namespace Graphium.Models
         private void Init()
         { 
         }
-        public override void Update(Dictionary<int, List<object>> data)
+        public override void Update(Dictionary<int, List<object>> data, double elapsedTime)
         {
+            if (data.TryGetValue(0, out var yValues))
+            {
+                foreach (var obj in yValues)
+                {
+                    X.Add(elapsedTime);
+                    Y.Add(1);
+                }
+            }
         }
         public override IEnumerable<Signal> GetSignals()
         {

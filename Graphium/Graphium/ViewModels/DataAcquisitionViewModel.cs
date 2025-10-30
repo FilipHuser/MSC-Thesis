@@ -23,11 +23,6 @@ namespace Graphium.ViewModels
             var ccvm = _viewModelFactory.Create<ChannelsConfigViewModel>();
             var smvm = _viewModelFactory.Create<SignalManagerViewModel>();
 
-            smvm.Signals.CollectionChanged += (s, e) =>
-            {
-                ccvm.LoadSignals();
-            };
-
             MenuItems = new ObservableCollection<ViewModelBase>() { ccvm, smvm };
             _currentMenuItem = MenuItems.First();
         }

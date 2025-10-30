@@ -34,7 +34,7 @@ namespace Graphium.Models
         }
         public void Add(Signal signal) => Signals.Add(signal);
         public void Remove(Signal signal) => Signals?.Remove(signal);
-        public override void Update(Dictionary<int, List<object>> data)
+        public override void Update(Dictionary<int, List<object>> data, double elapsedTime)
         {
             foreach (var kvp in data)
             {
@@ -42,8 +42,7 @@ namespace Graphium.Models
                 if (index >= 0 && index < Signals.Count)
                 {
                     var singleData = new Dictionary<int, List<object>> { { index, kvp.Value } };
-
-                    Signals[index].Update(singleData);
+                    Signals[index].Update(singleData, elapsedTime);
                 }
             }
         }

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PCAPILib
+﻿namespace DataHub.Core
 {
     public static class ByteArrayConverter<T> where T : struct
     {

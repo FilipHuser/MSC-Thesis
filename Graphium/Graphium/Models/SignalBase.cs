@@ -20,7 +20,7 @@ namespace Graphium.Models
             Name = name;
             Source = source;
         }
-        public abstract void Update(Dictionary<int , List<object>> data);
+        public abstract void Update(Dictionary<int, List<object>> data, double elapsedTime);
         public abstract IEnumerable<Signal> GetSignals();
         public override bool Equals(object? obj)
         {

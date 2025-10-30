@@ -1,4 +1,5 @@
 ﻿using System.Windows.Input;
+using System.Windows.Threading;
 using Graphium.Interfaces;
 using ScottPlot;
 using ScottPlot.MultiplotLayouts;
@@ -13,8 +14,10 @@ namespace Graphium.ViewModels
         private readonly ILoggingService _loggingService;
         #endregion
         #region PROPERTIES
+        private readonly TimeSpan updateInterval = TimeSpan.FromMilliseconds(10);
         private DraggableRows? _layout;
         private int? _dividerBeingDragged;
+        private readonly DispatcherTimer _updateTimer;
         public WpfPlot PlotControl { get; } = new WpfPlot();
         private readonly IMultiplot _multiplot;
         #endregion
@@ -24,9 +27,14 @@ namespace Graphium.ViewModels
             _signalService = signalService;
             _loggingService = loggingService;
             _multiplot = PlotControl.Multiplot;
+
+            _updateTimer = new DispatcherTimer()
+            {
+                Interval = updateInterval
+            };
+
             Init();
         }
-        private void Init() => _multiplot.RemovePlot(_multiplot.GetPlot(0)); 
         public void OnSignalsChanged()
         {
             PlotControl.Reset();
@@ -35,13 +43,16 @@ namespace Graphium.ViewModels
 
             var signals = _signalService.Signals?.SelectMany(x => x.GetSignals());
 
-            if(signals == null || !signals.Any()) { return; }
+            if (signals == null || !signals.Any()) { return; }
 
             foreach (var signal in signals)
             {
                 var plot = _multiplot.AddPlot();
                 plot.Axes.Left.Label.Text = signal.Name;
                 var scatter = plot.Add.Scatter(signal.X, signal.Y);
+
+                
+
                 scatter.Axes.YAxis = plot.Axes.Right;
             }
 
@@ -49,7 +60,7 @@ namespace Graphium.ViewModels
             var plots = _multiplot.GetPlots();
             var bottomPlot = plots.Last();
 
-            foreach(var plot in plots)
+            foreach (var plot in plots)
             {
                 plot.Axes.Left.LockSize(32);
                 plot.Axes.Right.LockSize(64);
@@ -67,6 +78,13 @@ namespace Graphium.ViewModels
 
             PlotControl.Refresh();
             _loggingService.LogDebug($"Refreshed plot with {signals.Count()} signals.");
+        }
+        public void StartPloting() => _updateTimer.Start();
+        public void StopPloting() => _updateTimer.Stop();
+        private void Init()
+        {
+            _updateTimer.Tick += Refresh;
+            _multiplot.RemovePlot(_multiplot.GetPlot(0));
         }
         private void SubscribePlotEvents()
         {
@@ -118,6 +136,7 @@ namespace Graphium.ViewModels
                 ? Cursors.SizeNS
                 : Cursors.Arrow;
         }
+        private void Refresh(object? sender , EventArgs e) => PlotControl.Refresh();
         #endregion
     }
 }

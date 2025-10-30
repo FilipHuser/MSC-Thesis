@@ -24,9 +24,9 @@
             </Menu>
             <Separator />
             <Button Content="Start"
-                    Command=""/>
+                    Command="{Binding StartCmd}"/>
             <Button Content="Stop"
-                    Command=""/>
+                    Command="{Binding StopCmd}"/>
         </ToolBar>
         <local:DataPlotterControl DataContext="{Binding DataPlotter}"/>
     </DockPanel>
