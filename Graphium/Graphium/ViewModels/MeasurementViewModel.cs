@@ -16,7 +16,7 @@ namespace Graphium.ViewModels
         #region PROPERTIES
         private string? _name;
         private Task? _measurementTask;
-        private int _dataPollingInterval = 50; // ms
+        private int _dataPollingInterval = 16; // ms
         private SignalStorage? _signalStorage;
         private CancellationTokenSource? _cts = new();
         public int TabId { get; set; } = -1;
@@ -59,6 +59,9 @@ namespace Graphium.ViewModels
         {
             try
             {
+                // Cache last known values for each signal
+                var lastValues = new Dictionary<Signal, object>();
+
                 while (!token.IsCancellationRequested)
                 {
                     var dataByModule = _dataHubService.GetData();
@@ -68,20 +71,26 @@ namespace Graphium.ViewModels
                     foreach (var signal in Signals)
                     {
                         var sourceModuleType = signal.Source;
-
                         if (!dataByModule.TryGetValue(sourceModuleType, out var sourceData) || sourceData == null)
                             continue;
 
                         int currentCounter = moduleCounters.TryGetValue(sourceModuleType, out int c) ? c : 0;
 
-                        if (!sourceData.TryGetValue(currentCounter, out var list))
-                            break;
-
-                        signal.Update(currentTime, list);
-                        _signalStorage?.Add(signal, list.First());
-
-                        currentCounter++;
-                        moduleCounters[sourceModuleType] = currentCounter;
+                        if (sourceData.TryGetValue(currentCounter, out var list))
+                        {
+                            // New data available
+                            signal.Update(currentTime, list);
+                            lastValues[signal] = list.First();
+                            _signalStorage?.Add(signal, list.First());
+                            currentCounter++;
+                            moduleCounters[sourceModuleType] = currentCounter;
+                        }
+                        else if (lastValues.ContainsKey(signal))
+                        {
+                            // No new data, use last known value
+                            signal.Update(currentTime, new List<object> { lastValues[signal] });
+                            _signalStorage?.Add(signal, lastValues[signal]);
+                        }
                     }
 
                     DataPlotter.Update();

@@ -2,7 +2,6 @@
 using DataHub.Core;
 using ScottPlot.Plottables;
 using System.Text.Json.Serialization;
-
 namespace Graphium.Models
 {
     public class Signal
@@ -15,6 +14,9 @@ namespace Graphium.Models
         [JsonIgnore] public Plot Plot { get; set; } = new Plot();
         [JsonIgnore] public List<DataLogger> Loggers { get; set; } = new();
         public PlotProperties Properties { get; set; } = new();
+        public double SamplingRate { get; set; }
+        [JsonIgnore] public double? _lastTimestamp = null;
+        [JsonIgnore] private double _timeOffset = 0; // ADD THIS LINE
         #endregion
         #region METHODS
         public Signal()
@@ -23,13 +25,21 @@ namespace Graphium.Models
             Source = ModuleType.NONE;
             Init();
         }
-        public Signal(string name, ModuleType source, PlotProperties? properties = null)
+        public Signal(string name, ModuleType source, PlotProperties? properties = null, double samplingRate = 1000)
         {
             Name = name;
             Source = source;
             Properties = properties ?? new PlotProperties();
+            SamplingRate = samplingRate;
             Init();
         }
+
+        public void ResetTimestamp()
+        {
+            _lastTimestamp = null;
+            _timeOffset = 0;
+        }
+
         private void Init()
         {
             var newLogger = Plot.Add.DataLogger();
@@ -41,10 +51,16 @@ namespace Graphium.Models
         }
         public void Update(DateTime timestamp, List<object> data)
         {
-            if (data == null || data.Count == 0)
-                return;
-
-            double oaDate = timestamp.ToOADate();
+            double currentTime;
+            if (!_lastTimestamp.HasValue)
+            {
+                _timeOffset = timestamp.Ticks / (double)TimeSpan.TicksPerSecond;
+                currentTime = 0;
+            }
+            else
+            {
+                currentTime = (timestamp.Ticks / (double)TimeSpan.TicksPerSecond) - _timeOffset;
+            }
 
             if (data.First() is IEnumerable<object> nested)
             {
@@ -65,20 +81,20 @@ namespace Graphium.Models
                     int ch = 0;
                     foreach (var value in sample)
                     {
-                        Loggers[ch].Add(oaDate, Convert.ToDouble(value));
+                        Loggers[ch].Add(currentTime, Convert.ToDouble(value));
                         ch++;
                     }
                 }
             }
             else
             {
-                int sampleIndex = 0;
                 foreach (var value in data)
                 {
-                    Loggers.First().Add(oaDate, Convert.ToDouble(value));
-                    sampleIndex++;
+                    Loggers.First().Add(currentTime, Convert.ToDouble(value));
                 }
             }
+
+            _lastTimestamp = currentTime;
         }
         private Color GetColorForIndex(int index)
         {
