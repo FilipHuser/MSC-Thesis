@@ -24,9 +24,10 @@ namespace Graphium
             services.AddSingleton<IViewFactory , ViewFactoryService>();
             services.AddSingleton<IViewModelFactory, ViewModelFactoryService>();
             services.AddSingleton<ILoggingService, LoggingService>();
-            services.AddSingleton<ISettingsService, SettingsService>();
+            services.AddSingleton<IConfigurationService, ConfigurationService>();
             services.AddSingleton<ISignalService, SignalService>();
             services.AddSingleton<IDataHubService, DataHubService>();
+            services.AddSingleton<IAppConfigurationService, AppConfigurationService>();
 
             //VIEWMODELS
             services.AddScoped<MainViewModel>();
@@ -58,7 +59,7 @@ namespace Graphium
                 return () => new ChannelsConfigViewModel(
                     x.GetRequiredService<ISignalService>(),
                     x.GetRequiredService<ILoggingService>(),
-                    x.GetRequiredService<ISettingsService>(),
+                    x.GetRequiredService<IConfigurationService>(),
                     x.GetRequiredService<IViewManager>());
             });
 
@@ -66,11 +67,17 @@ namespace Graphium
             {
                 return () => new SignalManagerViewModel(
                     x.GetRequiredService<IViewManager>(),
-                    x.GetRequiredService<ISettingsService>());
+                    x.GetRequiredService<IConfigurationService>());
             });
 
             services.AddSingleton<Create<SignalCreatorViewModel>>(x => {
                 return () => new SignalCreatorViewModel(
+                    x.GetRequiredService<IViewManager>());
+            });
+
+            services.AddSingleton<Create<PreferencesViewModel>>(x => {
+                return () => new PreferencesViewModel(
+                    x.GetRequiredService<IAppConfigurationService>(),
                     x.GetRequiredService<IViewManager>());
             });
 

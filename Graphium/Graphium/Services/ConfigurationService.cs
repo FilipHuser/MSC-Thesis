@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace Graphium.Services
 {
-    internal class SettingsService : ISettingsService
+    internal class ConfigurationService : IConfigurationService
     {
         #region SERVICES
         private readonly ILoggingService _loggingService;
@@ -20,7 +20,7 @@ namespace Graphium.Services
         };
         #endregion
         #region METHODS
-        public SettingsService(ILoggingService loggingService)
+        public ConfigurationService(ILoggingService loggingService)
         {
             _loggingService = loggingService;
         }
@@ -56,29 +56,48 @@ namespace Graphium.Services
         }
         public void Save<T>(T settings, SettingsCategory category, bool append = false)
         {
-            var filePath = GetFilePath(category);
-
-            if (append && File.Exists(filePath))
+            try
             {
-                var existingJson = File.ReadAllText(filePath);
-                var existingData = JsonSerializer.Deserialize<List<T>>(existingJson, _options) ?? new List<T>();
+                var filePath = GetFilePath(category);
 
-                if (settings is IEnumerable<T> newItems)
+                if (append && File.Exists(filePath))
                 {
-                    existingData.AddRange(newItems);
+                    var existingJson = File.ReadAllText(filePath);
+                    var existingData = JsonSerializer.Deserialize<List<T>>(existingJson, _options) ?? new List<T>();
+
+                    if (settings is IEnumerable<T> newItems)
+                    {
+                        existingData.AddRange(newItems);
+                    }
+                    else
+                    {
+                        existingData.Add(settings);
+                    }
+
+                    var json = JsonSerializer.Serialize(existingData, _options);
+                    File.WriteAllText(filePath, json);
                 }
                 else
                 {
-                    existingData.Add(settings);
+                    var json = JsonSerializer.Serialize(settings, _options);
+                    File.WriteAllText(filePath, json);
                 }
-
-                var json = JsonSerializer.Serialize(existingData, _options);
-                File.WriteAllText(filePath, json);
             }
-            else
+            catch (IOException ex)
             {
-                var json = JsonSerializer.Serialize(settings, _options);
-                File.WriteAllText(filePath, json);
+                _loggingService.LogError($"I/O error saving settings: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _loggingService.LogError($"Access denied when saving settings: {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                _loggingService.LogError($"JSON serialization error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                _loggingService.LogError($"Unexpected error saving settings: {ex.Message}");
             }
         }
         private static string GetFilePath(SettingsCategory category)

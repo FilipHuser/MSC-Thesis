@@ -22,6 +22,7 @@ namespace Graphium.Services
                                        Create<ChannelsConfigViewModel> channelsConfigViewModelCreator,
                                        Create<SignalManagerViewModel> signalManagerViewModelCreator,
                                        Create<SignalCreatorViewModel> signalCreatorViewModelCreator,
+                                       Create<PreferencesViewModel> preferencesViewModelCreator,
                                        ILoggingService loggingService)
         {
             _loggingService = loggingService;
@@ -31,7 +32,8 @@ namespace Graphium.Services
                 { typeof(DataAcquisitionViewModel), () => dataAcquisitionViewModelCreator() },
                 { typeof(ChannelsConfigViewModel), () => channelsConfigViewModelCreator() },
                 { typeof(SignalManagerViewModel), () => signalManagerViewModelCreator() },
-                { typeof(SignalCreatorViewModel), () => signalCreatorViewModelCreator()}
+                { typeof(SignalCreatorViewModel), () => signalCreatorViewModelCreator() },
+                { typeof(PreferencesViewModel), () => preferencesViewModelCreator()}
             };
         }
         public TViewModel Create<TViewModel>() where TViewModel : ViewModelBase

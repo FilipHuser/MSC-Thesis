@@ -5,7 +5,6 @@ using Graphium.Core;
 using Graphium.Enums;
 using Graphium.Interfaces;
 using Graphium.Models;
-using Graphium.Services;
 
 namespace Graphium.ViewModels
 {
@@ -14,13 +13,13 @@ namespace Graphium.ViewModels
         #region SERVICES
         private readonly ISignalService _signalService;
         private readonly ILoggingService _loggingService;
-        private readonly ISettingsService _settingsService;
+        private readonly IConfigurationService _ConfigurationService;
         private readonly IViewManager _viewManager;
         #endregion
         #region PROPERTIES
         public string Header => "Channels";
         public ObservableCollection<int> Channels { get; set; } = [];
-        public ObservableCollection<SignalBase> ChannelOptions { get; set; } = [];
+        public ObservableCollection<Signal> ChannelOptions { get; set; } = [];
         public ObservableCollection<ChannelSlot> ConfiguredChannels { get; set; } = [];
         #endregion
         #region RELAY_COMMANDS
@@ -29,17 +28,17 @@ namespace Graphium.ViewModels
         public RelayCommand SetupCmd => new RelayCommand(execute => Setup());
         #endregion
         #region METHODS
-        public ChannelsConfigViewModel(ISignalService signalService, ILoggingService loggingService, ISettingsService settingsService, IViewManager viewManager)
+        public ChannelsConfigViewModel(ISignalService signalService, ILoggingService loggingService, IConfigurationService ConfigurationService, IViewManager viewManager)
         {
             _signalService = signalService;
             _loggingService = loggingService;
-            _settingsService = settingsService;
+            _ConfigurationService = ConfigurationService;
             _viewManager = viewManager;
             Init();
         }
         public void LoadSignals()
         {
-            var availableSignals = _settingsService.Load<List<SignalBase>>(SettingsCategory.SIGNALS_CONFIGURATION) ?? new List<SignalBase>();
+            var availableSignals = _ConfigurationService.Load<List<Signal>>(SettingsCategory.SIGNALS_CONFIGURATION) ?? new List<Signal>();
             var currentSelections = ConfiguredChannels
                 .Where(slot => slot.Signal != null)
                 .ToDictionary(slot => slot.Number, slot => slot.Signal!.Name);

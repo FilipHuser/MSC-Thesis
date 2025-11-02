@@ -8,19 +8,19 @@ namespace Graphium.Services
     class SignalService : ISignalService
     {
         #region PROPERTIES
-        private ObservableCollection<SignalBase>? _signals = [];
-        public IReadOnlyCollection<SignalBase>? Signals => _signals;
+        private ObservableCollection<Signal>? _signals = [];
+        public IReadOnlyCollection<Signal>? Signals => _signals;
         public event EventHandler? SignalsChanged;
         #endregion
         #region METHODS
-        public void AddSignal(SignalBase signal)
+        public void AddSignal(Signal signal)
         {
-            if (_signals == null) { _signals = new ObservableCollection<SignalBase>(); }
+            if (_signals == null) { _signals = new ObservableCollection<Signal>(); }
             _signals.Add(signal);
         }
-        public void RemoveSignal(SignalBase signal) => _signals?.Remove(signal);
+        public void RemoveSignal(Signal signal) => _signals?.Remove(signal);
         public void Clear() => _signals?.Clear();
-        public void SetCurrentSignals(ObservableCollection<SignalBase> signals)
+        public void SetCurrentSignals(ObservableCollection<Signal> signals)
         {
             if(_signals != null) {
                 _signals.CollectionChanged -= SignalsCollectionChanged; }

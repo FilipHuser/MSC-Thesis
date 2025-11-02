@@ -21,7 +21,8 @@ namespace Graphium.Services
             _creators = new Dictionary<Type, Func<Window>>
             {
                 { typeof(DataAcquisitionViewModel), () => new DataAcquisitionWindow() },
-                { typeof(SignalCreatorViewModel), () => new SignalCreatorWindow() }
+                { typeof(SignalCreatorViewModel), () => new SignalCreatorWindow() },
+                { typeof(PreferencesViewModel), () => new PreferencesWindow() }
             };
         }
         public Window Create<TViewModel>() where TViewModel : ViewModelBase

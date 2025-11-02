@@ -16,12 +16,14 @@ namespace Graphium.ViewModels
         #region PROPERTIES
         private string? _name;
         private Task? _measurementTask;
-        private readonly CancellationTokenSource _cts = new();
+        private int _dataPollingInterval = 16; // ms
+        private SignalStorage? _signalStorage;
+        private CancellationTokenSource? _cts = new();
         public int TabId { get; set; } = -1;
         public string? Name { get => _name; set => SetProperty(ref _name, value); }
         public bool IsMeasuring { get; private set; }
         public DataPlotterViewModel DataPlotter { get; set; }
-        public ObservableCollection<SignalBase> Signals { get; set; } = [];
+        public ObservableCollection<Signal> Signals { get; set; } = [];
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand StartCmd => new RelayCommand(execute => StartMeasuring(), canExecute => !_dataHubService.IsCapturing && _signalService.Signals != null
@@ -40,66 +42,50 @@ namespace Graphium.ViewModels
         {
             _dataHubService.StopCapturing();
             IsMeasuring = false;
-            _cts.Cancel();
-            DataPlotter.StopPloting();
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+            _signalStorage = null;
         }
         private void StartMeasuring()
         {
+            _signalStorage = new SignalStorage(Name!, Signals.ToList());
             _dataHubService.StartCapturing();
-
+            _cts = new CancellationTokenSource();
             _measurementTask = AcquireDataAsync(_cts.Token);
-
             IsMeasuring = true;
-            DataPlotter.StartPloting();
         }
         private async Task AcquireDataAsync(CancellationToken token)
         {
-            var startTime = DateTime.Now;
-
             try
             {
                 while (!token.IsCancellationRequested)
                 {
                     var dataByModule = _dataHubService.GetData();
                     var moduleCounters = new Dictionary<ModuleType, int>();
-
-                    // calculate elapsed time
-                    double elapsedTime = (DateTime.Now - startTime).TotalSeconds;
+                    DateTime currentTime = DateTime.Now;
 
                     foreach (var signal in Signals)
                     {
                         var sourceModuleType = signal.Source;
 
-                        if (!dataByModule.ContainsKey(sourceModuleType)) continue;
-                        var sourceData = dataByModule[sourceModuleType];
-                        if (sourceData == null) continue;
+                        if (!dataByModule.TryGetValue(sourceModuleType, out var sourceData) || sourceData == null)
+                            continue;
 
                         int currentCounter = moduleCounters.TryGetValue(sourceModuleType, out int c) ? c : 0;
 
-                        switch (signal)
-                        {
-                            case Models.Signal si:
-                                if (!sourceData.TryGetValue(currentCounter, out var list)) break;
-                                si.Update(new() { { 0, list } }, elapsedTime); // <-- pass elapsed time here
-                                currentCounter++;
-                                break;
+                        if (!sourceData.TryGetValue(currentCounter, out var list))
+                            break;
 
-                            case SignalComposite sc:
-                                var slice = new Dictionary<int, List<object>>();
-                                for (int i = 0; i < sc.Signals.Count; i++)
-                                {
-                                    if (sourceData.TryGetValue(currentCounter + i, out var item))
-                                        slice[i] = item;
-                                }
-                                sc.Update(slice, elapsedTime); // <-- pass elapsed time here
-                                currentCounter += sc.Signals.Count;
-                                break;
-                        }
+                        signal.Update(currentTime, list);
+                        _signalStorage?.Add(signal, list.First());
 
+                        currentCounter++;
                         moduleCounters[sourceModuleType] = currentCounter;
                     }
 
-                    await Task.Delay(10, token); // can be made configurable
+                    DataPlotter.Update();
+                    await Task.Delay(_dataPollingInterval, token);
                 }
             }
             catch (Exception ex)
@@ -107,7 +93,6 @@ namespace Graphium.ViewModels
                 System.Diagnostics.Debug.WriteLine($"Measurement error: {ex.Message}");
             }
         }
-
         #endregion
     }
 }

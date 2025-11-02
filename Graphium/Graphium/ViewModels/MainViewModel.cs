@@ -46,7 +46,8 @@ namespace Graphium.ViewModels
         public RelayCommand CloseTabCmd => new RelayCommand(item => CloseTab(item));
         public RelayCommand NextTabCmd => new RelayCommand(execute => NextTab(), canExecute => CurrentTab != null && Tabs.Count > 1);
         public RelayCommand PreviousTabCmd => new RelayCommand(execute => PreviousTab(), canExecute => CurrentTab != null && Tabs.Count > 1);
-        public RelayCommand DataAcquisitionSetupCmd => new RelayCommand(execute => DataAcquisitionSetup() , canExecute => CurrentTab is not null);
+        public RelayCommand DataAcquisitionSetupCmd => new RelayCommand(execute => DataAcquisitionSetup(), canExecute => CurrentTab is not null);
+        public RelayCommand PreferencesCmd => new RelayCommand(execute => Preferences());
         #endregion
         public MainViewModel(IViewManager viewManager, IViewModelFactory viewModelFactory , ISignalService signalService, ILoggingService loggingService)
         {
@@ -91,7 +92,7 @@ namespace Graphium.ViewModels
             _loggingService.LogDebug($"Switched to previous Measurement tab, current: '{CurrentTab?.Name}'");
         }
         private void DataAcquisitionSetup() => _viewManager.ShowDialog<MainViewModel, DataAcquisitionViewModel>();
-
+        private void Preferences() => _viewManager.ShowDialog<MainViewModel, PreferencesViewModel>();
         private void OnSignalsChanged(object? sender, EventArgs e)  
         {
             _currentTab?.DataPlotter.OnSignalsChanged();

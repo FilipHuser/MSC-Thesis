@@ -6,13 +6,13 @@ namespace Graphium.Interfaces
     interface ISignalService
     {
         #region PROPERTIES
-        public IReadOnlyCollection<SignalBase>? Signals { get; }
+        public IReadOnlyCollection<Signal>? Signals { get; }
         event EventHandler? SignalsChanged;
         #endregion
         #region METHODS
-        public void SetCurrentSignals(ObservableCollection<SignalBase> signals);
-        public void AddSignal(SignalBase signal);
-        public void RemoveSignal(SignalBase signal);
+        public void SetCurrentSignals(ObservableCollection<Signal> signals);
+        public void AddSignal(Signal signal);
+        public void RemoveSignal(Signal signal);
         public void Clear();
         #endregion
     }

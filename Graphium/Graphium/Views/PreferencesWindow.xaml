@@ -1,0 +1,47 @@
+﻿<Window x:Class="Graphium.Views.PreferencesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Graphium.Views"
+        xmlns:models="clr-namespace:Graphium.Models"
+        mc:Ignorable="d"
+        Title="PreferencesWindow" Height="Auto" Width="Auto" SizeToContent="WidthAndHeight">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Label Content="Capture Device" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+        <ComboBox SelectedIndex="{Binding Settings.CaptureDeviceIndex, Mode=TwoWay}" 
+                  ItemsSource="{Binding CaptureDeviceOptions}"
+                  Grid.Row="0" Grid.Column="1" Margin="0,2"/>
+
+        <Label Content="UDP Packet Payload Size" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
+        <TextBox Text="{Binding Settings.PayloadSize, Mode=TwoWay}" Grid.Row="1" Grid.Column="1" Margin="0,2"/>
+
+        <Label Content="BIOPAC IP Address" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
+        <TextBox Text="{Binding Settings.IPAddr, Mode=TwoWay}" Grid.Row="2" Grid.Column="1" Margin="0,2"/>
+
+        <Label Content="URI" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
+        <TextBox Text="{Binding Settings.URI, Mode=TwoWay}" Grid.Row="3" Grid.Column="1" Margin="0,2"/>
+
+        <Button Content="Save" 
+                Grid.Row="4" Grid.Column="1"
+                Margin="0,10,0,0"
+                HorizontalAlignment="Right" 
+                Width="80"
+                Padding="5"
+                Command="{Binding SaveCmd}"/>
+    </Grid>
+</Window>
