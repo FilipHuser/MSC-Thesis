@@ -2,7 +2,15 @@
 
 ## IMPORTANT: First-Time Setup
 
-Before running Graphium, open Command Prompt as Administrator and run:
+### 1. Install npcap for SharpPcap
+
+Download and install npcap from: https://npcap.com/#download
+
+This is required for network packet capture functionality.
+
+### 2. Configure URL Reservation
+
+Open Command Prompt as Administrator and run:
 
 ```
 netsh http add urlacl url=http://+:8080/ user=Everyone
