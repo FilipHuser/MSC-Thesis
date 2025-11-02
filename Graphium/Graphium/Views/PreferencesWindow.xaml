@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Graphium.Views"
-        xmlns:models="clr-namespace:Graphium.Models"
+        xmlns:vm="clr-namespace:Graphium.ViewModels"
         mc:Ignorable="d"
-        Title="PreferencesWindow" Height="Auto" Width="Auto" SizeToContent="WidthAndHeight">
+        d:DataContext="{d:DesignInstance Type=vm:PreferencesViewModel}"
+        Title="Preferences" Height="Auto" Width="400" SizeToContent="Height">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,8 +16,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="150"/>
             <ColumnDefinition Width="*"/>
@@ -28,16 +29,36 @@
                   Grid.Row="0" Grid.Column="1" Margin="0,2"/>
 
         <Label Content="UDP Packet Payload Size" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
-        <TextBox Text="{Binding Settings.PayloadSize, Mode=TwoWay}" Grid.Row="1" Grid.Column="1" Margin="0,2"/>
+        <TextBox Text="{Binding Settings.PayloadSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                 Grid.Row="1" Grid.Column="1" Margin="0,2"/>
 
         <Label Content="BIOPAC IP Address" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
-        <TextBox Text="{Binding Settings.IPAddr, Mode=TwoWay}" Grid.Row="2" Grid.Column="1" Margin="0,2"/>
+        <TextBox Text="{Binding Settings.IPAddr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                 Grid.Row="2" Grid.Column="1" Margin="0,2"/>
 
         <Label Content="URI" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
-        <TextBox Text="{Binding Settings.URI, Mode=TwoWay}" Grid.Row="3" Grid.Column="1" Margin="0,2"/>
+        <TextBox Text="{Binding Settings.URI, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                 Grid.Row="3" Grid.Column="1" Margin="0,2"/>
+
+        <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+           Text="{Binding ValidationError}"
+           Foreground="Red"
+           TextWrapping="Wrap"
+           Margin="0,10,0,0">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasValidationError}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
 
         <Button Content="Save" 
-                Grid.Row="4" Grid.Column="1"
+                Grid.Row="5" Grid.Column="1"
                 Margin="0,10,0,0"
                 HorizontalAlignment="Right" 
                 Width="80"

@@ -16,7 +16,7 @@ namespace Graphium.ViewModels
         #region PROPERTIES
         private string? _name;
         private Task? _measurementTask;
-        private int _dataPollingInterval = 16; // ms
+        private int _dataPollingInterval = 50; // ms
         private SignalStorage? _signalStorage;
         private CancellationTokenSource? _cts = new();
         public int TabId { get; set; } = -1;
