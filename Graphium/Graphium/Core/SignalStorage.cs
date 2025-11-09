@@ -7,8 +7,9 @@ namespace Graphium.Core
 {
     internal class SignalStorage
     {
+        #region PROPERTIES
         private string? _filePath;
-        private Dictionary<Signal, object?> AlignedValues = new Dictionary<Signal, object?>();
+        private Dictionary<Signal, (object? value, DateTime? timestamp)> AlignedValues = [];
         public SignalStorage(string measurementName, List<Signal> signals)
         {
             var allSignals = new List<Signal>();
@@ -17,27 +18,50 @@ namespace Graphium.Core
 
             foreach (var signal in allSignals.Distinct())
             {
-                AlignedValues[signal] = null;
+                AlignedValues[signal] = (null,null);
             }
             OnAlignment += Flush;
             Init(measurementName);
         }
         public delegate void AlignHandler();
         public event AlignHandler? OnAlignment;
+        #endregion
         #region METHODS
-        public void Add(Signal signal, object value)
+        public void Add(Signal signal, object value, DateTime timestamp)
         {
-            if (!AlignedValues.ContainsKey(signal)) { 
-                throw new ArgumentException("Signal not found in storage."); }
+            if (!AlignedValues.ContainsKey(signal)) { throw new ArgumentException("Signal not found in storage."); }
 
-            AlignedValues[signal] = value;
-            if (AlignedValues.All(x => x.Value != null))
+            AlignedValues[signal] = (value, timestamp);
+            if (AlignedValues.All(x => x.Value.value != null && x.Value.timestamp != null))
             {
                 OnAlignment?.Invoke();
                 var keys = AlignedValues.Keys.ToList();
                 foreach (var key in keys)
-                    AlignedValues[key] = null;
+                    AlignedValues[key] = (null, null);
             }
+        }
+        public string ToCsv(char delimiter)
+        {
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var valuesAsString = AlignedValues.Values.Select(v =>
+            {
+                if (v.value == null) return "";
+                if (v.value is List<object> list)
+                {
+                    return string.Join(',', list.Select(x =>
+                    {
+                        if (x == null) return "";
+                        if (x is IFormattable f) return f.ToString(null, CultureInfo.InvariantCulture);
+                        return x.ToString() ?? "";
+                    }));
+                }
+
+                if (v.value is IFormattable formattable) return formattable.ToString(null, CultureInfo.InvariantCulture);
+
+                return v.ToString() ?? "";
+            });
+
+            return $"{timestamp}{delimiter}" + string.Join(delimiter, valuesAsString);
         }
         private void Init(string fileName)
         {
@@ -53,29 +77,6 @@ namespace Graphium.Core
             {
                 sw.WriteLine(data);
             }
-        }
-        public string ToCsv(char delimiter)
-        {
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var valuesAsString = AlignedValues.Values.Select(v =>
-            {
-                if (v == null) return "";
-                if (v is List<object> list)
-                {
-                    return string.Join(',', list.Select(x =>
-                    {
-                        if (x == null) return "";
-                        if (x is IFormattable f) return f.ToString(null, CultureInfo.InvariantCulture);
-                        return x.ToString() ?? "";
-                    }));
-                }
-
-                if (v is IFormattable formattable) return formattable.ToString(null, CultureInfo.InvariantCulture);
-
-                return v.ToString() ?? "";
-            });
-
-            return $"{timestamp}{delimiter}" + string.Join(delimiter, valuesAsString);
         }
         #endregion
     }

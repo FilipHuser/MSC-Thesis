@@ -27,6 +27,7 @@ namespace Graphium
             services.AddSingleton<IConfigurationService, ConfigurationService>();
             services.AddSingleton<ISignalService, SignalService>();
             services.AddSingleton<IDataHubService, DataHubService>();
+            services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IAppConfigurationService, AppConfigurationService>();
 
             //VIEWMODELS
@@ -37,7 +38,8 @@ namespace Graphium
                 return () => new MeasurementViewModel(
                     x.GetRequiredService<ISignalService>(),
                     x.GetRequiredService<IDataHubService>(),
-                    x.GetRequiredService<IViewModelFactory>());
+                    x.GetRequiredService<IViewModelFactory>(),
+                    x.GetRequiredService<IDialogService>());
             });
 
             services.AddSingleton<Create<DataPlotterViewModel>>(x => 
@@ -88,7 +90,6 @@ namespace Graphium
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-
             var win = _serviceProvider.GetRequiredService<MainWindow>();
             win.Show();
         }

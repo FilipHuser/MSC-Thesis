@@ -9,7 +9,7 @@
             set => SetProperty(ref _payloadSize, value);
         }
 
-        private int _captureDeviceIndex = 3;
+        private int _captureDeviceIndex = 0;
         public int CaptureDeviceIndex
         {
             get => _captureDeviceIndex;
@@ -23,7 +23,7 @@
             set => SetProperty(ref _ipAddr, value);
         }
 
-        private string _uri = "http://localhost:8888/";
+        private string _uri = "http://*:8888/";
         public string URI
         {
             get => _uri;

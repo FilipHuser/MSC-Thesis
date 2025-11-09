@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Channels;
 using DataHub.Core;
 using Graphium.Core;
@@ -17,15 +18,20 @@ namespace Graphium.ViewModels
         private readonly IViewManager _viewManager;
         #endregion
         #region PROPERTIES
+        private ObservableCollection<ChannelSlot> _configuredChannels = [];
         public string Header => "Channels";
         public ObservableCollection<int> Channels { get; set; } = [];
         public ObservableCollection<Signal> ChannelOptions { get; set; } = [];
-        public ObservableCollection<ChannelSlot> ConfiguredChannels { get; set; } = [];
+        public ObservableCollection<ChannelSlot> ConfiguredChannels { get => _configuredChannels; set => SetProperty(ref _configuredChannels, value); }
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand AddChannelSlotCmd => new RelayCommand(execute => AddChannelSlot());
         public RelayCommand RemoveChannelSlotCmd => new RelayCommand(item => RemoveChannelSlot(item));
         public RelayCommand SetupCmd => new RelayCommand(execute => Setup());
+
+        public RelayCommand SaveConfigurationCmd => new RelayCommand(execute => SaveConfiguration(), canExecute => ConfiguredChannels.Any(x => x.Signal != null));
+        public RelayCommand LoadConfigurationCmd => new RelayCommand(execute => LoadConfiguration());
+
         #endregion
         #region METHODS
         public ChannelsConfigViewModel(ISignalService signalService, ILoggingService loggingService, IConfigurationService ConfigurationService, IViewManager viewManager)
@@ -132,6 +138,20 @@ namespace Graphium.ViewModels
                     _signalService.AddSignal(slot.Signal);
             }
             _viewManager.Close<DataAcquisitionViewModel>();
+        }
+
+
+        private void SaveConfiguration()
+        {
+            _ConfigurationService.Save(ConfiguredChannels.ToList(), SettingsCategory.CHANNELS_CONFIGURATION);
+        }
+        private void LoadConfiguration()
+        {
+            var channelSlots = _ConfigurationService.Load<List<ChannelSlot>>(SettingsCategory.CHANNELS_CONFIGURATION);
+
+            if(channelSlots == null || channelSlots.Count == 0) { return; }
+
+            ConfiguredChannels = new ObservableCollection<ChannelSlot>(channelSlots);
         }
         #endregion
     }

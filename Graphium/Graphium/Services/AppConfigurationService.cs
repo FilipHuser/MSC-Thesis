@@ -11,27 +11,28 @@ namespace Graphium.Services
         private readonly IConfigurationService _configurationService;
         #endregion
         #region PROPERTIES
-        private AppSettings _settings { get; set; } = new();
         public event EventHandler? ConfigurationChanged;
         #endregion
         #region METHODS
         public AppConfigurationService(IConfigurationService configurationService)
         {
             _configurationService = configurationService;
-
+        }
+        public AppSettings GetAppSettings()
+        {
             var settings = _configurationService.Load<AppSettings>(SettingsCategory.APP_CONFIGURATION);
 
-            if (settings == null)
-            {
-                _settings = new AppSettings();
-                _configurationService.Save(_settings, SettingsCategory.APP_CONFIGURATION);
-            }
+            if (settings != null)
+                return settings;
+
+            var defaultSettings = new AppSettings();
+            _configurationService.Save(defaultSettings, SettingsCategory.APP_CONFIGURATION);
+
+            return defaultSettings;
         }
-        public AppSettings GetAppSettings() => _settings;
         public void SetAppSettings(AppSettings settings)
         {
-            _settings = settings;
-            _configurationService.Save(_settings, SettingsCategory.APP_CONFIGURATION);
+            _configurationService.Save(settings, SettingsCategory.APP_CONFIGURATION);
             ConfigurationChanged?.Invoke(this, EventArgs.Empty);
         }
         #endregion

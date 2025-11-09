@@ -18,7 +18,7 @@
             <Menu>
                 <MenuItem Header="Measurement">
                     <MenuItem Header="Save As">
-                        <MenuItem Header="CSV" Command="" />
+                        <MenuItem Header="CSV" Command="{Binding SaveAsCSVCmd}" />
                     </MenuItem>
                 </MenuItem>
             </Menu>
