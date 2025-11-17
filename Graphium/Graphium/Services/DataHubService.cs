@@ -111,7 +111,10 @@ namespace Graphium.Services
             }
         }
 
-        public Dictionary<ModuleType, Dictionary<int, List<object>>?> GetData() => DataProcessor.ProcessAll(_hub.Modules.Values, _signalCounts);
+        public Dictionary<ModuleType, Dictionary<int, List<(object value, DateTime timestamp)>>?> GetData()
+        {
+            return DataProcessor.ProcessAll(_hub.Modules.Values, _signalCounts);
+        }
         public void StartCapturing()
         {
             _hub.StartCapturing();

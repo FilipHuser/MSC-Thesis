@@ -1,8 +1,11 @@
 ﻿using ScottPlot;
 using ScottPlot.WPF;
 using Graphium.Interfaces;
+using Graphium.Services;
+using Graphium.Models;
 using System.Windows.Input;
 using ScottPlot.MultiplotLayouts;
+using System.Windows;
 
 namespace Graphium.ViewModels
 {
@@ -11,6 +14,7 @@ namespace Graphium.ViewModels
         #region SERVICES
         private readonly ISignalService _signalService;
         private readonly ILoggingService _loggingService;
+        private readonly SignalPlotManager _plotManager;
         #endregion
         #region PROPERTIES
         private DraggableRows? _layout;
@@ -20,7 +24,7 @@ namespace Graphium.ViewModels
         private bool _autoFollow = true;
         private readonly IMultiplot _multiplot;
         public IPalette PlotPallete;
-        public WpfPlot PlotControl { get; } = new WpfPlot();
+        public WpfPlot PlotControl { get; } = new();
         #endregion
         #region METHODS
         public DataPlotterViewModel(ISignalService signalService, ILoggingService loggingService)
@@ -28,95 +32,88 @@ namespace Graphium.ViewModels
             _signalService = signalService;
             _loggingService = loggingService;
             PlotPallete = new ScottPlot.Palettes.Nord();
+            _plotManager = new SignalPlotManager(PlotPallete);
             _multiplot = PlotControl.Multiplot;
             Init();
         }
-        public void SetTimeWindow(double seconds)
-        {
-            _timeWindowSec = seconds;
-        }
-        public void SetAutoFollow(bool enabled)
-        {
-            _autoFollow = enabled;
-        }
+        public void SetTimeWindow(double seconds) => _timeWindowSec = seconds;
+        public void SetAutoFollow(bool enabled) => _autoFollow = enabled;
         public void OnSignalsChanged()
         {
             PlotControl.Reset();
             _multiplot.RemovePlot(_multiplot.GetPlot(0));
             UnsubscribePlotEvents();
+
             var signals = _signalService.Signals?.ToList();
             if (signals == null || !signals.Any()) { return; }
 
             int colorIndex = 0;
             foreach (var signal in signals)
             {
-                signal.ResetTimestamp();
-                var plot = signal.Plot;
+                var plot = _plotManager.GetOrCreatePlot(signal);
                 _multiplot.AddPlot(plot);
+
                 var color = PlotPallete.GetColor(colorIndex++);
                 colorIndex %= PlotPallete.Count();
-                plot.Axes.Left.Label.Text = signal.Name;
-                signal.Loggers.First().Color = color;
+
+                // Set color for all channels in this signal
+                _plotManager.SetAllChannelsColor(signal, color);
             }
 
             _multiplot.CollapseVertically();
+
             var plots = _multiplot.GetPlots();
             var bottomPlot = plots.Last();
-
 
             foreach (var plot in plots)
             {
                 plot.Axes.Left.LockSize(32);
                 plot.Axes.Right.LockSize(64);
-                plot.Grid.XAxis = bottomPlot.Axes.Bottom;
                 plot.Grid.YAxis = plot.Axes.Right;
+
+                if (plot != bottomPlot)
+                {
+                    plot.Grid.XAxis = bottomPlot.Axes.Bottom;
+                }
             }
 
             _multiplot.SharedAxes.ShareX(plots);
+
             _layout = new DraggableRows();
             _multiplot.Layout = _layout;
             _dividerBeingDragged = null;
+
             SubscribePlotEvents();
-
-            UpdateTimeWindow();
-
+            PlotControl.UpdateLayout();
             PlotControl.Refresh();
+
             _loggingService.LogDebug($"Refreshed plot with {signals.Count()} signals.");
         }
-        public void Update()
-        {
-            if (_autoFollow)
-            {
-                UpdateTimeWindow();
-            }
-            PlotControl.Refresh();
-        }
-        private void UpdateTimeWindow()
+        public void Update(double currentTime)
         {
             var signals = _signalService.Signals?.ToList();
-            if (signals == null || !signals.Any()) return;
-
-            var plots = _multiplot.GetPlots();
-            if (!plots.Any()) return;
-
-            // Find the latest timestamp across all signals (in seconds)
-            double? maxTimestamp = signals
-                .Where(s => s._lastTimestamp.HasValue)
-                .Select(s => s._lastTimestamp.Value)
-                .DefaultIfEmpty(0)
-                .Max();
-
-            if (!maxTimestamp.HasValue || maxTimestamp.Value == 0)
-                return;
-
-            double endTime = maxTimestamp.Value;
-            double startTime = Math.Max(0, endTime - _timeWindowSec);
-
-            foreach (var plot in plots)
+            if (signals != null)
             {
-                plot.Axes.SetLimitsX(startTime, endTime);
-                plot.Axes.AutoScaleY(plot.Axes.Right);
+                foreach (var signal in signals)
+                {
+                    _plotManager.UpdatePlot(signal);
+                }
             }
+
+            //if (_autoFollow)
+            //{
+            //    var plots = _multiplot.GetPlots();
+            //    if (!plots.Any()) return;
+
+            //    double startTime = Math.Max(0, currentTime - _timeWindowSec);
+
+            //    foreach (var plot in plots)
+            //    {
+            //        plot.Axes.SetLimitsX(startTime, currentTime);
+            //        plot.Axes.AutoScaleY(plot.Axes.Righ\t);
+            //    }
+            //}
+            PlotControl.Refresh();
         }
         private void Init() => _multiplot.RemovePlot(_multiplot.GetPlot(0));
         private void SubscribePlotEvents()
@@ -142,7 +139,8 @@ namespace Graphium.ViewModels
             if (_layout == null) return;
 
             double mouseY = e.GetPosition(PlotControl).Y;
-            _dividerBeingDragged = _layout.GetDivider((float)mouseY);
+            double dpiScale = GetDPIScale();
+            _dividerBeingDragged = _layout.GetDivider((float)(mouseY * dpiScale));
 
             if (_dividerBeingDragged is null)
             {
@@ -167,14 +165,15 @@ namespace Graphium.ViewModels
             if (_layout == null) return;
 
             double mouseY = e.GetPosition(PlotControl).Y;
+            double dpiScale = GetDPIScale();
 
             if (_dividerBeingDragged is not null)
             {
-                _layout.SetDivider(_dividerBeingDragged.Value, (float)mouseY);
+                _layout.SetDivider(_dividerBeingDragged.Value, (float)(mouseY * dpiScale));
                 PlotControl.Refresh();
             }
 
-            UpdateCursor(mouseY);
+            UpdateCursor(mouseY * dpiScale);
         }
         private void OnPlotMouseLeave(object s, MouseEventArgs e)
         {
@@ -182,7 +181,6 @@ namespace Graphium.ViewModels
         }
         private void OnPlotMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            // Double-click to re-enable auto-follow
             _autoFollow = true;
             _loggingService.LogDebug("Auto-follow re-enabled");
         }
@@ -190,7 +188,6 @@ namespace Graphium.ViewModels
         {
             if (e.Key == Key.F)
             {
-                // Press 'F' to toggle auto-follow
                 _autoFollow = !_autoFollow;
                 _loggingService.LogDebug($"Auto-follow {(_autoFollow ? "enabled" : "disabled")}");
             }
@@ -200,6 +197,15 @@ namespace Graphium.ViewModels
             Mouse.OverrideCursor = _layout?.GetDivider((float)mouseY) != null
                 ? Cursors.SizeNS
                 : Cursors.Arrow;
+        }
+        private double GetDPIScale()
+        {
+            var source = PresentationSource.FromVisual(PlotControl);
+            if (source?.CompositionTarget != null)
+            {
+                return source.CompositionTarget.TransformToDevice.M22;
+            }
+            return 1.0;
         }
         #endregion
     }

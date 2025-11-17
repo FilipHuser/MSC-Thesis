@@ -11,7 +11,7 @@ namespace Graphium.Interfaces
     interface IDataHubService
     {
         #region METHODS
-        Dictionary<ModuleType, Dictionary<int, List<object>>?> GetData();
+        Dictionary<ModuleType, Dictionary<int, List<(object value, DateTime timestamp)>>?> GetData();
         void StartCapturing();
         void StopCapturing();
         bool IsCapturing { get; }

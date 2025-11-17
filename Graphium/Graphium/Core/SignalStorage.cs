@@ -1,82 +1,58 @@
-﻿using System.IO;
+﻿using Graphium.Enums;
 using Graphium.Models;
-using Graphium.ViewModels;
-using System.Globalization;
 
 namespace Graphium.Core
 {
     internal class SignalStorage
     {
         #region PROPERTIES
+        private HoldMode _mode;
         private string? _filePath;
-        private Dictionary<Signal, (object? value, DateTime? timestamp)> AlignedValues = [];
-        public SignalStorage(string measurementName, List<Signal> signals)
+        private Dictionary<Signal, List<object>?> _latestSamples = [];
+        private HashSet<Signal> _signalsWithData = [];
+        public SignalStorage(string measurementName, List<Signal> signals, HoldMode mode = HoldMode.ZOH)
         {
-            var allSignals = new List<Signal>();
-
-            allSignals.AddRange(signals.Where(x => x.IsAcquired));
-
-            foreach (var signal in allSignals.Distinct())
+            _mode = mode;
+            foreach (Signal signal in signals)
             {
-                AlignedValues[signal] = (null,null);
+                _latestSamples.Add(signal, null);
             }
-            OnAlignment += Flush;
-            Init(measurementName);
         }
-        public delegate void AlignHandler();
-        public event AlignHandler? OnAlignment;
         #endregion
         #region METHODS
-        public void Add(Signal signal, object value, DateTime timestamp)
+        public void Add(Signal signal, List<object>? value)
         {
-            if (!AlignedValues.ContainsKey(signal)) { throw new ArgumentException("Signal not found in storage."); }
-
-            AlignedValues[signal] = (value, timestamp);
-            if (AlignedValues.All(x => x.Value.value != null && x.Value.timestamp != null))
-            {
-                OnAlignment?.Invoke();
-                var keys = AlignedValues.Keys.ToList();
-                foreach (var key in keys)
-                    AlignedValues[key] = (null, null);
-            }
+            _latestSamples[signal] = value;
+            if (!_signalsWithData.Contains(signal)) { _signalsWithData.Add(signal); }
         }
-        public string ToCsv(char delimiter)
+        public Dictionary<Signal, List<object>?> GetSnapshot()
         {
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var valuesAsString = AlignedValues.Values.Select(v =>
+            var snapshot = new Dictionary<Signal, List<object>?>();
+
+            foreach(var kvp in _latestSamples)
             {
-                if (v.value == null) return "";
-                if (v.value is List<object> list)
+                var signal = kvp.Key;
+                var value = kvp.Value;
+
+                switch (_mode)
                 {
-                    return string.Join(',', list.Select(x =>
-                    {
-                        if (x == null) return "";
-                        if (x is IFormattable f) return f.ToString(null, CultureInfo.InvariantCulture);
-                        return x.ToString() ?? "";
-                    }));
+                    case HoldMode.ZOH:
+                        snapshot[signal] = value;
+                        break;
+
+                    case HoldMode.FOH:
+                    case HoldMode.HOH:
+                        // For interpolation modes, return null if no data yet
+                        // (would need history for proper interpolation)
+                        snapshot[signal] = _signalsWithData.Contains(signal) ? value : null;
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unknown hold mode: {_mode}");
                 }
-
-                if (v.value is IFormattable formattable) return formattable.ToString(null, CultureInfo.InvariantCulture);
-
-                return v.ToString() ?? "";
-            });
-
-            return $"{timestamp}{delimiter}" + string.Join(delimiter, valuesAsString);
-        }
-        private void Init(string fileName)
-        {
-            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Graphium", "Measurements");
-            if (!Directory.Exists(appDataPath)) Directory.CreateDirectory(appDataPath);
-            _filePath = Path.Combine(appDataPath, $"{fileName}_tmpMeasurement.csv");
-            if (File.Exists(_filePath)) File.WriteAllText(_filePath, string.Empty);
-        }
-        private void Flush()
-        {
-            string data = ToCsv(';');
-            using (var sw = new StreamWriter(_filePath!, append: true))
-            {
-                sw.WriteLine(data);
             }
+
+            return snapshot;
         }
         #endregion
     }

@@ -7,6 +7,7 @@ using Microsoft.Win32;
 using System.Windows;
 using System.IO;
 using Graphium.Services;
+using System.Diagnostics;
 
 namespace Graphium.ViewModels
 {
@@ -24,8 +25,6 @@ namespace Graphium.ViewModels
         private int _dataPollingInterval = 16; // ms
         private SignalStorage? _signalStorage;
         private CancellationTokenSource? _cts = new();
-        private readonly TimeSpan _signalTimeout = TimeSpan.FromSeconds(5);
-        private readonly HashSet<ModuleType> _warnedSources = new();
         public int TabId { get; set; } = -1;
         public string? Name { get => _name; set => SetProperty(ref _name, value); }
         public bool IsMeasuring { get; private set; }
@@ -134,85 +133,55 @@ namespace Graphium.ViewModels
         }
         private async Task AcquireDataAsync(CancellationToken token)
         {
-            var startTime = DateTime.Now;
-            try
-            {
-                var lastValues = new Dictionary<Signal, object>();
-                var lastReceivedPerSource = new Dictionary<ModuleType, DateTime>();
+            DateTime startTime = DateTime.Now;
+            var ts = new Dictionary<Signal, HashSet<double>>();
 
-                while (!token.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
+            {
+                var dataByModule = _dataHubService.GetData();
+                var moduleCounters = new Dictionary<ModuleType, int>();
+
+                foreach (var signal in Signals)
                 {
-                    var dataByModule = _dataHubService.GetData();
-                    var moduleCounters = new Dictionary<ModuleType, int>();
-                    DateTime currentTime = DateTime.Now;
+                    var sourceType = signal.Source;
+                    if (!moduleCounters.ContainsKey(sourceType))
+                        moduleCounters[sourceType] = 0;
 
-                    foreach (var signal in Signals)
+                    int currentCounter = moduleCounters[sourceType];
+
+                    if (!ts.ContainsKey(signal)) { ts[signal] = new HashSet<double>(); }
+
+                    if (dataByModule.TryGetValue(signal.Source, out var data) && data != null)
                     {
-                        var sourceModuleType = signal.Source;
 
-                        if (dataByModule.TryGetValue(sourceModuleType, out var sourceData) && sourceData != null)
+                        if (!data.TryGetValue(currentCounter, out var pairs)) { continue; }
+
+                        int i = 0;
+                        var delta = 1000.0 / signal.SamplingRate;
+
+                        double lastTimestamp = ts[signal].Count > 0 ? ts[signal].Max() : 0;
+
+                        foreach (var pair in pairs)
                         {
-                            int currentCounter = moduleCounters.TryGetValue(sourceModuleType, out int c) ? c : 0;
+                            var xTimestamp = Math.Max(lastTimestamp + delta, (pair.timestamp - startTime).TotalMilliseconds);
 
-                            if (sourceData.TryGetValue(currentCounter, out var list))
+                            if (!ts[signal].Add(xTimestamp))
                             {
-                                signal.Update(currentTime, list);
-                                lastValues[signal] = list.First();
-                                _signalStorage?.Add(signal, list.First(), currentTime);
-
-                                currentCounter++;
-                                moduleCounters[sourceModuleType] = currentCounter;
-
-                                lastReceivedPerSource[sourceModuleType] = currentTime;
-                                _warnedSources.Remove(sourceModuleType);
+                                Debug.WriteLine($"Duplicate timestamp: {signal.Name} {xTimestamp}");
                             }
-                            else if (lastValues.ContainsKey(signal))
-                            {
-                                signal.Update(currentTime, new List<object> { lastValues[signal] });
-                                _signalStorage?.Add(signal, lastValues[signal], currentTime);
-                            }
+
+                            signal.Update(xTimestamp, pair.value);
+                            lastTimestamp = xTimestamp;
                         }
+
+                        DataPlotter.Update(0);
                     }
+                    moduleCounters[sourceType] = currentCounter + 1;
 
-                    foreach (var sourceType in Signals.Select(s => s.Source).Distinct())
-                    {
-                        if (lastReceivedPerSource.TryGetValue(sourceType, out var lastTime))
-                        {
-                            if (currentTime - lastTime > _signalTimeout && !_warnedSources.Contains(sourceType))
-                            {
-                                _dialogService.ShowWarning(
-                                    $"Data from source '{sourceType}' has not arrived for {_signalTimeout.TotalSeconds} seconds."
-                                );
-                                _warnedSources.Add(sourceType);
-                            }
-                        }
-                        else
-                        {
-                            if (!_warnedSources.Contains(sourceType))
-                            {
-                                var firstCheckTime = currentTime - startTime;
-                                if (firstCheckTime > _signalTimeout)
-                                {
-                                    _dialogService.ShowWarning(
-                                        $"No data has been received yet from source '{sourceType}'."
-                                    );
-                                    _warnedSources.Add(sourceType);
-                                }
-                            }
-                        }
-                    }
-
-
-                    DataPlotter.Update();
-                    await Task.Delay(_dataPollingInterval, token);
                 }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Measurement error: {ex.Message}");
+                await Task.Delay(_dataPollingInterval, token);
             }
         }
-
         #endregion
     }
 }
