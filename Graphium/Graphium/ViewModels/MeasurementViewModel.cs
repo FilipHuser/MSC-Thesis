@@ -168,6 +168,7 @@ namespace Graphium.ViewModels
                             if (!ts[signal].Add(xTimestamp))
                             {
                                 Debug.WriteLine($"Duplicate timestamp: {signal.Name} {xTimestamp}");
+
                             }
 
                             signal.Update(xTimestamp, pair.value);
