@@ -20,7 +20,7 @@ namespace Graphium.ViewModels
         private DraggableRows? _layout;
         private int? _dividerBeingDragged;
         private bool _mouseDragging = false;
-        private double _timeWindowSec = 5;
+        private double _timeWindowSec = 10000;
         private bool _autoFollow = true;
         private readonly IMultiplot _multiplot;
         public IPalette PlotPallete;
@@ -83,6 +83,7 @@ namespace Graphium.ViewModels
             _multiplot.Layout = _layout;
             _dividerBeingDragged = null;
 
+
             SubscribePlotEvents();
             PlotControl.UpdateLayout();
             PlotControl.Refresh();
@@ -100,19 +101,19 @@ namespace Graphium.ViewModels
                 }
             }
 
-            //if (_autoFollow)
-            //{
-            //    var plots = _multiplot.GetPlots();
-            //    if (!plots.Any()) return;
+            if (_autoFollow)
+            {
+                var plots = _multiplot.GetPlots();
+                if (!plots.Any()) return;
 
-            //    double startTime = Math.Max(0, currentTime - _timeWindowSec);
+                double startTime = Math.Max(0, currentTime - _timeWindowSec);
 
-            //    foreach (var plot in plots)
-            //    {
-            //        plot.Axes.SetLimitsX(startTime, currentTime);
-            //        plot.Axes.AutoScaleY(plot.Axes.Righ\t);
-            //    }
-            //}
+                foreach (var plot in plots)
+                {
+                    plot.Axes.SetLimitsX(startTime, currentTime);
+                    plot.Axes.AutoScaleY(plot.Axes.Right);
+                }
+            }
             PlotControl.Refresh();
         }
         private void Init() => _multiplot.RemovePlot(_multiplot.GetPlot(0));

@@ -131,6 +131,8 @@ namespace Graphium.ViewModels
                 }
             }
         }
+        private SignalAligner _signalAligner = new SignalAligner();
+
         private async Task AcquireDataAsync(CancellationToken token)
         {
             DateTime startTime = DateTime.Now;
@@ -141,6 +143,7 @@ namespace Graphium.ViewModels
                 var dataByModule = _dataHubService.GetData();
                 var moduleCounters = new Dictionary<ModuleType, int>();
 
+                // First pass: process all new data and track per signal and per source
                 foreach (var signal in Signals)
                 {
                     var sourceType = signal.Source;
@@ -153,33 +156,60 @@ namespace Graphium.ViewModels
 
                     if (dataByModule.TryGetValue(signal.Source, out var data) && data != null)
                     {
-
-                        if (!data.TryGetValue(currentCounter, out var pairs)) { continue; }
-
-                        int i = 0;
-                        var delta = 1000.0 / signal.SamplingRate;
-
-                        double lastTimestamp = ts[signal].Count > 0 ? ts[signal].Max() : 0;
-
-                        foreach (var pair in pairs)
+                        if (data.TryGetValue(currentCounter, out var pairs))
                         {
-                            var xTimestamp = Math.Max(lastTimestamp + delta, (pair.timestamp - startTime).TotalMilliseconds);
+                            var delta = 1000.0 / signal.SamplingRate;
+                            double lastTimestamp = ts[signal].Count > 0 ? ts[signal].Max() : 0;
 
-                            if (!ts[signal].Add(xTimestamp))
+                            foreach (var pair in pairs)
                             {
-                                Debug.WriteLine($"Duplicate timestamp: {signal.Name} {xTimestamp}");
+                                var xTimestamp = Math.Max(lastTimestamp + delta, (pair.timestamp - startTime).TotalMilliseconds);
 
+                                if (!ts[signal].Add(xTimestamp))
+                                {
+                                    Debug.WriteLine($"Duplicate timestamp: {signal.Name} {xTimestamp}");
+                                }
+                                else
+                                {
+                                    signal.Update(xTimestamp, pair.value);
+                                    _signalAligner.UpdateSignal(signal, xTimestamp, pair.value);
+                                    lastTimestamp = xTimestamp;
+                                }
                             }
-
-                            signal.Update(xTimestamp, pair.value);
-                            lastTimestamp = xTimestamp;
                         }
-
-                        DataPlotter.Update(0);
                     }
                     moduleCounters[sourceType] = currentCounter + 1;
-
                 }
+
+                // Get the maximum timestamp across all sources
+                double maxTimestamp = _signalAligner.GetMaxTimestamp();
+
+                // Second pass: fill signals from slower sources up to maxTimestamp
+                foreach (var signal in Signals)
+                {
+                    double sourceLastTimestamp = _signalAligner.GetLastTimestamp(signal.Source);
+
+                    if (sourceLastTimestamp < maxTimestamp)
+                    {
+                        var lastValue = _signalAligner.GetLastValue(signal);  // Get value for THIS signal
+                        if (lastValue != null)
+                        {
+                            var delta = 1000.0 / signal.SamplingRate;
+                            double lastTimestamp = ts[signal].Count > 0 ? ts[signal].Max() : 0;
+
+                            while (lastTimestamp + delta <= maxTimestamp)
+                            {
+                                lastTimestamp += delta;
+                                if (ts[signal].Add(lastTimestamp))
+                                {
+                                    signal.Update(lastTimestamp, lastValue);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                DataPlotter.Update(maxTimestamp);
                 await Task.Delay(_dataPollingInterval, token);
             }
         }

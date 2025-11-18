@@ -61,7 +61,7 @@ namespace Graphium.Services
             int payloadSize = settings.PayloadSize;
             string ipAddr = settings.IPAddr;
             string uri = settings.URI ?? "http://localhost:8888/";
-            string filter = $"udp and src host {ipAddr} and udp[4:2] > {payloadSize}";
+            string filter = $"udp and src host {ipAddr} and udp[4:2] >  {payloadSize}";
 
             try
             {
