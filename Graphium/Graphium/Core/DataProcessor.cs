@@ -4,28 +4,43 @@ using DataHub.Core;
 using System.Text.Json;
 using DataHub.Interfaces;
 using SharpPcap;
+using Graphium.Models;
+using System.Text.RegularExpressions;
 
 namespace Graphium.Core
 {
     static class DataProcessor
     {
+        private static string NormalizeKey(string key)
+        {
+            return Regex.Replace(key, @"\s+", string.Empty);
+        }
+
         public static Dictionary<ModuleType, Dictionary<int, List<(object value, DateTime timestamp)>>?> ProcessAll(
             IEnumerable<IModule> modules,
-            Dictionary<ModuleType, int> signalCounts)
+            IEnumerable<Signal> signals)
         {
             var result = new Dictionary<ModuleType, Dictionary<int, List<(object value, DateTime timestamp)>>?>();
+            var signalsByModule = signals.GroupBy(s => s.Source)
+                                         .ToDictionary(g => g.Key, g => g.ToList());
 
             foreach (var module in modules)
             {
-                var channelCount = signalCounts.GetValueOrDefault(module.ModuleType, 0);
-                result[module.ModuleType] = channelCount > 0 ? ProcessModule(module, channelCount) : null;
+                if (signalsByModule.TryGetValue(module.ModuleType, out var moduleSignals) && moduleSignals.Any())
+                {
+                    result[module.ModuleType] = ProcessModule(module, moduleSignals);
+                }
+                else
+                {
+                    result[module.ModuleType] = null;
+                }
             }
 
             return result;
         }
-
-        private static Dictionary<int, List<(object value, DateTime timestamp)>>? ProcessModule(IModule module, int channelCount)
+        private static Dictionary<int, List<(object value, DateTime timestamp)>>? ProcessModule(IModule module, List<Signal> moduleSignals)
         {
+            var channelCount = moduleSignals.Count;
             if (channelCount <= 0) return null;
 
             var output = new Dictionary<int, List<(object value, DateTime timestamp)>>();
@@ -36,7 +51,7 @@ namespace Graphium.Core
                     ProcessBiopacModule(biopac, channelCount, output);
                     break;
                 case VRSourceModule vr:
-                    ProcessVRModule(vr, output);
+                    ProcessVRModule(vr, output, moduleSignals);
                     break;
             }
 
@@ -72,19 +87,22 @@ namespace Graphium.Core
                 }
             }
         }
-        private static void ProcessVRModule(VRSourceModule module, Dictionary<int, List<(object value, DateTime timestamp)>> output)
+        private static void ProcessVRModule(VRSourceModule module, Dictionary<int, List<(object value, DateTime timestamp)>> output, List<Signal> moduleSignals)
         {
             object? ConvertElement(JsonElement element) => element.ValueKind switch
             {
                 JsonValueKind.String => element.GetString(),
-                JsonValueKind.Number => element.TryGetInt64(out var l) ? l :
-                                        element.TryGetDouble(out var d) ? d : null,
+                JsonValueKind.Number => element.TryGetInt64(out var l) ? (object)l :
+                                         element.TryGetDouble(out var d) ? (object)d : null,
                 JsonValueKind.True => true,
                 JsonValueKind.False => false,
                 JsonValueKind.Array => element.EnumerateArray().Select(ConvertElement).ToList(),
                 JsonValueKind.Object => element.EnumerateObject().ToDictionary(p => p.Name, p => ConvertElement(p.Value)),
                 _ => null
             };
+            var signalNameToChannelIndex = moduleSignals
+                .Select((signal, index) => new { NormalizedName = NormalizeKey(signal.Name), index })
+                .ToDictionary(x => x.NormalizedName, x => x.index, StringComparer.OrdinalIgnoreCase);
 
             foreach (var post in module.Get())
             {
@@ -93,18 +111,26 @@ namespace Graphium.Core
                 var root = doc.RootElement;
                 if (root.ValueKind != JsonValueKind.Object) continue;
 
-                int index = 0;
-                foreach (var property in root.EnumerateObject())
+                var receivedData = root.EnumerateObject()
+                    .ToDictionary(p => NormalizeKey(p.Name), p => ConvertElement(p.Value), StringComparer.OrdinalIgnoreCase);
+
+                foreach (var mapping in signalNameToChannelIndex)
                 {
-                    var value = ConvertElement(property.Value);
-                    if (value != null)
+                    var normalizedSignalName = mapping.Key;
+                    var channelIndex = mapping.Value;
+
+                    if (receivedData.TryGetValue(normalizedSignalName, out object? value))
                     {
-                        AddSample(output, index, value, timestamp);
+                        AddSample(output, channelIndex, value!, timestamp);
                     }
-                    index++;
+                    else
+                    {
+                        AddSample(output, channelIndex, null!, timestamp);
+                    }
                 }
             }
         }
+
         private static void AddSample(Dictionary<int, List<(object value, DateTime timestamp)>> output, int channel, object value, DateTime timestamp)
         {
             if (!output.ContainsKey(channel))

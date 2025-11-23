@@ -6,6 +6,9 @@ using Graphium.Core;
 using Graphium.Interfaces;
 using Graphium.Models;
 using SharpPcap;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Graphium.Services
 {
@@ -19,12 +22,13 @@ namespace Graphium.Services
         #endregion
         #region PROPERTIES
         private readonly Hub _hub;
+        // _signalCounts is kept for UpdateSignalCounts event handler
         private Dictionary<ModuleType, int> _signalCounts = [];
         public bool IsCapturing => _hub.IsCapturing;
         #endregion
         #region METHODS
-        public DataHubService(ISignalService signalService, 
-                              IConfigurationService ConfigurationService, 
+        public DataHubService(ISignalService signalService,
+                              IConfigurationService ConfigurationService,
                               IAppConfigurationService appConfigurationService,
                               ILoggingService loggingService,
                               IDialogService dialogService)
@@ -36,6 +40,7 @@ namespace Graphium.Services
             _dialogService = dialogService;
             Init();
         }
+
         public void Init()
         {
             _loggingService.LogInfo("Initializing DataHubService");
@@ -44,6 +49,7 @@ namespace Graphium.Services
             _appConfigurationService.ConfigurationChanged += OnConfigurationChanged;
             _signalService.SignalsChanged += UpdateSignalCounts;
         }
+
         private void InitializeModules(AppSettings settings)
         {
             _loggingService.LogDebug($"Initializing modules with CaptureDevice: {settings.CaptureDeviceIndex}, IP: {settings.IPAddr}");
@@ -113,28 +119,35 @@ namespace Graphium.Services
 
         public Dictionary<ModuleType, Dictionary<int, List<(object value, DateTime timestamp)>>?> GetData()
         {
-            return DataProcessor.ProcessAll(_hub.Modules.Values, _signalCounts);
+            // FIX: Pass the Signals collection to the DataProcessor
+            // This is required for name-based filtering of VR data.
+            return DataProcessor.ProcessAll(_hub.Modules.Values, _signalService.Signals);
         }
+
         public void StartCapturing()
         {
             _hub.StartCapturing();
             _loggingService.LogDebug("Starting data capture");
         }
+
         public void StopCapturing()
         {
             _hub.StopCapturing();
             _loggingService.LogDebug("Stopping data capture");
         }
+
         public void AddModule(IModule module)
         {
             _hub.AddModule(module);
             _loggingService.LogDebug($"Adding module: {module.GetType().Name}");
         }
+
         public void RemoveModule(IModule module)
         {
             _hub.RemoveModule(module);
             _loggingService.LogDebug($"Removing module: {module.GetType().Name}");
         }
+
         private void UpdateSignalCounts(object? sender, EventArgs e)
         {
             _signalCounts = _signalService.Signals?
@@ -144,6 +157,7 @@ namespace Graphium.Services
 
             _loggingService.LogDebug($"Signal counts updated: {string.Join(", ", _signalCounts.Select(x => $"{x.Key}={x.Value}"))}");
         }
+
         private void OnConfigurationChanged(object? sender, EventArgs e)
         {
             _loggingService.LogDebug("Configuration changed, reinitializing modules");
