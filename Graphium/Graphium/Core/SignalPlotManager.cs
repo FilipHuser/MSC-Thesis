@@ -43,7 +43,6 @@ namespace Graphium.Services
                 signal.YData[channelIndex]
             );
 
-            // Always include channel number
             signalXY.LegendText = $"{signal.Name} CH{channelIndex + 1}";
 
             signalXY.LineWidth = 2;
@@ -61,6 +60,19 @@ namespace Graphium.Services
             {
                 AddChannelToPlot(signal, plotData, plotData.Plottables.Count);
             }
+        }
+        public void ClearAll()
+        {
+            foreach (var plotData in _plotDataMap.Values)
+            {
+                foreach (var plottable in plotData.Plottables)
+                {
+                    plotData.Plot.Remove(plottable);
+                }
+                plotData.Plottables.Clear();
+                plotData.Plot.Clear();
+            }
+            _plotDataMap.Clear();
         }
         public void SetChannelColor(Models.Signal signal, int channelIndex, Color color)
         {

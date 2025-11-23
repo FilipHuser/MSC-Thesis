@@ -15,7 +15,6 @@ namespace Graphium.Models
         public PlotProperties Properties { get; set; } = new();
         public double SamplingRate { get; set; }
         #endregion
-
         #region METHODS
         public Signal()
         {
@@ -23,7 +22,6 @@ namespace Graphium.Models
             Source = ModuleType.NONE;
             AddChannel();
         }
-
         public Signal(string name, ModuleType source, double samplingRate, PlotProperties? properties = null)
         {
             Name = name;
@@ -32,12 +30,10 @@ namespace Graphium.Models
             SamplingRate = samplingRate;
             AddChannel();
         }
-
         private void AddChannel()
         {
             YData.Add(new List<double>());
         }
-
         public void Update(double absoluteTimeSeconds, object? data)
         {
             if (data == null) return;
@@ -61,13 +57,16 @@ namespace Graphium.Models
             }
             XData.Add(absoluteTimeSeconds);
         }
-
+        public void ClearData()
+        {
+            XData.Clear();
+            YData.ForEach(channel => channel.Clear());
+        }
         public override bool Equals(object? obj)
         {
             if (obj is not Signal other) return false;
             return Name == other.Name && Source == other.Source;
         }
-
         public override int GetHashCode() => HashCode.Combine(Name, Source);
         #endregion
     }

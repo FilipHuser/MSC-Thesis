@@ -122,6 +122,28 @@ namespace Graphium.ViewModels
                 }
             }
         }
+        public void Reset()
+        {
+            _plotManager.ClearAll();
+            Init();
+        }
+        public void PauseRefresh()
+        {
+            if (_refreshTimer.IsEnabled)
+            {
+                _refreshTimer.Stop();
+                _loggingService.LogDebug("Plot refresh timer stopped.");
+            }
+        }
+
+        public void ResumeRefresh()
+        {
+            if (!_refreshTimer.IsEnabled)
+            {
+                _refreshTimer.Start();
+                _loggingService.LogDebug("Plot refresh timer resumed.");
+            }
+        }
         private void Init()
         {
             PlotControl.Plot.Legend.Orientation = Orientation.Horizontal;

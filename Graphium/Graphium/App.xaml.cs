@@ -41,7 +41,8 @@ namespace Graphium
                     x.GetRequiredService<IDataHubService>(),
                     x.GetRequiredService<IViewModelFactory>(),
                     x.GetRequiredService<IDialogService>(),
-                    x.GetRequiredService<IFileExportService>());
+                    x.GetRequiredService<IFileExportService>(),
+                    x.GetRequiredService<ILoggingService>());
             });
 
             services.AddSingleton<Create<DataPlotterViewModel>>(x => 

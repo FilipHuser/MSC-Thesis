@@ -16,11 +16,12 @@ namespace Graphium.ViewModels
         private readonly IViewModelFactory _viewModelFactory;
         private readonly IDialogService _dialogService;
         private readonly IFileExportService _fileExportService;
+        private readonly ILoggingService _loggingService;
         #endregion
         #region PROPERTIES
         private string? _name;
         private Task? _measurementTask;
-        private int _dataPollingInterval = 16; // ms
+        private int _dataPollingInterval = 16;
         private SignalAligner _signalAligner = new();
         private CancellationTokenSource? _cts = new();
         private CsvMeasurementExporter? _csvExporter;
@@ -31,54 +32,106 @@ namespace Graphium.ViewModels
         public ObservableCollection<Signal> Signals { get; set; } = [];
         #endregion
         #region RELAY_COMMANDS
-        public RelayCommand StartCmd => new RelayCommand(execute => StartMeasuring(), canExecute => !_dataHubService.IsCapturing && _signalService.Signals != null && _signalService.Signals.Any());
-        public RelayCommand StopCmd => new RelayCommand(execute => StopMeasuring(), canExecute => _dataHubService.IsCapturing);
-        public RelayCommand SaveAsCSVCmd => new RelayCommand(execute => SaveAsCSV());
+        public RelayCommand StartCmd => new RelayCommand(async execute => await StartMeasuringAsync(),
+                                                canExecute => !_dataHubService.IsCapturing && _signalService.Signals != null && _signalService.Signals.Any());
+        public RelayCommand StopCmd => new RelayCommand(async execute => await StopMeasuringAsync(), canExecute => _dataHubService.IsCapturing);
+        public RelayCommand SaveAsCSVCmd => new RelayCommand(async execute => await SaveAsCSV());
         #endregion
         #region METHODS
         public MeasurementViewModel(ISignalService signalService,
                                     IDataHubService dataHubService,
                                     IViewModelFactory viewModelFactory,
                                     IDialogService dialogService,
-                                    IFileExportService fileExportService)
+                                    IFileExportService fileExportService,
+                                    ILoggingService loggingService)
         {
             _signalService = signalService;
             _dataHubService = dataHubService;
             _viewModelFactory = viewModelFactory;
             _dialogService = dialogService;
             _fileExportService = fileExportService;
+            _loggingService = loggingService;
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
         }
-        public void StopMeasuring()
+        public async Task StopMeasuringAsync()
         {
             _dataHubService.StopCapturing();
-            IsMeasuring = false;
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _cts = null;
 
-            // Dispose the CSV exporter to flush and close the file
+            _cts?.Cancel();
+            IsMeasuring = false;
+
+            if (_measurementTask != null)
+            {
+                try
+                {
+                    await _measurementTask;
+                } catch (Exception ex)
+                {
+                    _loggingService.LogError($"Error waiting for measurement task: {ex.Message}");
+                }
+                _measurementTask = null;
+            }
             _csvExporter?.Dispose();
             _csvExporter = null;
+
+            _cts?.Dispose();
+            _cts = null;
         }
-        private void StartMeasuring()
+        private async Task StartMeasuringAsync()
         {
+            if (_dataHubService.IsCapturing)
+            {
+                _loggingService.LogWarning("Attempted to start measurement while already capturing.");
+                return;
+            }
+
+            bool hasPreviousData = Signals.Any(s => s.XData.Any());
+
+            if (hasPreviousData)
+            {
+                bool confirmedOverwrite = _dialogService.ShowConfirmation(
+                    "Starting a new measurement will erase all unsaved data from the previous session. Do you want to continue?",
+                    "Overwrite Unsaved Data?");
+
+                if (!confirmedOverwrite) { return; }
+
+                bool confirmedSave = _dialogService.ShowConfirmation(
+                    "The previous measurement is unsaved. Would you like to save it before starting a new session?",
+                    "Save Current Data?");
+
+                if (confirmedSave) { await SaveAsCSV(suppressResumePrompt: true); } // Pass the flag
+
+                // Ensure data is cleared outside the 'if (hasPreviousData)' block 
+                // if you had a separate sync StartMeasuring, but here it's fine 
+                // to clear *after* the decision process.
+            }
+
+            // Clear data and reset state
+            foreach (var signal in Signals)
+            {
+                signal.ClearData();
+            }
+            DataPlotter.Reset();
+            _signalAligner = new SignalAligner();
+
+            // Start new session
             _dataHubService.StartCapturing();
             _cts = new CancellationTokenSource();
-
-            // Create new CSV exporter for this measurement session
             _csvExporter = new CsvMeasurementExporter(this);
-
             _measurementTask = AcquireDataAsync(_cts.Token);
             IsMeasuring = true;
+
+            DataPlotter.ResumeRefresh();
+            DataPlotter.OnSignalsChanged();
         }
-        private async void SaveAsCSV()
+        private async Task SaveAsCSV(bool suppressResumePrompt = false)
         {
             bool wasRunning = IsMeasuring;
-            if (wasRunning) { StopMeasuring(); }
+            if (wasRunning) { await StopMeasuringAsync(); }
 
             try
             {
+                // ... file saving logic ...
                 string sourceFile = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "Graphium",
@@ -92,9 +145,9 @@ namespace Graphium.ViewModels
             }
             finally
             {
-                if (wasRunning && _dialogService.ShowConfirmation("Resume measurement?", "Continue"))
+                if (wasRunning && !suppressResumePrompt && _dialogService.ShowConfirmation("Resume measurement?", "Continue"))
                 {
-                    StartMeasuring();
+                    await StartMeasuringAsync();
                 }
             }
         }

@@ -14,18 +14,14 @@ namespace Graphium.Core
         private bool _headerWritten = false;
         private readonly Dictionary<Signal, int> _lastWrittenIndexPerSignal = new();
         public List<Signal> Signals { get; set; } = [];
-        private readonly string _delimiter; // New property for the delimiter
+        private readonly string _delimiter;
         private readonly CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
 
-        // Formats for different signal types
-        // F3 is used for the Timestamp column (time in ms)
         private const string TimestampFormat = "F3";
-        // G17 is a standard format for maximum precision in double/float
         private const string ValueFormat = "G17";
         #endregion
 
         #region METHODS
-        // Added 'delimiter' parameter to the constructor
         public CsvMeasurementExporter(MeasurementViewModel measurement, string delimiter = ";")
         {
             _delimiter = delimiter;
@@ -166,10 +162,8 @@ namespace Graphium.Core
             var header = new StringBuilder("Timestamp");
             foreach (var signal in Signals)
             {
-                // Add the main column delimiter before the signal name
                 header.Append(_delimiter);
 
-                // Now, only one column per signal
                 header.Append(signal.Name ?? $"Signal_{signal.Source}");
             }
             await _streamWriter.WriteLineAsync(header.ToString());
