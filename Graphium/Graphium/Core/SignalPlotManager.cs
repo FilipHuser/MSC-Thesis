@@ -31,7 +31,6 @@ namespace Graphium.Services
         }
         private void InitializePlot(Models.Signal signal, PlotData plotData)
         {
-            plotData.Plot.Axes.Left.Label.Text = signal.Name;
 
             // Create initial plottables for existing channels
             for (int i = 0; i < signal.YData.Count; i++)
@@ -46,10 +45,11 @@ namespace Graphium.Services
                 signal.YData[channelIndex]
             );
 
+            signalXY.LegendText = signal.Name;
+
             signalXY.LineWidth = 2;
             signalXY.Color = _palette.GetColor(channelIndex);
             signalXY.Axes.YAxis = plotData.Plot.Axes.Right;
-
             plotData.Plottables.Add(signalXY);
         }
         public void UpdatePlot(Models.Signal signal)

@@ -6,6 +6,7 @@ using Graphium.Models;
 using System.Windows.Input;
 using ScottPlot.MultiplotLayouts;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace Graphium.ViewModels
 {
@@ -20,9 +21,10 @@ namespace Graphium.ViewModels
         private DraggableRows? _layout;
         private int? _dividerBeingDragged;
         private bool _mouseDragging = false;
-        private double _timeWindowSec = 10000;
+        private double _timeWindow = 5000;
         private bool _autoFollow = true;
         private readonly IMultiplot _multiplot;
+        private readonly DispatcherTimer _refreshTimer;
         public IPalette PlotPallete;
         public WpfPlot PlotControl { get; } = new();
         #endregion
@@ -34,9 +36,13 @@ namespace Graphium.ViewModels
             PlotPallete = new ScottPlot.Palettes.Nord();
             _plotManager = new SignalPlotManager(PlotPallete);
             _multiplot = PlotControl.Multiplot;
+
+            _refreshTimer = new DispatcherTimer();
+            _refreshTimer.Tick += (s,e) => { PlotControl.Refresh(); };
+            _refreshTimer.Start();
+
             Init();
         }
-        public void SetTimeWindow(double seconds) => _timeWindowSec = seconds;
         public void SetAutoFollow(bool enabled) => _autoFollow = enabled;
         public void OnSignalsChanged()
         {
@@ -67,7 +73,6 @@ namespace Graphium.ViewModels
 
             foreach (var plot in plots)
             {
-                plot.Axes.Left.LockSize(32);
                 plot.Axes.Right.LockSize(64);
                 plot.Grid.YAxis = plot.Axes.Right;
 
@@ -106,7 +111,7 @@ namespace Graphium.ViewModels
                 var plots = _multiplot.GetPlots();
                 if (!plots.Any()) return;
 
-                double startTime = Math.Max(0, currentTime - _timeWindowSec);
+                double startTime = Math.Max(0, currentTime - _timeWindow);
 
                 foreach (var plot in plots)
                 {
@@ -114,7 +119,7 @@ namespace Graphium.ViewModels
                     plot.Axes.AutoScaleY(plot.Axes.Right);
                 }
             }
-            PlotControl.Refresh();
+            //PlotControl.Refresh();
         }
         private void Init() => _multiplot.RemovePlot(_multiplot.GetPlot(0));
         private void SubscribePlotEvents()
