@@ -3,10 +3,7 @@ using Graphium.Core;
 using Graphium.Models;
 using Graphium.Interfaces;
 using System.Collections.ObjectModel;
-using Microsoft.Win32;
-using System.Windows;
 using System.IO;
-using Graphium.Services;
 using System.Diagnostics;
 
 namespace Graphium.ViewModels
@@ -18,13 +15,15 @@ namespace Graphium.ViewModels
         private readonly IDataHubService _dataHubService;
         private readonly IViewModelFactory _viewModelFactory;
         private readonly IDialogService _dialogService;
+        private readonly IFileExportService _fileExportService;
         #endregion
         #region PROPERTIES
         private string? _name;
         private Task? _measurementTask;
         private int _dataPollingInterval = 16; // ms
-        private SignalStorage? _signalStorage;
+        private SignalAligner _signalAligner = new();
         private CancellationTokenSource? _cts = new();
+        private CsvMeasurementExporter? _csvExporter;
         public int TabId { get; set; } = -1;
         public string? Name { get => _name; set => SetProperty(ref _name, value); }
         public bool IsMeasuring { get; private set; }
@@ -32,20 +31,22 @@ namespace Graphium.ViewModels
         public ObservableCollection<Signal> Signals { get; set; } = [];
         #endregion
         #region RELAY_COMMANDS
-        public RelayCommand StartCmd => new RelayCommand(execute => StartMeasuring(), canExecute => !_dataHubService.IsCapturing && _signalService.Signals != null                                                                                                              && _signalService.Signals.Any());
+        public RelayCommand StartCmd => new RelayCommand(execute => StartMeasuring(), canExecute => !_dataHubService.IsCapturing && _signalService.Signals != null && _signalService.Signals.Any());
         public RelayCommand StopCmd => new RelayCommand(execute => StopMeasuring(), canExecute => _dataHubService.IsCapturing);
         public RelayCommand SaveAsCSVCmd => new RelayCommand(execute => SaveAsCSV());
         #endregion
         #region METHODS
-        public MeasurementViewModel(ISignalService signalService, 
-                                    IDataHubService dataHubService, 
+        public MeasurementViewModel(ISignalService signalService,
+                                    IDataHubService dataHubService,
                                     IViewModelFactory viewModelFactory,
-                                    IDialogService dialogService)
+                                    IDialogService dialogService,
+                                    IFileExportService fileExportService)
         {
             _signalService = signalService;
             _dataHubService = dataHubService;
             _viewModelFactory = viewModelFactory;
             _dialogService = dialogService;
+            _fileExportService = fileExportService;
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
         }
         public void StopMeasuring()
@@ -55,24 +56,26 @@ namespace Graphium.ViewModels
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
-            _signalStorage = null;
+
+            // Dispose the CSV exporter to flush and close the file
+            _csvExporter?.Dispose();
+            _csvExporter = null;
         }
         private void StartMeasuring()
         {
-            _signalStorage = new SignalStorage(Name!, Signals.ToList());
             _dataHubService.StartCapturing();
             _cts = new CancellationTokenSource();
+
+            // Create new CSV exporter for this measurement session
+            _csvExporter = new CsvMeasurementExporter(this);
+
             _measurementTask = AcquireDataAsync(_cts.Token);
             IsMeasuring = true;
         }
-        private void SaveAsCSV()
+        private async void SaveAsCSV()
         {
             bool wasRunning = IsMeasuring;
-
-            if (wasRunning)
-            {
-                StopMeasuring();
-            }
+            if (wasRunning) { StopMeasuring(); }
 
             try
             {
@@ -82,57 +85,19 @@ namespace Graphium.ViewModels
                     "Measurements",
                     $"{Name}_tmpMeasurement.csv");
 
-                if (!File.Exists(sourceFile))
-                {
-                    MessageBox.Show("No measurement file found.",
-                                    "Error",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Warning);
-                    return;
-                }
-
-                // Open save dialog for the user
-                var dialog = new SaveFileDialog
-                {
-                    InitialDirectory = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)),
-                    Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
-                    FileName = "measurement.csv"
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    File.Copy(sourceFile, dialog.FileName, overwrite: true);
-                    MessageBox.Show("CSV file saved successfully.",
-                                    "Success",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to save CSV: {ex.Message}",
-                                "Error",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
+                await _fileExportService.ExportAsync(
+                    sourceFile,
+                    "measurement.csv",
+                    "CSV files (*.csv)|*.csv|All files (*.*)|*.*");
             }
             finally
             {
-                if (wasRunning)
+                if (wasRunning && _dialogService.ShowConfirmation("Resume measurement?", "Continue"))
                 {
-                    var result = MessageBox.Show("Resume measurement?",
-                                                  "Continue",
-                                                  MessageBoxButton.YesNo,
-                                                  MessageBoxImage.Question);
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        StartMeasuring();
-                    }
+                    StartMeasuring();
                 }
             }
         }
-        private SignalAligner _signalAligner = new SignalAligner();
-
         private async Task AcquireDataAsync(CancellationToken token)
         {
             DateTime startTime = DateTime.Now;
@@ -143,16 +108,14 @@ namespace Graphium.ViewModels
                 var dataByModule = _dataHubService.GetData();
                 var moduleCounters = new Dictionary<ModuleType, int>();
 
-                // First pass: process all new data and track per signal and per source
                 foreach (var signal in Signals)
                 {
                     var sourceType = signal.Source;
                     if (!moduleCounters.ContainsKey(sourceType))
                         moduleCounters[sourceType] = 0;
-
                     int currentCounter = moduleCounters[sourceType];
-
-                    if (!ts.ContainsKey(signal)) { ts[signal] = new HashSet<double>(); }
+                    if (!ts.ContainsKey(signal))
+                        ts[signal] = new HashSet<double>();
 
                     if (dataByModule.TryGetValue(signal.Source, out var data) && data != null)
                     {
@@ -163,13 +126,10 @@ namespace Graphium.ViewModels
 
                             foreach (var pair in pairs)
                             {
-                                var xTimestamp = Math.Max(lastTimestamp + delta, (pair.timestamp - startTime).TotalMilliseconds);
+                                var xTimestamp = Math.Max(lastTimestamp + delta,
+                                    (pair.timestamp - startTime).TotalMilliseconds);
 
-                                if (!ts[signal].Add(xTimestamp))
-                                {
-                                    Debug.WriteLine($"Duplicate timestamp: {signal.Name} {xTimestamp}");
-                                }
-                                else
+                                if (ts[signal].Add(xTimestamp))
                                 {
                                     signal.Update(xTimestamp, pair.value);
                                     _signalAligner.UpdateSignal(signal, xTimestamp, pair.value);
@@ -181,17 +141,15 @@ namespace Graphium.ViewModels
                     moduleCounters[sourceType] = currentCounter + 1;
                 }
 
-                // Get the maximum timestamp across all sources
                 double maxTimestamp = _signalAligner.GetMaxTimestamp();
 
-                // Second pass: fill signals from slower sources up to maxTimestamp
                 foreach (var signal in Signals)
                 {
-                    double sourceLastTimestamp = _signalAligner.GetLastTimestamp(signal.Source);
+                    double signalLastTimestamp = _signalAligner.GetLastTimestamp(signal.Source);
 
-                    if (sourceLastTimestamp < maxTimestamp)
+                    if (signalLastTimestamp < maxTimestamp)
                     {
-                        var lastValue = _signalAligner.GetLastValue(signal);  // Get value for THIS signal
+                        var lastValue = _signalAligner.GetLastValue(signal);
                         if (lastValue != null)
                         {
                             var delta = 1000.0 / signal.SamplingRate;
@@ -203,6 +161,7 @@ namespace Graphium.ViewModels
                                 if (ts[signal].Add(lastTimestamp))
                                 {
                                     signal.Update(lastTimestamp, lastValue);
+                                    _signalAligner.UpdateSignal(signal, lastTimestamp, lastValue);
                                 }
                             }
                         }
@@ -210,6 +169,13 @@ namespace Graphium.ViewModels
                 }
 
                 DataPlotter.Update(maxTimestamp);
+
+                // Export to CSV
+                if (_csvExporter != null)
+                {
+                    await _csvExporter.ExportAsync();
+                }
+
                 await Task.Delay(_dataPollingInterval, token);
             }
         }

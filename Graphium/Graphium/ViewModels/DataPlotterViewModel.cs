@@ -33,11 +33,14 @@ namespace Graphium.ViewModels
         {
             _signalService = signalService;
             _loggingService = loggingService;
-            PlotPallete = new ScottPlot.Palettes.Nord();
+            //TBD => GLOBAL MISC SETTINGS
+            PlotPallete = new ScottPlot.Palettes.Microcharts();
             _plotManager = new SignalPlotManager(PlotPallete);
             _multiplot = PlotControl.Multiplot;
-
-            _refreshTimer = new DispatcherTimer();
+            _refreshTimer = new DispatcherTimer()
+            {
+                Interval = TimeSpan.FromMilliseconds(16.67)
+            };
             _refreshTimer.Tick += (s,e) => { PlotControl.Refresh(); };
             _refreshTimer.Start();
 
@@ -61,8 +64,6 @@ namespace Graphium.ViewModels
 
                 var color = PlotPallete.GetColor(colorIndex++);
                 colorIndex %= PlotPallete.Count();
-
-                // Set color for all channels in this signal
                 _plotManager.SetAllChannelsColor(signal, color);
             }
 
@@ -70,6 +71,7 @@ namespace Graphium.ViewModels
 
             var plots = _multiplot.GetPlots();
             var bottomPlot = plots.Last();
+            bottomPlot.Axes.SetLimits(0, _timeWindow);
 
             foreach (var plot in plots)
             {
@@ -119,9 +121,12 @@ namespace Graphium.ViewModels
                     plot.Axes.AutoScaleY(plot.Axes.Right);
                 }
             }
-            //PlotControl.Refresh();
         }
-        private void Init() => _multiplot.RemovePlot(_multiplot.GetPlot(0));
+        private void Init()
+        {
+            PlotControl.Plot.Legend.Orientation = Orientation.Horizontal;
+            _multiplot.RemovePlot(_multiplot.GetPlot(0));
+        }
         private void SubscribePlotEvents()
         {
             PlotControl.MouseDown += OnPlotMouseDown;

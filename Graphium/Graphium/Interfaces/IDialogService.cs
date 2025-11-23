@@ -12,5 +12,6 @@ namespace Graphium.Interfaces
         void ShowWarning(string message, string title = "Warning");
         void ShowError(string message, string title = "Error");
         bool ShowConfirmation(string message, string title = "Confirm");
+        string? ShowSaveFile(string filter, string defaultFileName, string? initialDirectory = null);
     }
 }

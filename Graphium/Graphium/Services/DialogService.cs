@@ -1,6 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Windows;
 using Graphium.Interfaces;
+using Microsoft.Win32;
 
 namespace Graphium.Services
 {
@@ -44,6 +46,18 @@ namespace Graphium.Services
             );
 
             return result == MessageBoxResult.Yes;
+        }
+        public string? ShowSaveFile(string filter, string defaultFileName, string? initialDirectory = null)
+        {
+            var dialog = new SaveFileDialog
+            {
+                Filter = filter,
+                FileName = defaultFileName,
+                InitialDirectory = initialDirectory ?? Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments))
+            };
+
+            return dialog.ShowDialog() == true ? dialog.FileName : null;
         }
         #endregion
     }

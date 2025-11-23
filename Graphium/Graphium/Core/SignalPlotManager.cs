@@ -31,8 +31,6 @@ namespace Graphium.Services
         }
         private void InitializePlot(Models.Signal signal, PlotData plotData)
         {
-
-            // Create initial plottables for existing channels
             for (int i = 0; i < signal.YData.Count; i++)
             {
                 AddChannelToPlot(signal, plotData, i);
@@ -45,7 +43,8 @@ namespace Graphium.Services
                 signal.YData[channelIndex]
             );
 
-            signalXY.LegendText = signal.Name;
+            // Always include channel number
+            signalXY.LegendText = $"{signal.Name} CH{channelIndex + 1}";
 
             signalXY.LineWidth = 2;
             signalXY.Color = _palette.GetColor(channelIndex);
@@ -58,13 +57,10 @@ namespace Graphium.Services
 
             var plotData = _plotDataMap[signal];
 
-            // Add new channels if needed
             while (plotData.Plottables.Count < signal.YData.Count)
             {
                 AddChannelToPlot(signal, plotData, plotData.Plottables.Count);
             }
-
-            // SignalXY automatically reflects the updated lists, no need to recreate
         }
         public void SetChannelColor(Models.Signal signal, int channelIndex, Color color)
         {

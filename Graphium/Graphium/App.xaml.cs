@@ -29,6 +29,7 @@ namespace Graphium
             services.AddSingleton<IDataHubService, DataHubService>();
             services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IAppConfigurationService, AppConfigurationService>();
+            services.AddSingleton<IFileExportService, FileExportService>();
 
             //VIEWMODELS
             services.AddScoped<MainViewModel>();
@@ -39,7 +40,8 @@ namespace Graphium
                     x.GetRequiredService<ISignalService>(),
                     x.GetRequiredService<IDataHubService>(),
                     x.GetRequiredService<IViewModelFactory>(),
-                    x.GetRequiredService<IDialogService>());
+                    x.GetRequiredService<IDialogService>(),
+                    x.GetRequiredService<IFileExportService>());
             });
 
             services.AddSingleton<Create<DataPlotterViewModel>>(x => 
