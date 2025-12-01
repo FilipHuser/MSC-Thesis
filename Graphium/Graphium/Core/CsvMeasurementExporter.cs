@@ -13,9 +13,11 @@ namespace Graphium.Core
         private readonly StreamWriter _streamWriter;
         private bool _headerWritten = false;
         private readonly Dictionary<Signal, int> _lastWrittenIndexPerSignal = new();
+        private readonly Dictionary<Signal, List<double>> _lastKnownValues = new();
         public List<Signal> Signals { get; set; } = [];
         private readonly string _delimiter;
         private readonly CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
+        private readonly object _exportLock = new object();
 
         private const string TimestampFormat = "F3";
         private const string ValueFormat = "G17";
@@ -31,10 +33,8 @@ namespace Graphium.Core
             Directory.CreateDirectory(measurementsFolderPath);
             var filePath = Path.Combine(measurementsFolderPath, fileName);
 
-            _fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write,
-                FileShare.None, bufferSize: 16 * 1024, useAsync: true);
+            _fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 16 * 1024, useAsync: true);
 
-            // Removed AutoFlush = true for performance
             _streamWriter = new StreamWriter(_fileStream, Encoding.UTF8) { AutoFlush = false };
             Signals = measurement.Signals.ToList();
 
@@ -42,32 +42,55 @@ namespace Graphium.Core
             foreach (var signal in Signals)
             {
                 _lastWrittenIndexPerSignal[signal] = 0;
+                _lastKnownValues[signal] = new List<double>();
             }
         }
 
         public async Task ExportAsync()
         {
-            // Write header if not already written
-            if (!_headerWritten)
+            // Thread-safe snapshot of signal data
+            var signalSnapshots = new Dictionary<Signal, (List<double> XData, List<List<double>> YData, int StartIndex)>();
+            
+            lock (_exportLock)
             {
-                await WriteHeaderAsync();
-                _headerWritten = true;
+                // Write header if not already written
+                if (!_headerWritten)
+                {
+                    WriteHeaderSync();
+                    _headerWritten = true;
+                }
+
+                // Create snapshots of all signal data - only copy NEW data since last export
+                foreach (var signal in Signals)
+                {
+                    int startIndex = _lastWrittenIndexPerSignal[signal];
+                    
+                    // Only copy the slice of data we haven't exported yet
+                    var xDataCopy = signal.XData != null && signal.XData.Count > startIndex
+                        ? signal.XData.Skip(startIndex).ToList()
+                        : new List<double>();
+                    
+                    var yDataCopy = signal.YData != null
+                        ? signal.YData.Select(ch => ch.Count > startIndex ? ch.Skip(startIndex).ToList() : new List<double>()).ToList()
+                        : new List<List<double>>();
+                    
+                    signalSnapshots[signal] = (xDataCopy, yDataCopy, startIndex);
+                }
             }
 
             // Collect all new unique timestamps from all signals
-            // NOTE: This remains the primary performance bottleneck for large data sets
             var timestampToValues = new SortedDictionary<double, Dictionary<Signal, List<double>>>();
 
             foreach (var signal in Signals)
             {
-                if (signal.XData == null || signal.YData == null) continue;
+                var (xData, yData, startIndex) = signalSnapshots[signal];
+                
+                if (xData == null || yData == null || xData.Count == 0) continue;
 
-                int startIndex = _lastWrittenIndexPerSignal[signal];
-
-                // Process only new data points since last export for this signal
-                for (int i = startIndex; i < signal.XData.Count; i++)
+                // Process only new data points (already sliced in snapshot)
+                for (int i = 0; i < xData.Count; i++)
                 {
-                    double timestamp = signal.XData[i];
+                    double timestamp = xData[i];
 
                     if (!timestampToValues.ContainsKey(timestamp))
                     {
@@ -75,40 +98,64 @@ namespace Graphium.Core
                     }
 
                     // Collect all channel values for this signal at this timestamp
-                    var channelValues = new List<double>();
-                    foreach (var channel in signal.YData)
+                    var channelValues = new List<double>(yData.Count); // Pre-allocate capacity
+                    for (int ch = 0; ch < yData.Count; ch++)
                     {
-                        if (i < channel.Count)
+                        if (i < yData[ch].Count)
                         {
-                            channelValues.Add(channel[i]);
+                            channelValues.Add(yData[ch][i]);
                         }
                     }
 
-                    timestampToValues[timestamp][signal] = channelValues;
+                    if (channelValues.Count > 0)
+                    {
+                        timestampToValues[timestamp][signal] = channelValues;
+                        // Update last known values for this signal
+                        _lastKnownValues[signal] = channelValues;
+                    }
                 }
 
                 // Update the last written index for this signal
-                _lastWrittenIndexPerSignal[signal] = signal.XData.Count;
+                lock (_exportLock)
+                {
+                    _lastWrittenIndexPerSignal[signal] = startIndex + xData.Count;
+                }
             }
 
-            // Track last value for each signal for padding
+            // Track last value for each signal for padding (initialized from _lastKnownValues)
             var lastValues = new Dictionary<Signal, List<double>>();
+            foreach (var signal in Signals)
+            {
+                // Only initialize if we have actual data from previous exports
+                if (_lastKnownValues.ContainsKey(signal) && _lastKnownValues[signal].Count > 0)
+                {
+                    lastValues[signal] = new List<double>(_lastKnownValues[signal]);
+                }
+            }
+
+            // If no new data for any signal, skip export
+            if (timestampToValues.Count == 0)
+            {
+                return;
+            }
 
             // Write rows for each unique timestamp
+            var rowBuffer = new StringBuilder(256); // Pre-allocate with reasonable size
+            
             foreach (var kvp in timestampToValues)
             {
                 double timestamp = kvp.Key;
                 var valuesAtTime = kvp.Value;
 
-                var row = new StringBuilder();
+                rowBuffer.Clear();
                 // Use invariant culture for decimal point '.'
-                row.Append(timestamp.ToString(TimestampFormat, _invariantCulture));
+                rowBuffer.Append(timestamp.ToString(TimestampFormat, _invariantCulture));
 
                 foreach (var signal in Signals)
                 {
-                    row.Append(_delimiter); // Add the main column delimiter
+                    rowBuffer.Append(_delimiter); // Add the main column delimiter
 
-                    if (valuesAtTime.TryGetValue(signal, out var channelValues))
+                    if (valuesAtTime.TryGetValue(signal, out var channelValues) && channelValues.Count > 0)
                     {
                         // Signal has data at this timestamp - use it and update last values
                         lastValues[signal] = channelValues;
@@ -117,56 +164,48 @@ namespace Graphium.Core
                         for (int i = 0; i < channelValues.Count; i++)
                         {
                             // Use invariant culture for decimal point '.'
-                            row.Append(channelValues[i].ToString(ValueFormat, _invariantCulture));
+                            rowBuffer.Append(channelValues[i].ToString(ValueFormat, _invariantCulture));
                             if (i < channelValues.Count - 1)
                             {
-                                row.Append(','); // Use comma as the inner channel delimiter
+                                rowBuffer.Append(','); // Use comma as the inner channel delimiter
                             }
                         }
                     }
                     else
                     {
                         // Signal doesn't have data at this timestamp - pad with last known values
-                        if (lastValues.TryGetValue(signal, out var lastChannelValues))
+                        if (lastValues.TryGetValue(signal, out var lastChannelValues) && lastChannelValues.Count > 0)
                         {
                             // Use a comma-separated format for multi-channel data within the single column
                             for (int i = 0; i < lastChannelValues.Count; i++)
                             {
                                 // Use invariant culture for decimal point '.'
-                                row.Append(lastChannelValues[i].ToString(ValueFormat, _invariantCulture));
+                                rowBuffer.Append(lastChannelValues[i].ToString(ValueFormat, _invariantCulture));
                                 if (i < lastChannelValues.Count - 1)
                                 {
-                                    row.Append(','); // Use comma as the inner channel delimiter
+                                    rowBuffer.Append(','); // Use comma as the inner channel delimiter
                                 }
                             }
                         }
-                        else
-                        {
-                            // No data yet for this signal - write an empty column value
-                            // For multi-channel signals, this results in an empty string in the column.
-                            // If you need padding for all channels (e.g., ",," for 3 channels), 
-                            // the header logic would need to change, but given the 
-                            // single-column requirement, an empty string is appropriate.
-                        }
+                        // else: Signal hasn't started yet - leave column empty (no padding before first value)
                     }
                 }
 
-                await _streamWriter.WriteLineAsync(row.ToString());
+                await _streamWriter.WriteLineAsync(rowBuffer.ToString());
             }
 
             await _streamWriter.FlushAsync();
         }
 
-        private async Task WriteHeaderAsync()
+        private void WriteHeaderSync()
         {
             var header = new StringBuilder("Timestamp");
             foreach (var signal in Signals)
             {
                 header.Append(_delimiter);
-
                 header.Append(signal.Name ?? $"Signal_{signal.Source}");
             }
-            await _streamWriter.WriteLineAsync(header.ToString());
+            _streamWriter.WriteLine(header.ToString());
         }
 
         public void Dispose()

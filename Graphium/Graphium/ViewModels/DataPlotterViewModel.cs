@@ -34,7 +34,7 @@ namespace Graphium.ViewModels
             _signalService = signalService;
             _loggingService = loggingService;
             //TBD => GLOBAL MISC SETTINGS
-            PlotPallete = new ScottPlot.Palettes.Microcharts();
+            PlotPallete = new ScottPlot.Palettes.Aurora();
             _plotManager = new SignalPlotManager(PlotPallete);
             _multiplot = PlotControl.Multiplot;
             _refreshTimer = new DispatcherTimer()

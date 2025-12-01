@@ -167,6 +167,7 @@ namespace Graphium.ViewModels
                     if (!moduleCounters.ContainsKey(sourceType))
                         moduleCounters[sourceType] = 0;
                     int currentCounter = moduleCounters[sourceType];
+
                     if (!ts.ContainsKey(signal))
                         ts[signal] = new HashSet<double>();
 
