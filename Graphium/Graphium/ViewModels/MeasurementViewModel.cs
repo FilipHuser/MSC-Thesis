@@ -24,7 +24,9 @@ namespace Graphium.ViewModels
         private int _dataPollingInterval = 16;
         private SignalAligner _signalAligner = new();
         private CancellationTokenSource? _cts = new();
-        private CsvMeasurementExporter? _csvExporter;
+        private FreezeFrame? _freezeFrame;
+        private CsvDataExporter? _csvExporter;
+
         public int TabId { get; set; } = -1;
         public string? Name { get => _name; set => SetProperty(ref _name, value); }
         public bool IsMeasuring { get; private set; }
@@ -53,6 +55,7 @@ namespace Graphium.ViewModels
             _loggingService = loggingService;
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
         }
+
         public async Task StopMeasuringAsync()
         {
             _dataHubService.StopCapturing();
@@ -65,17 +68,21 @@ namespace Graphium.ViewModels
                 try
                 {
                     await _measurementTask;
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     _loggingService.LogError($"Error waiting for measurement task: {ex.Message}");
                 }
                 _measurementTask = null;
             }
-            _csvExporter?.Dispose();
-            _csvExporter = null;
 
             _cts?.Dispose();
             _cts = null;
+
+            // Cleanup CSV exportu
+            _csvExporter?.Dispose();
+            _csvExporter = null;
+            _freezeFrame = null;
         }
         private async Task StartMeasuringAsync()
         {
@@ -99,11 +106,7 @@ namespace Graphium.ViewModels
                     "The previous measurement is unsaved. Would you like to save it before starting a new session?",
                     "Save Current Data?");
 
-                if (confirmedSave) { await SaveAsCSV(suppressResumePrompt: true); } // Pass the flag
-
-                // Ensure data is cleared outside the 'if (hasPreviousData)' block 
-                // if you had a separate sync StartMeasuring, but here it's fine 
-                // to clear *after* the decision process.
+                if (confirmedSave) { await SaveAsCSV(suppressResumePrompt: true); }
             }
 
             // Clear data and reset state
@@ -114,10 +117,18 @@ namespace Graphium.ViewModels
             DataPlotter.Reset();
             _signalAligner = new SignalAligner();
 
+            // Inicializace freeze frame a CSV exportu
+            _freezeFrame = new FreezeFrame();
+            _csvExporter = new CsvDataExporter(
+                _freezeFrame,
+                this,
+                exportIntervalMs: _dataPollingInterval,
+                exportOnUpdate: true
+            );
+
             // Start new session
             _dataHubService.StartCapturing();
             _cts = new CancellationTokenSource();
-            _csvExporter = new CsvMeasurementExporter(this);
             _measurementTask = AcquireDataAsync(_cts.Token);
             IsMeasuring = true;
 
@@ -131,7 +142,6 @@ namespace Graphium.ViewModels
 
             try
             {
-                // ... file saving logic ...
                 string sourceFile = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "Graphium",
@@ -156,81 +166,122 @@ namespace Graphium.ViewModels
             DateTime startTime = DateTime.Now;
             var ts = new Dictionary<Signal, HashSet<double>>();
 
-            while (!token.IsCancellationRequested)
+            // ✅ Najít nejvyšší sampling rate pro delta-t
+            double maxSamplingRate = Signals.Max(s => s.SamplingRate);
+            double exportDelta = 1000.0 / maxSamplingRate; // Minimální delta mezi exporty
+            double nextExportTimestamp = 0;
+
+            try
             {
-                var dataByModule = _dataHubService.GetData();
-                var moduleCounters = new Dictionary<ModuleType, int>();
-
-                foreach (var signal in Signals)
+                while (!token.IsCancellationRequested)
                 {
-                    var sourceType = signal.Source;
-                    if (!moduleCounters.ContainsKey(sourceType))
-                        moduleCounters[sourceType] = 0;
-                    int currentCounter = moduleCounters[sourceType];
+                    var dataByModule = _dataHubService.GetData();
+                    var moduleCounters = new Dictionary<ModuleType, int>();
 
-                    if (!ts.ContainsKey(signal))
-                        ts[signal] = new HashSet<double>();
-
-                    if (dataByModule.TryGetValue(signal.Source, out var data) && data != null)
+                    // === PHASE 1: Process incoming data from all modules ===
+                    foreach (var signal in Signals)
                     {
-                        if (data.TryGetValue(currentCounter, out var pairs))
+                        if (token.IsCancellationRequested)
+                            break;
+
+                        var sourceType = signal.Source;
+                        if (!moduleCounters.ContainsKey(sourceType))
+                            moduleCounters[sourceType] = 0;
+
+                        int currentCounter = moduleCounters[sourceType];
+
+                        if (!ts.ContainsKey(signal))
+                            ts[signal] = new HashSet<double>();
+
+                        if (dataByModule.TryGetValue(signal.Source, out var data) && data != null)
                         {
-                            var delta = 1000.0 / signal.SamplingRate;
-                            double lastTimestamp = ts[signal].Count > 0 ? ts[signal].Max() : 0;
-
-                            foreach (var pair in pairs)
+                            if (data.TryGetValue(currentCounter, out var pairs))
                             {
-                                var xTimestamp = Math.Max(lastTimestamp + delta,
-                                    (pair.timestamp - startTime).TotalMilliseconds);
+                                var delta = 1000.0 / signal.SamplingRate;
+                                double lastTimestamp = ts[signal].Count > 0 ? ts[signal].Max() : 0;
 
-                                if (ts[signal].Add(xTimestamp))
+                                foreach (var pair in pairs)
                                 {
-                                    signal.Update(xTimestamp, pair.value);
-                                    _signalAligner.UpdateSignal(signal, xTimestamp, pair.value);
-                                    lastTimestamp = xTimestamp;
+                                    var xTimestamp = Math.Max(
+                                        lastTimestamp + delta,
+                                        (pair.timestamp - startTime).TotalMilliseconds);
+
+                                    if (ts[signal].Add(xTimestamp))
+                                    {
+                                        signal.Update(xTimestamp, pair.value);
+                                        _signalAligner.UpdateSignal(signal, xTimestamp, pair.value);
+                                        _freezeFrame?.UpdateValue(signal, xTimestamp, pair.value);
+
+                                        // ✅ Export s inkrementálním timestampem
+                                        _csvExporter?.TriggerExport(nextExportTimestamp);
+                                        nextExportTimestamp += exportDelta;
+
+                                        lastTimestamp = xTimestamp;
+                                    }
+                                }
+                            }
+                        }
+                        moduleCounters[sourceType] = currentCounter + 1;
+                    }
+
+                    if (token.IsCancellationRequested)
+                        break;
+
+                    // === PHASE 2: Interpolate slower signals ===
+                    double maxTimestamp = _signalAligner.GetMaxTimestamp();
+
+                    foreach (var signal in Signals)
+                    {
+                        if (token.IsCancellationRequested)
+                            break;
+
+                        double signalLastTimestamp = _signalAligner.GetLastTimestamp(signal.Source);
+
+                        if (signalLastTimestamp < maxTimestamp)
+                        {
+                            var lastValue = _signalAligner.GetLastValue(signal);
+                            if (lastValue != null)
+                            {
+                                var delta = 1000.0 / signal.SamplingRate;
+                                double lastTimestamp = ts[signal].Count > 0 ? ts[signal].Max() : 0;
+
+                                while (lastTimestamp + delta <= maxTimestamp)
+                                {
+                                    lastTimestamp += delta;
+                                    if (ts[signal].Add(lastTimestamp))
+                                    {
+                                        signal.Update(lastTimestamp, lastValue);
+                                        _signalAligner.UpdateSignal(signal, lastTimestamp, lastValue);
+                                        _freezeFrame?.UpdateValue(signal, lastTimestamp, lastValue);
+
+                                        // ✅ Export s inkrementálním timestampem
+                                        _csvExporter?.TriggerExport(nextExportTimestamp);
+                                        nextExportTimestamp += exportDelta;
+                                    }
                                 }
                             }
                         }
                     }
-                    moduleCounters[sourceType] = currentCounter + 1;
+
+                    // === PHASE 3: Update UI ===
+                    DataPlotter.Update(maxTimestamp);
+
+                    await Task.Delay(_dataPollingInterval, token);
                 }
-
-                double maxTimestamp = _signalAligner.GetMaxTimestamp();
-
-                foreach (var signal in Signals)
-                {
-                    double signalLastTimestamp = _signalAligner.GetLastTimestamp(signal.Source);
-
-                    if (signalLastTimestamp < maxTimestamp)
-                    {
-                        var lastValue = _signalAligner.GetLastValue(signal);
-                        if (lastValue != null)
-                        {
-                            var delta = 1000.0 / signal.SamplingRate;
-                            double lastTimestamp = ts[signal].Count > 0 ? ts[signal].Max() : 0;
-
-                            while (lastTimestamp + delta <= maxTimestamp)
-                            {
-                                lastTimestamp += delta;
-                                if (ts[signal].Add(lastTimestamp))
-                                {
-                                    signal.Update(lastTimestamp, lastValue);
-                                    _signalAligner.UpdateSignal(signal, lastTimestamp, lastValue);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                DataPlotter.Update(maxTimestamp);
-
-                // Export to CSV
-                if (_csvExporter != null)
-                {
-                    await _csvExporter.ExportAsync();
-                }
-
-                await Task.Delay(_dataPollingInterval, token);
+            }
+            catch (OperationCanceledException)
+            {
+                _loggingService?.LogInfo("Data acquisition cancelled");
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.LogError($"Error in data acquisition: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                _csvExporter?.TriggerExport();
+                _loggingService?.LogInfo("Data acquisition completed");
             }
         }
         #endregion
