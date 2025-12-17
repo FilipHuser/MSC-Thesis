@@ -100,6 +100,7 @@ namespace Graphium.Core
                 JsonValueKind.Object => element.EnumerateObject().ToDictionary(p => p.Name, p => ConvertElement(p.Value)),
                 _ => null
             };
+
             var signalNameToChannelIndex = moduleSignals
                 .Select((signal, index) => new { NormalizedName = NormalizeKey(signal.Name), index })
                 .ToDictionary(x => x.NormalizedName, x => x.index, StringComparer.OrdinalIgnoreCase);

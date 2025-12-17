@@ -43,7 +43,7 @@ namespace Graphium.Services
                 signal.YData[channelIndex]
             );
 
-            signalXY.LegendText = $"{signal.Name} CH{channelIndex + 1}";
+            signalXY.LegendText = $"{signal.Name} CH{channelIndex + 1} = {signal.SamplingRate}";
 
             signalXY.LineWidth = 2;
             signalXY.Color = _palette.GetColor(channelIndex);
