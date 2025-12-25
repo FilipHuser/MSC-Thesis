@@ -5,13 +5,14 @@ using System.Text;
 using System.Threading.Tasks;
 using DataHub.Core;
 using DataHub.Interfaces;
+using Graphium.Core;
 
 namespace Graphium.Interfaces
 {
     interface IDataHubService
     {
         #region METHODS
-        Dictionary<ModuleType, Dictionary<int, List<(object value, DateTime timestamp)>>?> GetData();
+        Dictionary<ModuleType, List<List<Sample>>> GetData();
         void StartCapturing();
         void StopCapturing();
         bool IsCapturing { get; }

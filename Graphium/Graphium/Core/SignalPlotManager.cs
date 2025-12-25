@@ -45,9 +45,11 @@ namespace Graphium.Services
 
             signalXY.LegendText = $"{signal.Name} CH{channelIndex + 1} = {signal.SamplingRate}";
 
-            signalXY.LineWidth = 2;
-            signalXY.Color = _palette.GetColor(channelIndex);
+            signalXY.LineWidth = 1;
+            signalXY.MarkerSize = 4;
+            signalXY.MarkerShape = MarkerShape.FilledCircle;
             signalXY.Axes.YAxis = plotData.Plot.Axes.Right;
+
             plotData.Plottables.Add(signalXY);
         }
         public void UpdatePlot(Models.Signal signal)

@@ -40,7 +40,7 @@ namespace DataHub.Modules
                 }
 
                 yield return rawItem;
-                yielded++;
+                yielded++;      
 
                 if (take.HasValue && yielded >= take.Value)
                     yield break;
@@ -63,9 +63,27 @@ namespace DataHub.Modules
             _captureDevice?.StopCapture();
             base.StopCapturing();
         }
+        private PosixTimeval? _firstTimeval = null;
+        private DateTime _referenceTime;
+
         protected void device_OnPacketArrival(object sender, PacketCapture pc)
         {
-            _dataQueue.Enqueue(new CapturedData<RawCapture> (DateTime.Now, pc.GetPacket() , this));
+            var packet = pc.GetPacket();
+
+            if (_firstTimeval == null)
+            {
+                _firstTimeval = packet.Timeval;
+                _referenceTime = DateTime.Now;
+            }
+
+            // Calculate microseconds offset with proper casting
+            long microsecondsOffset =
+                ((long)packet.Timeval.Seconds - (long)_firstTimeval.Seconds) * 1_000_000L +
+                ((long)packet.Timeval.MicroSeconds - (long)_firstTimeval.MicroSeconds);
+
+            var timestamp = _referenceTime.AddTicks(microsecondsOffset * 10);
+
+            _dataQueue.Enqueue(new CapturedData<RawCapture>(timestamp, packet, this));
         }
         protected override Task CaptureTask(CancellationToken ct)
         {

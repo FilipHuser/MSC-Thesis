@@ -7,6 +7,7 @@ using System.Windows.Input;
 using ScottPlot.MultiplotLayouts;
 using System.Windows;
 using System.Windows.Threading;
+using ScottPlot.Plottables;
 
 namespace Graphium.ViewModels
 {
@@ -62,8 +63,8 @@ namespace Graphium.ViewModels
                 var plot = _plotManager.GetOrCreatePlot(signal);
                 _multiplot.AddPlot(plot);
 
-                var color = PlotPallete.GetColor(colorIndex++);
                 colorIndex %= PlotPallete.Count();
+                var color = PlotPallete.GetColor(colorIndex);
                 _plotManager.SetAllChannelsColor(signal, color);
             }
 

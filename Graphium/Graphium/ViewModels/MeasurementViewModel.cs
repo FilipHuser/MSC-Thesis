@@ -144,71 +144,73 @@ namespace Graphium.ViewModels
                 }
             }
         }
-
-
-
         private async Task AcquireDataAsync(CancellationToken token)
         {
+            var start = DateTime.Now;
             var signalsBySource = Signals.GroupBy(x => x.Source).ToDictionary(x => x.Key, x => x.ToList());
-            var globalMaxSamplingRate = Signals.Max(x => x.SamplingRate);
-            double deltaT = 1000.0 / globalMaxSamplingRate;
-
+            var masterSource = signalsBySource
+                .Select(x => new { Source = x.Key, MaxSamplingRate = x.Value.Max(s => s.SamplingRate) })
+                .OrderByDescending(x => x.MaxSamplingRate)
+                .First()
+                .Source;
 
             while (!token.IsCancellationRequested)
             {
                 var dataByModule = _dataHubService.GetData();
- 
+                var biopacData = dataByModule[ModuleType.BIOPAC];
 
-                //ITERATING OVER THE SOURCE (MODULETYPES)
-                foreach (var group in signalsBySource)
+                if (biopacData == null || biopacData.Count == 0)
                 {
-                    var currentSource = group.Key;
-                    var signalsInSource = group.Value;
+                    await Task.Delay(_dataPollingInterval);
+                    continue;
+                }
 
-                    int signalCount = signalsInSource.Count;
-                    var currentDataForSource = dataByModule[currentSource];
+                // Process packets in pairs to calculate deltaT
+                for (int packetIndex = 0; packetIndex < biopacData.Count - 1; packetIndex++)
+                {
+                    var currentPacket = biopacData[packetIndex];
+                    var nextPacket = biopacData[packetIndex + 1];
 
+                    if (currentPacket.Count == 0 || nextPacket.Count == 0) continue;
 
-                    if(currentDataForSource == null) { continue; } // TBD => IF NULL OR ALSO EMPTY
+                    // Get timestamps from first sample of each packet
+                    var currentTimestamp = currentPacket.First().GetTimestamp();
+                    var nextTimestamp = nextPacket.First().GetTimestamp();
 
-                    int dataIndex = 0;
-                    var dataCount = currentDataForSource.First().Value.Count;
+                    // Calculate time delta between packets
+                    TimeSpan deltaT = nextTimestamp - currentTimestamp;
 
-                    var timestamp = _globalClock.Elapsed.TotalMilliseconds;
-                    do
+                    // Calculate time increment per sample within the packet
+                    TimeSpan sampleIncrement = currentPacket.Count > 1
+                        ? deltaT / currentPacket.Count
+                        : TimeSpan.Zero;
+
+                    // Process all samples in current packet
+                    for (int sampleIndex = 0; sampleIndex < currentPacket.Count; sampleIndex++)
                     {
-                        for(int i = 0; i < signalsInSource.Count; i++)
+                        var sample = currentPacket[sampleIndex];
+
+                        // Calculate interpolated timestamp for this sample
+                        var sampleTimestamp = currentTimestamp + (sampleIncrement * sampleIndex);
+
+                        // Update all channels for this sample
+                        foreach (var channel in sample.Channels)
                         {
-                            var signal = signalsInSource[i];
-                            var dataForSignal = currentDataForSource[i][dataIndex];
+                            var signal = channel.Key;
+                            var value = channel.Value;
+                            var xVal = (sampleTimestamp - start).TotalMilliseconds;
 
-                            _signalAligner.UpdateSignal(signal, dataForSignal.value);
-
+                            signal.Update(xVal, value);
                         }
+                    }
+                }
 
-                        foreach (var signal in Signals)
-                        {
-                            var xVal = timestamp + deltaT * dataIndex;
-                            var yVal = _signalAligner.GetLastValue(signal);
-
-                            signal.Update(xVal, yVal);
-                        }
-
-                        dataIndex++;
-
-                    } while (dataIndex < dataCount);
-
-                    // x y x y x y
-                    // a b c d e f
-
-
-                    // 1 2 3 4
-                    // x x x x
-                    // y y y y
-                    //     a
-                    //     b
-                    //     c
-                    //     d
+                // Handle the last packet (if there's only one packet or process the final one)
+                if (biopacData.Count > 0)
+                {
+                    var lastPacket = biopacData.Last();
+                    // You might want to process this differently or wait for the next iteration
+                    // to get a proper deltaT for it
                 }
 
                 await Task.Delay(_dataPollingInterval);

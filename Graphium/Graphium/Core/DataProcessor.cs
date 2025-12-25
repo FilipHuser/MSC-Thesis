@@ -11,16 +11,10 @@ namespace Graphium.Core
 {
     static class DataProcessor
     {
-        private static string NormalizeKey(string key)
+        private static string NormalizeKey(string key) => Regex.Replace(key, @"\s+", string.Empty);
+        public static Dictionary<ModuleType, List<List<Sample>>> ProcessAll(IEnumerable<IModule> modules, IEnumerable<Signal> signals)
         {
-            return Regex.Replace(key, @"\s+", string.Empty);
-        }
-
-        public static Dictionary<ModuleType, Dictionary<int, List<(object value, DateTime timestamp)>>?> ProcessAll(
-            IEnumerable<IModule> modules,
-            IEnumerable<Signal> signals)
-        {
-            var result = new Dictionary<ModuleType, Dictionary<int, List<(object value, DateTime timestamp)>>?>();
+            var result = new Dictionary<ModuleType, List<List<Sample>>>();
             var signalsByModule = signals.GroupBy(s => s.Source)
                                          .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -38,57 +32,80 @@ namespace Graphium.Core
 
             return result;
         }
-        private static Dictionary<int, List<(object value, DateTime timestamp)>>? ProcessModule(IModule module, List<Signal> moduleSignals)
+        private static List<List<Sample>> ProcessModule(IModule module, List<Signal> moduleSignals)
         {
             var channelCount = moduleSignals.Count;
-            if (channelCount <= 0) return null;
-
-            var output = new Dictionary<int, List<(object value, DateTime timestamp)>>();
+            if (channelCount <= 0) return new List<List<Sample>>();
 
             switch (module)
             {
                 case BiopacSourceModule biopac:
-                    ProcessBiopacModule(biopac, channelCount, output);
-                    break;
+                    return ProcessBiopacModule(biopac, channelCount, moduleSignals);
                 case VRSourceModule vr:
-                    ProcessVRModule(vr, output, moduleSignals);
-                    break;
+                    return ProcessVRModule(vr, moduleSignals);
+                default:
+                    return new List<List<Sample>>();
             }
-
-            return output.Count > 0 ? output : null;
         }
-
-        private static void ProcessBiopacModule(BiopacSourceModule module, int channelCount,
-            Dictionary<int, List<(object value, DateTime timestamp)>> output)
+        private static List<List<Sample>> ProcessBiopacModule(BiopacSourceModule module, int channelCount, List<Signal> moduleSignals)
         {
+            var output = new List<List<Sample>>();
             var convertFunc = ByteArrayConverter<short>.GetConvertFunction();
 
+            //ITERATING PACKETS
             foreach (var capturedData in module.Get())
             {
+                var packetSamples = new List<Sample>();
+
                 var udp = Packet.ParsePacket(capturedData.Data.LinkLayerType, capturedData.Data.Data).Extract<UdpPacket>();
                 if (udp == null) continue;
 
                 var timestamp = capturedData.Timestamp;
                 var payload = udp.PayloadData;
 
-                if (payload.Length <= 2) return;
-
-                int samplesPerChannel = (payload.Length - 2) / sizeof(short) / channelCount;
-                int totalSamples = samplesPerChannel * channelCount;
-
-                for (int i = 0; i < totalSamples; i++)
-                {
-                    int offset = 1 + i * sizeof(short);
-                    var bytes = payload.Skip(offset).Take(sizeof(short)).Reverse().ToArray();
-                    var value = convertFunc(bytes, 0);
-                    int channel = i % channelCount;
-
-                    AddSample(output, channel, value, timestamp);
+                // Minimum: header(1) + one sample per channel(2*channelCount) + checksum(1)
+                if (payload.Length < 2 + (2 * channelCount))
+                { 
+                    continue; 
                 }
+
+                int dataBytes = payload.Length - 2;
+
+                // Validate packet has complete samples
+                if (dataBytes % (sizeof(short) * channelCount) != 0)
+                {
+                    continue;
+                }
+
+                int samplesPerChannel = dataBytes / sizeof(short) / channelCount;
+
+                // 01 xx yy xx yy cs
+                for (int sampleIndex = 0; sampleIndex < samplesPerChannel; sampleIndex++)
+                {
+                    var sample = new Sample(timestamp);
+
+                    // Extract all channel values for this sample
+                    for (int channel = 0; channel < channelCount; channel++)
+                    {
+                        int pairIndex = sampleIndex * channelCount + channel;
+                        int offset = 1 + pairIndex * sizeof(short);
+                        var bytes = new byte[] { payload[offset + 1], payload[offset] };
+                        var value = convertFunc(bytes, 0);
+
+                        sample.Channels[moduleSignals[channel]] = value;
+                    }
+
+                    packetSamples.Add(sample);
+                }
+                output.Add(packetSamples);
             }
+
+            return output;
         }
-        private static void ProcessVRModule(VRSourceModule module, Dictionary<int, List<(object value, DateTime timestamp)>> output, List<Signal> moduleSignals)
+        private static List<List<Sample>> ProcessVRModule(VRSourceModule module, List<Signal> moduleSignals)
         {
+            var output = new List<List<Sample>>();
+
             object? ConvertElement(JsonElement element) => element.ValueKind switch
             {
                 JsonValueKind.String => element.GetString(),
@@ -101,13 +118,15 @@ namespace Graphium.Core
                 _ => null
             };
 
-            var signalNameToChannelIndex = moduleSignals
-                .Select((signal, index) => new { NormalizedName = NormalizeKey(signal.Name), index })
-                .ToDictionary(x => x.NormalizedName, x => x.index, StringComparer.OrdinalIgnoreCase);
+            var signalNameToSignal = moduleSignals
+                .ToDictionary(signal => NormalizeKey(signal.Name), signal => signal, StringComparer.OrdinalIgnoreCase);
+
+            output.Add(new List<Sample>());
 
             foreach (var post in module.Get())
             {
-                var timestamp = DateTime.Now;
+                var sample = new Sample(post.Timestamp);
+
                 using var doc = JsonDocument.Parse(post.Data);
                 var root = doc.RootElement;
                 if (root.ValueKind != JsonValueKind.Object) continue;
@@ -115,30 +134,25 @@ namespace Graphium.Core
                 var receivedData = root.EnumerateObject()
                     .ToDictionary(p => NormalizeKey(p.Name), p => ConvertElement(p.Value), StringComparer.OrdinalIgnoreCase);
 
-                foreach (var mapping in signalNameToChannelIndex)
+                foreach (var signalMapping in signalNameToSignal)
                 {
-                    var normalizedSignalName = mapping.Key;
-                    var channelIndex = mapping.Value;
+                    var normalizedSignalName = signalMapping.Key;
+                    var signal = signalMapping.Value;
 
                     if (receivedData.TryGetValue(normalizedSignalName, out object? value))
                     {
-                        AddSample(output, channelIndex, value!, timestamp);
+                        sample.Channels[signal] = value;
                     }
                     else
                     {
-                        AddSample(output, channelIndex, null!, timestamp);
+                        sample.Channels[signal] = null;
                     }
                 }
-            }
-        }
 
-        private static void AddSample(Dictionary<int, List<(object value, DateTime timestamp)>> output, int channel, object value, DateTime timestamp)
-        {
-            if (!output.ContainsKey(channel))
-            {
-                output[channel] = new List<(object value, DateTime timestamp)>();
+                output.ElementAt(0).Add(sample);
             }
-            output[channel].Add((value, timestamp));
+
+            return output;
         }
     }
 }

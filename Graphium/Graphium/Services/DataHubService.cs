@@ -117,12 +117,7 @@ namespace Graphium.Services
             }
         }
 
-        public Dictionary<ModuleType, Dictionary<int, List<(object value, DateTime timestamp)>>?> GetData()
-        {
-            // FIX: Pass the Signals collection to the DataProcessor
-            // This is required for name-based filtering of VR data.
-            return DataProcessor.ProcessAll(_hub.Modules.Values, _signalService.Signals);
-        }
+        public Dictionary<ModuleType, List<List<Sample>>> GetData() => DataProcessor.ProcessAll(_hub.Modules.Values, _signalService.Signals);
 
         public void StartCapturing()
         {
