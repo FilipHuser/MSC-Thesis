@@ -16,12 +16,13 @@ namespace Graphium.ViewModels
         private readonly IViewModelFactory _viewModelFactory;
         private readonly IDialogService _dialogService;
         private readonly IFileExportService _fileExportService;
+        private readonly IMeasurementExportService _measurementExportService;
         private readonly ILoggingService _loggingService;
         #endregion
         #region PROPERTIES
         private string? _name;
         private Task? _measurementTask;
-        private int _dataPollingInterval = 16;
+        private int _dataPollingInterval = 10;
         private SignalAligner _signalAligner = new();
         private CancellationTokenSource? _cts = new();
         private readonly Stopwatch _globalClock = new Stopwatch();
@@ -44,6 +45,7 @@ namespace Graphium.ViewModels
                                     IViewModelFactory viewModelFactory,
                                     IDialogService dialogService,
                                     IFileExportService fileExportService,
+                                    IMeasurementExportService measurementExportService,
                                     ILoggingService loggingService)
         {
             _signalService = signalService;
@@ -51,6 +53,7 @@ namespace Graphium.ViewModels
             _viewModelFactory = viewModelFactory;
             _dialogService = dialogService;
             _fileExportService = fileExportService;
+            _measurementExportService = measurementExportService;
             _loggingService = loggingService;
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
         }
@@ -78,6 +81,7 @@ namespace Graphium.ViewModels
             _cts?.Dispose();
             _cts = null;
         }
+
         private async Task StartMeasuringAsync()
         {
             if (_dataHubService.IsCapturing)
@@ -108,7 +112,6 @@ namespace Graphium.ViewModels
             DataPlotter.Reset();
             _signalAligner = new SignalAligner();
 
-
             _globalClock.Restart();
             _dataHubService.StartCapturing();
             _cts = new CancellationTokenSource();
@@ -118,6 +121,7 @@ namespace Graphium.ViewModels
             DataPlotter.ResumeRefresh();
             DataPlotter.OnSignalsChanged();
         }
+
         private async Task SaveAsCSV(bool suppressResumePrompt = false)
         {
             bool wasRunning = IsMeasuring;
@@ -144,6 +148,7 @@ namespace Graphium.ViewModels
                 }
             }
         }
+
         private async Task AcquireDataAsync(CancellationToken token)
         {
             var start = DateTime.Now;
@@ -154,64 +159,87 @@ namespace Graphium.ViewModels
                 .First()
                 .Source;
 
+            var allSignalsSet = new HashSet<Signal>(Signals);
+
+            // Just one line - service handles everything!
+            using var csvWriter = _measurementExportService.CreateCsvWriter(this);
+
             while (!token.IsCancellationRequested)
             {
                 var dataByModule = _dataHubService.GetData();
-                var biopacData = dataByModule[ModuleType.BIOPAC];
+                var masterSourceData = dataByModule.TryGetValue(masterSource, out var data) ? data : null;
 
-                if (biopacData == null || biopacData.Count == 0)
+                if (masterSourceData == null || masterSourceData.Count == 0)
                 {
                     await Task.Delay(_dataPollingInterval);
                     continue;
                 }
 
-                // Process packets in pairs to calculate deltaT
-                for (int packetIndex = 0; packetIndex < biopacData.Count - 1; packetIndex++)
+                // Update SignalAligner with latest values from all sources
+                foreach (var sourceData in dataByModule)
                 {
-                    var currentPacket = biopacData[packetIndex];
-                    var nextPacket = biopacData[packetIndex + 1];
+                    var groups = sourceData.Value;
+                    if (groups == null || groups.Count == 0) { continue; }
 
-                    if (currentPacket.Count == 0 || nextPacket.Count == 0) continue;
-
-                    // Get timestamps from first sample of each packet
-                    var currentTimestamp = currentPacket.First().GetTimestamp();
-                    var nextTimestamp = nextPacket.First().GetTimestamp();
-
-                    // Calculate time delta between packets
-                    TimeSpan deltaT = nextTimestamp - currentTimestamp;
-
-                    // Calculate time increment per sample within the packet
-                    TimeSpan sampleIncrement = currentPacket.Count > 1
-                        ? deltaT / currentPacket.Count
-                        : TimeSpan.Zero;
-
-                    // Process all samples in current packet
-                    for (int sampleIndex = 0; sampleIndex < currentPacket.Count; sampleIndex++)
+                    var lastGroup = groups[groups.Count - 1];
+                    if (lastGroup.Count > 0)
                     {
-                        var sample = currentPacket[sampleIndex];
-
-                        // Calculate interpolated timestamp for this sample
-                        var sampleTimestamp = currentTimestamp + (sampleIncrement * sampleIndex);
-
-                        // Update all channels for this sample
-                        foreach (var channel in sample.Channels)
+                        var latestSample = lastGroup[lastGroup.Count - 1];
+                        foreach (var channel in latestSample.Channels)
                         {
-                            var signal = channel.Key;
-                            var value = channel.Value;
-                            var xVal = (sampleTimestamp - start).TotalMilliseconds;
-
-                            signal.Update(xVal, value);
+                            _signalAligner.UpdateSignal(channel.Key, channel.Value);
                         }
                     }
                 }
 
-                // Handle the last packet (if there's only one packet or process the final one)
-                if (biopacData.Count > 0)
+                for (int groupIndex = 0; groupIndex < masterSourceData.Count - 1; groupIndex++)
                 {
-                    var lastPacket = biopacData.Last();
-                    // You might want to process this differently or wait for the next iteration
-                    // to get a proper deltaT for it
+                    var currentGroup = masterSourceData[groupIndex];
+                    var nextGroup = masterSourceData[groupIndex + 1];
+
+                    if (currentGroup.Count == 0 || nextGroup.Count == 0) { continue; }
+
+                    var currentTimestamp = currentGroup[0].GetTimestamp();
+                    var nextTimestamp = nextGroup[0].GetTimestamp();
+                    TimeSpan deltaT = nextTimestamp - currentTimestamp;
+                    TimeSpan sampleIncrement = currentGroup.Count > 1 ? deltaT / currentGroup.Count : TimeSpan.Zero;
+
+                    for (int sampleIndex = 0; sampleIndex < currentGroup.Count; sampleIndex++)
+                    {
+                        var sample = currentGroup[sampleIndex];
+                        var sampleTimestamp = currentTimestamp + (sampleIncrement * sampleIndex);
+                        var xVal = (sampleTimestamp - start).TotalMilliseconds;
+
+                        var rowValues = new Dictionary<Signal, object>();
+
+                        // Update signals present in this sample
+                        foreach (var channel in sample.Channels)
+                        {
+                            channel.Key.Update(xVal, channel.Value);
+                            rowValues[channel.Key] = channel.Value;
+                        }
+
+                        // Update all other signals with their last known values
+                        foreach (var sig in allSignalsSet)
+                        {
+                            if (!sample.Channels.ContainsKey(sig))
+                            {
+                                var val = _signalAligner.GetLastValue(sig);
+                                if (val != null)
+                                {
+                                    sig.Update(xVal, val);
+                                    rowValues[sig] = val;
+                                }
+                            }
+                        }
+
+                        // Write row using the service
+                        await csvWriter.WriteRowAsync(sampleTimestamp, rowValues);
+                    }
                 }
+
+                // Flush periodically to ensure data is written
+                await csvWriter.FlushAsync();
 
                 await Task.Delay(_dataPollingInterval);
             }

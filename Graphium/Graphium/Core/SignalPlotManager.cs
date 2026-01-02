@@ -43,11 +43,8 @@ namespace Graphium.Services
                 signal.YData[channelIndex]
             );
 
-            signalXY.LegendText = $"{signal.Name} CH{channelIndex + 1} = {signal.SamplingRate}";
+            signalXY.LegendText = $"{signal.Name} CH{channelIndex + 1}";
 
-            signalXY.LineWidth = 1;
-            signalXY.MarkerSize = 4;
-            signalXY.MarkerShape = MarkerShape.FilledCircle;
             signalXY.Axes.YAxis = plotData.Plot.Axes.Right;
 
             plotData.Plottables.Add(signalXY);

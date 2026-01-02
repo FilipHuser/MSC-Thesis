@@ -63,9 +63,11 @@ namespace Graphium.ViewModels
                 var plot = _plotManager.GetOrCreatePlot(signal);
                 _multiplot.AddPlot(plot);
 
-                colorIndex %= PlotPallete.Count();
                 var color = PlotPallete.GetColor(colorIndex);
                 _plotManager.SetAllChannelsColor(signal, color);
+
+                colorIndex++;
+                colorIndex %= PlotPallete.Count();
             }
 
             _multiplot.CollapseVertically();
