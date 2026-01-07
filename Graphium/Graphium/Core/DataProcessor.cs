@@ -121,7 +121,7 @@ namespace Graphium.Core
             var signalNameToSignal = moduleSignals
                 .ToDictionary(signal => NormalizeKey(signal.Name), signal => signal, StringComparer.OrdinalIgnoreCase);
 
-            output.Add(new List<Sample>());
+            var samples = new List<Sample>();  // ← DOČASNÝ list
 
             foreach (var post in module.Get())
             {
@@ -149,7 +149,13 @@ namespace Graphium.Core
                     }
                 }
 
-                output.ElementAt(0).Add(sample);
+                samples.Add(sample);  // ← Přidej do DOČASNÉHO listu
+            }
+
+            // ← PŘIDEJ JEN KDYŽ MÁŠ DATA!
+            if (samples.Count > 0)
+            {
+                output.Add(samples);
             }
 
             return output;

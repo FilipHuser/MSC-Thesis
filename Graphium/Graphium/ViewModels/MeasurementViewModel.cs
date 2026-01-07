@@ -5,6 +5,8 @@ using Graphium.Interfaces;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Diagnostics;
+using System.Threading.Tasks.Dataflow;
+using System.Runtime.InteropServices;
 
 namespace Graphium.ViewModels
 {
@@ -157,17 +159,20 @@ namespace Graphium.ViewModels
                 .Select(x => new { Source = x.Key, MaxSamplingRate = x.Value.Max(s => s.SamplingRate) })
                 .OrderByDescending(x => x.MaxSamplingRate)
                 .First()
-                .Source;
+              .Source;
 
-            var allSignalsSet = new HashSet<Signal>(Signals);
+            var slaveSignals = new HashSet<Signal>(Signals.Where(x => x.Source != masterSource));
+            var distinctSourceCount = Signals.Select(s => s.Source).Distinct().Count();
 
-            // Just one line - service handles everything!
             using var csvWriter = _measurementExportService.CreateCsvWriter(this);
+
+            var masterSourceDataBuffer = new List<Sample>();
 
             while (!token.IsCancellationRequested)
             {
                 var dataByModule = _dataHubService.GetData();
                 var masterSourceData = dataByModule.TryGetValue(masterSource, out var data) ? data : null;
+                var slaveSourceData = dataByModule.Where(kvp => kvp.Key != masterSource);
 
                 if (masterSourceData == null || masterSourceData.Count == 0)
                 {
@@ -175,8 +180,8 @@ namespace Graphium.ViewModels
                     continue;
                 }
 
-                // Update SignalAligner with latest values from all sources
-                foreach (var sourceData in dataByModule)
+                // Update latest values of slave data sources via signal aligner
+                foreach (var sourceData in slaveSourceData)
                 {
                     var groups = sourceData.Value;
                     if (groups == null || groups.Count == 0) { continue; }
@@ -190,6 +195,27 @@ namespace Graphium.ViewModels
                             _signalAligner.UpdateSignal(channel.Key, channel.Value);
                         }
                     }
+                }
+
+                if (masterSourceData.Count == 1 && distinctSourceCount == 1)
+                {
+                    var group = masterSourceData.First();
+
+                    if (masterSourceDataBuffer.Count == 0)
+                    {
+                        if (group.Any())
+                        {
+                            masterSourceDataBuffer.AddRange(group);
+                        }
+
+                        await Task.Delay(_dataPollingInterval);
+                        continue;
+                    }
+
+                    masterSourceData.Insert(0, new List<Sample>(masterSourceDataBuffer));
+
+                    masterSourceDataBuffer.Clear();
+                    masterSourceDataBuffer.AddRange(masterSourceData.Last());
                 }
 
                 for (int groupIndex = 0; groupIndex < masterSourceData.Count - 1; groupIndex++)
@@ -212,15 +238,13 @@ namespace Graphium.ViewModels
 
                         var rowValues = new Dictionary<Signal, object>();
 
-                        // Update signals present in this sample
                         foreach (var channel in sample.Channels)
                         {
                             channel.Key.Update(xVal, channel.Value);
                             rowValues[channel.Key] = channel.Value;
                         }
 
-                        // Update all other signals with their last known values
-                        foreach (var sig in allSignalsSet)
+                        foreach (var sig in slaveSignals)
                         {
                             if (!sample.Channels.ContainsKey(sig))
                             {
@@ -238,9 +262,12 @@ namespace Graphium.ViewModels
                     }
                 }
 
+                var lastTimestamp = masterSourceData.Last().Last().GetTimestamp();
+                var lastXVal = (lastTimestamp - start).TotalMilliseconds;
+                DataPlotter.Update(lastXVal);
+
                 // Flush periodically to ensure data is written
                 await csvWriter.FlushAsync();
-
                 await Task.Delay(_dataPollingInterval);
             }
         }

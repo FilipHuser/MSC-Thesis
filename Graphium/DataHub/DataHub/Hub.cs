@@ -31,8 +31,7 @@ namespace DataHub
         }
         public void ClearModules()
         {
-            if (IsCapturing)
-                StopCapturing();
+            if (IsCapturing) { StopCapturing(); }
             Modules.Clear();
         }
         #endregion
