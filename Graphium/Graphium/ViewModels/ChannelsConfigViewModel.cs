@@ -140,7 +140,6 @@ namespace Graphium.ViewModels
             _viewManager.Close<DataAcquisitionViewModel>();
         }
 
-
         private void SaveConfiguration()
         {
             _ConfigurationService.Save(ConfiguredChannels.ToList(), SettingsCategory.CHANNELS_CONFIGURATION);

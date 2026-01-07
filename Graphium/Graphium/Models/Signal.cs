@@ -8,7 +8,7 @@ namespace Graphium.Models
         #region PROPERTIES
         public string Name { get; set; }
         public ModuleType Source { get; set; }
-        [JsonIgnore] public bool IsPlotted { get; set; } = true;
+        public bool IsPlotted { get; set; } = true;
         [JsonIgnore] public bool IsAcquired { get; set; } = true;
         [JsonIgnore] public List<double> XData { get; set; } = new(); // Single shared X data
         [JsonIgnore] public List<List<double>> YData { get; set; } = new();

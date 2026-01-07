@@ -77,9 +77,6 @@
                     Command="{Binding CreateSignalCmd}"
                     Padding="5" 
                     Margin="0,0,5,0"/>
-            <Button Grid.Column="2"
-                    Content="Create Signal Compound"
-                    Padding="5"/>
         </StackPanel>
     </Grid>
 </UserControl>

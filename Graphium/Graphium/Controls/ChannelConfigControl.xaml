@@ -79,8 +79,8 @@
                     <DataGridTemplateColumn Header="Acquired" Width="Auto">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding Signal.IsAcquired, Mode=TwoWay}"
-                                          IsEnabled="{Binding IsSignalAssigned}"
+                                <CheckBox IsChecked="{Binding IsSignalAssigned, Mode=OneWay}"
+                                          IsEnabled="False"
                                           HorizontalAlignment="Center"
                                           VerticalAlignment="Center"/>
                             </DataTemplate>
@@ -91,7 +91,6 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding Signal.IsPlotted, Mode=TwoWay}"
-                                          IsEnabled="False"
                                           HorizontalAlignment="Center"
                                           VerticalAlignment="Center"/>
                             </DataTemplate>
