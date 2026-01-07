@@ -68,10 +68,14 @@ namespace Graphium.Core
 
         public async Task WriteRowAsync(DateTime timestamp, Dictionary<Signal, object> values)
         {
+            long unixTimestampUs = ((DateTimeOffset)timestamp).ToUnixTimeMilliseconds() * 1000
+                          + (timestamp.Ticks % TimeSpan.TicksPerMillisecond) / 10;
+
             var row = new List<string>
             {
-                timestamp.ToString("HH:mm:ss.ffffff", CultureInfo.InvariantCulture)
+                unixTimestampUs.ToString(CultureInfo.InvariantCulture)
             };
+
             foreach (var signal in _signals)
             {
                 if (values.TryGetValue(signal, out var value))
@@ -91,6 +95,19 @@ namespace Graphium.Core
             if (value == null)
                 return string.Empty;
 
+            // Handle Dictionary<string, object> (objekty)
+            if (value is System.Collections.IDictionary dict)
+            {
+                var pairs = new List<string>();
+                foreach (System.Collections.DictionaryEntry entry in dict)
+                {
+                    var key = entry.Key?.ToString() ?? "";
+                    var val = FormatValue(entry.Value); // Rekurzivní volání
+                    pairs.Add($"{key}:{val}");
+                }
+                return string.Join(LIST_DELIMITER, pairs);
+            }
+
             // Handle List<object> or any IEnumerable
             if (value is System.Collections.IEnumerable enumerable && !(value is string))
             {
@@ -100,15 +117,8 @@ namespace Graphium.Core
                     if (item == null)
                         continue;
 
-                    // Try to format as number
-                    if (item is double d)
-                        values.Add(d.ToString("G", CultureInfo.InvariantCulture));
-                    else if (item is float f)
-                        values.Add(f.ToString("G", CultureInfo.InvariantCulture));
-                    else if (item is int || item is long || item is decimal)
-                        values.Add(Convert.ToString(item, CultureInfo.InvariantCulture));
-                    else
-                        values.Add(item.ToString());
+                    // Rekurzivní volání pro každý item (může být Dictionary!)
+                    values.Add(FormatValue(item));
                 }
 
                 return string.Join(LIST_DELIMITER, values);
@@ -116,19 +126,13 @@ namespace Graphium.Core
 
             // Handle single numeric values
             if (value is double d2)
-            {
                 return d2.ToString("G", CultureInfo.InvariantCulture);
-            }
 
             if (value is float f2)
-            {
                 return f2.ToString("G", CultureInfo.InvariantCulture);
-            }
 
             if (value is int || value is long || value is decimal)
-            {
                 return Convert.ToString(value, CultureInfo.InvariantCulture);
-            }
 
             return value.ToString();
         }

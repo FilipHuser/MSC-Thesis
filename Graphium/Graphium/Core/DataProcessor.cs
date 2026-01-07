@@ -72,10 +72,7 @@ namespace Graphium.Core
                 int dataBytes = payload.Length - 2;
 
                 // Validate packet has complete samples
-                if (dataBytes % (sizeof(short) * channelCount) != 0)
-                {
-                    continue;
-                }
+                if (dataBytes % (sizeof(short) * channelCount) != 0) { continue; }
 
                 int samplesPerChannel = dataBytes / sizeof(short) / channelCount;
 
@@ -121,7 +118,7 @@ namespace Graphium.Core
             var signalNameToSignal = moduleSignals
                 .ToDictionary(signal => NormalizeKey(signal.Name), signal => signal, StringComparer.OrdinalIgnoreCase);
 
-            var samples = new List<Sample>();  // ← DOČASNÝ list
+            var samples = new List<Sample>();
 
             foreach (var post in module.Get())
             {
@@ -149,10 +146,9 @@ namespace Graphium.Core
                     }
                 }
 
-                samples.Add(sample);  // ← Přidej do DOČASNÉHO listu
+                samples.Add(sample);
             }
 
-            // ← PŘIDEJ JEN KDYŽ MÁŠ DATA!
             if (samples.Count > 0)
             {
                 output.Add(samples);
