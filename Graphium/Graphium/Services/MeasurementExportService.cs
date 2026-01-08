@@ -32,6 +32,8 @@ namespace Graphium.Services
                 throw new InvalidOperationException("No signals available for export.");
             }
 
+
+
             var fileName = $"{vm.Name}.measurement.tmp.csv";
             var filePath = GetMeasurementFilePath(fileName);
 

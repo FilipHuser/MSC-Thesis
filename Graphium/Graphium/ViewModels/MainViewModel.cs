@@ -65,7 +65,7 @@ namespace Graphium.ViewModels
             int newId = maxId + 1;
             var tab = _viewModelFactory.Create<MeasurementViewModel>();
             tab.TabId = newId;
-            tab.Name = string.Format("Untitled{0}.gra", tab.TabId);
+            tab.Name = string.Format("Untitled{0}", tab.TabId);
             Tabs.Add(tab);
             CurrentTab = tab;
             _loggingService.LogDebug($"Measurement Tab added: '{tab.Name}'");

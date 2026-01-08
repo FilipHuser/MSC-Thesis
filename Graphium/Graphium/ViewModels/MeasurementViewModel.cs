@@ -135,7 +135,7 @@ namespace Graphium.ViewModels
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "Graphium",
                     "Measurements",
-                    $"{Name}_tmpMeasurement.csv");
+                    $"{Name}.measurement.tmp.csv");
 
                 await _fileExportService.ExportAsync(
                     sourceFile,
