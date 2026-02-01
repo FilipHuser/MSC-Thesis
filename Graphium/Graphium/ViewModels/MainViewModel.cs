@@ -26,16 +26,8 @@ namespace Graphium.ViewModels
             set
             {
                 if (_currentTab == value) return;
-
-                _signalService.SignalsChanged -= OnSignalsChanged;
-
                 SetProperty(ref _currentTab, value);
-
-                if (_currentTab != null)
-                {
-                    _signalService.SetCurrentSignals(_currentTab.Signals);
-                    _signalService.SignalsChanged += OnSignalsChanged;
-                }
+                if (_currentTab != null) { _signalService.SetCurrentSignals(_currentTab.Signals); }
             }
         }
         public ObservableCollection<MeasurementViewModel> Tabs { get; set; } = [];
@@ -93,10 +85,6 @@ namespace Graphium.ViewModels
         }
         private void DataAcquisitionSetup() => _viewManager.ShowDialog<MainViewModel, DataAcquisitionViewModel>();
         private void Preferences() => _viewManager.ShowDialog<MainViewModel, PreferencesViewModel>();
-        private void OnSignalsChanged(object? sender, EventArgs e)  
-        {
-            _currentTab?.DataPlotter.OnSignalsChanged();
-        }
         #endregion
     }
 }

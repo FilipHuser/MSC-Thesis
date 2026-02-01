@@ -27,7 +27,7 @@ namespace Graphium.Services
             _signals = signals;
             if(_signals != null) { 
                 _signals.CollectionChanged += SignalsCollectionChanged; }
-            SignalsChanged?.Invoke(this, EventArgs.Empty);
+            //SignalsChanged?.Invoke(this, EventArgs.Empty);
         }
         private void SignalsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => SignalsChanged?.Invoke(this, EventArgs.Empty);
         #endregion

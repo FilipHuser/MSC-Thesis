@@ -7,6 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Threading.Tasks.Dataflow;
 using System.Runtime.InteropServices;
+using System.Collections.Specialized;
 
 namespace Graphium.ViewModels
 {
@@ -58,8 +59,8 @@ namespace Graphium.ViewModels
             _measurementExportService = measurementExportService;
             _loggingService = loggingService;
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
+            Signals.CollectionChanged += OnSignalsCollectionChanged;
         }
-
         public async Task StopMeasuringAsync()
         {
             _dataHubService.StopCapturing();
@@ -83,7 +84,7 @@ namespace Graphium.ViewModels
             _cts?.Dispose();
             _cts = null;
         }
-
+        private void OnSignalsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => DataPlotter.OnSignalsChanged(Signals);
         private async Task StartMeasuringAsync()
         {
             if (_dataHubService.IsCapturing)
@@ -111,7 +112,6 @@ namespace Graphium.ViewModels
 
             foreach (var signal in Signals) { signal.ClearData(); }
 
-            DataPlotter.Reset();
             _signalAligner = new SignalAligner();
 
             _globalClock.Restart();
@@ -119,11 +119,7 @@ namespace Graphium.ViewModels
             _cts = new CancellationTokenSource();
             _measurementTask = AcquireDataAsync(_cts.Token);
             IsMeasuring = true;
-
-            DataPlotter.ResumeRefresh();
-            DataPlotter.OnSignalsChanged();
         }
-
         private async Task SaveAsCSV(bool suppressResumePrompt = false)
         {
             bool wasRunning = IsMeasuring;
@@ -150,7 +146,6 @@ namespace Graphium.ViewModels
                 }
             }
         }
-
         private async Task AcquireDataAsync(CancellationToken token)
         {
             var start = DateTime.Now;
@@ -271,7 +266,6 @@ namespace Graphium.ViewModels
 
                 var lastTimestamp = masterSourceData.Last().Last().GetTimestamp();
                 var lastXVal = (lastTimestamp - start).TotalMilliseconds;
-                DataPlotter.Update(lastXVal);
 
                 // Flush periodically to ensure data is written
                 await csvWriter.FlushAsync();
