@@ -166,8 +166,6 @@ namespace Graphium.ViewModels
 
             using var csvWriter = _measurementExportService.CreateCsvWriter(this);
 
-            var masterSourceDataBuffer = new List<Sample>();
-
             while (!token.IsCancellationRequested)
             {
                 var dataByModule = _dataHubService.GetData();
@@ -180,7 +178,6 @@ namespace Graphium.ViewModels
                     continue;
                 }
 
-                // Update latest values of slave data sources via signal aligner
                 foreach (var sourceData in slaveSourceData)
                 {
                     var groups = sourceData.Value;
@@ -195,27 +192,6 @@ namespace Graphium.ViewModels
                             _signalAligner.UpdateSignal(channel.Key, channel.Value);
                         }
                     }
-                }
-
-                if (masterSourceData.Count == 1 && distinctSourceCount == 1)
-                {
-                    var group = masterSourceData.First();
-
-                    if (masterSourceDataBuffer.Count == 0)
-                    {
-                        if (group.Any())
-                        {
-                            masterSourceDataBuffer.AddRange(group);
-                        }
-
-                        await Task.Delay(_dataPollingInterval);
-                        continue;
-                    }
-
-                    masterSourceData.Insert(0, new List<Sample>(masterSourceDataBuffer));
-
-                    masterSourceDataBuffer.Clear();
-                    masterSourceDataBuffer.AddRange(masterSourceData.Last());
                 }
 
                 for (int groupIndex = 0; groupIndex < masterSourceData.Count - 1; groupIndex++)
