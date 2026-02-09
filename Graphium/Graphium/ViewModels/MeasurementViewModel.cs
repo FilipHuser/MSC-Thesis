@@ -165,37 +165,16 @@ namespace Graphium.ViewModels
 
             using var csvWriter = _measurementExportService.CreateCsvWriter(this);
 
-            // BUFFER pro poslední nezpracovanou grupu
             List<Sample>? bufferedGroup = null;
 
             while (!token.IsCancellationRequested)
             {
                 var dataByModule = _dataHubService.GetData();
-
-#if DEBUG
-                Debug.WriteLine("=== GetData() called ===");
-                foreach (var kvp in dataByModule)
-                {
-                    if (kvp.Value != null)
-                    {
-                        int total = kvp.Value.Sum(g => g.Count);
-                        Debug.WriteLine($"[{kvp.Key}] Groups: {kvp.Value.Count}, Samples: {total}");
-                    }
-                }
-#endif
-
                 var masterSourceData = dataByModule.TryGetValue(masterSource, out var data) ? data : null;
                 var slaveSourceData = dataByModule.Where(kvp => kvp.Key != masterSource);
 
                 if (masterSourceData == null || masterSourceData.Count == 0)
                 {
-#if DEBUG
-                    if (bufferedGroup != null)
-                    {
-                        Debug.WriteLine($"⏳ Buffer waiting: {bufferedGroup.Count} samples");
-                    }
-#endif
-
                     await Task.Delay(_dataPollingInterval);
                     continue;
                 }
@@ -217,24 +196,15 @@ namespace Graphium.ViewModels
                     }
                 }
 
-                // Vytvoř seznam grup k zpracování
                 var groupsToProcess = new List<List<Sample>>();
 
                 if (bufferedGroup != null)
                 {
                     groupsToProcess.Add(bufferedGroup);
-#if DEBUG
-                    Debug.WriteLine($"📦 Using buffered group: {bufferedGroup.Count} samples");
-#endif
                 }
 
                 groupsToProcess.AddRange(masterSourceData);
 
-#if DEBUG
-                Debug.WriteLine($"🔄 Processing {groupsToProcess.Count} groups (including buffer)");
-#endif
-
-                // Zpracuj všechny KROMĚ poslední
                 int processedGroups = 0;
                 for (int groupIndex = 0; groupIndex < groupsToProcess.Count - 1; groupIndex++)
                 {
@@ -287,18 +257,6 @@ namespace Graphium.ViewModels
                     processedGroups++;
                 }
 
-#if DEBUG
-                Debug.WriteLine($"✅ Processed {processedGroups} groups");
-#endif
-
-                // Ulož poslední grupu do bufferu pro příští iteraci
-                bufferedGroup = groupsToProcess.Last();
-
-#if DEBUG
-                Debug.WriteLine($"💾 Buffered for next iteration: {bufferedGroup.Count} samples");
-#endif
-
-                // Update plotter s posledním ZPRACOVANÝM timestampem
                 if (groupsToProcess.Count > 1)
                 {
                     var lastProcessedGroup = groupsToProcess[groupsToProcess.Count - 2];
