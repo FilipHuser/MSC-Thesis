@@ -30,10 +30,11 @@ namespace Graphium.ViewModels
         private readonly Stopwatch _globalClock = new Stopwatch();
 
         public int TabId { get; set; } = -1;
-        public string? Name { get => _name; set => SetProperty(ref _name, value); }
         public bool IsMeasuring { get; private set; }
         public DataPlotterViewModel DataPlotter { get; set; }
         public ObservableCollection<Signal> Signals { get; set; } = [];
+        public string? Name { get => _name; set => SetProperty(ref _name, value); }
+        public ObservableCollection<SourceStatus> SourceStatuses { get; set; } = [];
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand StartCmd => new RelayCommand(async execute => await StartMeasuringAsync(),
@@ -59,13 +60,14 @@ namespace Graphium.ViewModels
             _loggingService = loggingService;
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
         }
-
         public async Task StopMeasuringAsync()
         {
             _dataHubService.StopCapturing();
 
             _cts?.Cancel();
             IsMeasuring = false;
+
+            foreach (var status in SourceStatuses) { status.IsActive = false; }
 
             if (_measurementTask != null)
             {
@@ -83,7 +85,6 @@ namespace Graphium.ViewModels
             _cts?.Dispose();
             _cts = null;
         }
-
         private async Task StartMeasuringAsync()
         {
             if (_dataHubService.IsCapturing)
@@ -111,6 +112,13 @@ namespace Graphium.ViewModels
 
             foreach (var signal in Signals) { signal.ClearData(); }
 
+            SourceStatuses.Clear();
+            var uniqueSources = Signals.Select(s => s.Source).Distinct();
+            foreach (var source in uniqueSources)
+            {
+                SourceStatuses.Add(new SourceStatus { Type = source, IsActive = false });
+            }
+
             DataPlotter.Reset();
             _signalAligner = new SignalAligner();
 
@@ -123,7 +131,6 @@ namespace Graphium.ViewModels
             DataPlotter.ResumeRefresh();
             DataPlotter.OnSignalsChanged();
         }
-
         private async Task SaveAsCSV(bool suppressResumePrompt = false)
         {
             bool wasRunning = IsMeasuring;
@@ -150,7 +157,6 @@ namespace Graphium.ViewModels
                 }
             }
         }
-
         private async Task AcquireDataAsync(CancellationToken token)
         {
             var start = DateTime.Now;
@@ -170,6 +176,16 @@ namespace Graphium.ViewModels
             while (!token.IsCancellationRequested)
             {
                 var dataByModule = _dataHubService.GetData();
+
+                foreach (var status in SourceStatuses)
+                {
+                    if (dataByModule.TryGetValue(status.Type, out var moduleData) && moduleData.Count > 0)
+                    {
+                        status.MarkDataReceived();
+                    }
+                    status.UpdateStatus();
+                }
+
                 var masterSourceData = dataByModule.TryGetValue(masterSource, out var data) ? data : null;
                 var slaveSourceData = dataByModule.Where(kvp => kvp.Key != masterSource);
 
