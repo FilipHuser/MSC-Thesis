@@ -9,13 +9,16 @@ using DataHub.Modules;
 
 namespace DataHub.Interfaces
 {
-    [JsonDerivedType(typeof(BiopacSourceModule), "BiopacSourceModule")]
-    [JsonDerivedType(typeof(VRSourceModule), "VRSourceModule")]
-    public interface IModule
+    public interface IModule : IDisposable
     {
-        void StartCapturing();
-        void StopCapturing();
+        #region METHODS
         ModuleType ModuleType { get; }
         bool IsCapturing { get; }
+        event EventHandler<DataAvailableEventArgs>? DataAvailable;
+        #endregion
+        #region PROPERTIES
+        void StartCapturing();
+        void StopCapturing();
+        #endregion
     }
 }
