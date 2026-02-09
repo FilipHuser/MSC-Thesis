@@ -15,19 +15,61 @@
                     <Setter Property="Padding" Value="5"/>
                 </Style>
             </ToolBar.Resources>
-            <Menu>
+
+            <Menu Background="Transparent">
                 <MenuItem Header="Measurement">
                     <MenuItem Header="Save As">
                         <MenuItem Header="CSV" Command="{Binding SaveAsCSVCmd}" />
                     </MenuItem>
                 </MenuItem>
             </Menu>
+
             <Separator />
-            <Button Content="Start"
-                    Command="{Binding StartCmd}"/>
-            <Button Content="Stop"
-                    Command="{Binding StopCmd}"/>
+
+            <Button Content="Start" Command="{Binding StartCmd}"/>
+            <Button Content="Stop" Command="{Binding StopCmd}"/>
+
+            <Separator />
+
+            <ItemsControl ItemsSource="{Binding SourceStatuses}" 
+                          VerticalAlignment="Center"
+                          ToolBar.OverflowMode="Never">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Margin="8,0" VerticalAlignment="Center">
+                            <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="Gray"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                <Setter Property="Fill" Value="Lime"/>
+                                                <Setter Property="Effect">
+                                                    <Setter.Value>
+                                                        <DropShadowEffect Color="Lime" BlurRadius="4" ShadowDepth="0"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock Text="{Binding Type}" 
+                                       Margin="5,0,0,0"
+                                       FontSize="11" 
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </ToolBar>
+
         <local:DataPlotterControl DataContext="{Binding DataPlotter}"/>
     </DockPanel>
 </UserControl>
