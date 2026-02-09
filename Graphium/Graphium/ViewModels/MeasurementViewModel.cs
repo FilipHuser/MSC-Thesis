@@ -159,32 +159,52 @@ namespace Graphium.ViewModels
                 .Select(x => new { Source = x.Key, MaxSamplingRate = x.Value.Max(s => s.SamplingRate) })
                 .OrderByDescending(x => x.MaxSamplingRate)
                 .First()
-              .Source;
+                .Source;
 
             var slaveSignals = new HashSet<Signal>(Signals.Where(x => x.Source != masterSource));
-            var distinctSourceCount = Signals.Select(s => s.Source).Distinct().Count();
 
             using var csvWriter = _measurementExportService.CreateCsvWriter(this);
 
-            var masterSourceDataBuffer = new List<Sample>();
+            // BUFFER pro poslední nezpracovanou grupu
+            List<Sample>? bufferedGroup = null;
 
             while (!token.IsCancellationRequested)
             {
                 var dataByModule = _dataHubService.GetData();
+
+#if DEBUG
+                Debug.WriteLine("=== GetData() called ===");
+                foreach (var kvp in dataByModule)
+                {
+                    if (kvp.Value != null)
+                    {
+                        int total = kvp.Value.Sum(g => g.Count);
+                        Debug.WriteLine($"[{kvp.Key}] Groups: {kvp.Value.Count}, Samples: {total}");
+                    }
+                }
+#endif
+
                 var masterSourceData = dataByModule.TryGetValue(masterSource, out var data) ? data : null;
                 var slaveSourceData = dataByModule.Where(kvp => kvp.Key != masterSource);
 
                 if (masterSourceData == null || masterSourceData.Count == 0)
                 {
+#if DEBUG
+                    if (bufferedGroup != null)
+                    {
+                        Debug.WriteLine($"⏳ Buffer waiting: {bufferedGroup.Count} samples");
+                    }
+#endif
+
                     await Task.Delay(_dataPollingInterval);
                     continue;
                 }
 
-                // Update latest values of slave data sources via signal aligner
+                // Update slave signals
                 foreach (var sourceData in slaveSourceData)
                 {
                     var groups = sourceData.Value;
-                    if (groups == null || groups.Count == 0) { continue; }
+                    if (groups == null || groups.Count == 0) continue;
 
                     var lastGroup = groups[groups.Count - 1];
                     if (lastGroup.Count > 0)
@@ -197,33 +217,31 @@ namespace Graphium.ViewModels
                     }
                 }
 
-                if (masterSourceData.Count == 1 && distinctSourceCount == 1)
+                // Vytvoř seznam grup k zpracování
+                var groupsToProcess = new List<List<Sample>>();
+
+                if (bufferedGroup != null)
                 {
-                    var group = masterSourceData.First();
-
-                    if (masterSourceDataBuffer.Count == 0)
-                    {
-                        if (group.Any())
-                        {
-                            masterSourceDataBuffer.AddRange(group);
-                        }
-
-                        await Task.Delay(_dataPollingInterval);
-                        continue;
-                    }
-
-                    masterSourceData.Insert(0, new List<Sample>(masterSourceDataBuffer));
-
-                    masterSourceDataBuffer.Clear();
-                    masterSourceDataBuffer.AddRange(masterSourceData.Last());
+                    groupsToProcess.Add(bufferedGroup);
+#if DEBUG
+                    Debug.WriteLine($"📦 Using buffered group: {bufferedGroup.Count} samples");
+#endif
                 }
 
-                for (int groupIndex = 0; groupIndex < masterSourceData.Count - 1; groupIndex++)
-                {
-                    var currentGroup = masterSourceData[groupIndex];
-                    var nextGroup = masterSourceData[groupIndex + 1];
+                groupsToProcess.AddRange(masterSourceData);
 
-                    if (currentGroup.Count == 0 || nextGroup.Count == 0) { continue; }
+#if DEBUG
+                Debug.WriteLine($"🔄 Processing {groupsToProcess.Count} groups (including buffer)");
+#endif
+
+                // Zpracuj všechny KROMĚ poslední
+                int processedGroups = 0;
+                for (int groupIndex = 0; groupIndex < groupsToProcess.Count - 1; groupIndex++)
+                {
+                    var currentGroup = groupsToProcess[groupIndex];
+                    var nextGroup = groupsToProcess[groupIndex + 1];
+
+                    if (currentGroup.Count == 0 || nextGroup.Count == 0) continue;
 
                     var currentTimestamp = currentGroup[0].GetTimestamp();
                     var nextTimestamp = nextGroup[0].GetTimestamp();
@@ -255,25 +273,43 @@ namespace Graphium.ViewModels
                                 var val = _signalAligner.GetLastValue(sig);
                                 if (val != null)
                                 {
-                                    if(sig.IsPlotted) 
-                                    { 
-                                        //sig.Update(xVal, val); 
+                                    if (sig.IsPlotted)
+                                    {
+                                        // sig.Update(xVal, val);
                                     }
                                     rowValues[sig] = val;
                                 }
                             }
                         }
 
-                        // Write row using the service
                         await csvWriter.WriteRowAsync(sampleTimestamp, rowValues);
+                    }
+                    processedGroups++;
+                }
+
+#if DEBUG
+                Debug.WriteLine($"✅ Processed {processedGroups} groups");
+#endif
+
+                // Ulož poslední grupu do bufferu pro příští iteraci
+                bufferedGroup = groupsToProcess.Last();
+
+#if DEBUG
+                Debug.WriteLine($"💾 Buffered for next iteration: {bufferedGroup.Count} samples");
+#endif
+
+                // Update plotter s posledním ZPRACOVANÝM timestampem
+                if (groupsToProcess.Count > 1)
+                {
+                    var lastProcessedGroup = groupsToProcess[groupsToProcess.Count - 2];
+                    if (lastProcessedGroup.Count > 0)
+                    {
+                        var lastTimestamp = lastProcessedGroup[0].GetTimestamp();
+                        var xVal = (lastTimestamp - start).TotalMilliseconds;
+                        DataPlotter.Update(xVal);
                     }
                 }
 
-                var lastTimestamp = masterSourceData.Last().Last().GetTimestamp();
-                var lastXVal = (lastTimestamp - start).TotalMilliseconds;
-                DataPlotter.Update(lastXVal);
-
-                // Flush periodically to ensure data is written
                 await csvWriter.FlushAsync();
                 await Task.Delay(_dataPollingInterval);
             }
