@@ -4,13 +4,16 @@
         Title="Signal Creator"
         Height="300" Width="400"
         WindowStartupLocation="CenterOwner">
-
-    <Grid Margin="5">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+    </Window.Resources>
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Fields -->
         <Grid Grid.Row="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -20,86 +23,74 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            <Grid.Resources>
+                <Style TargetType="Label">
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="Padding" Value="0,5"/>
+                </Style>
+                <Style TargetType="TextBox">
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="Margin" Value="0,3"/>
+                    <Setter Property="Padding" Value="4,3"/>
+                </Style>
+                <Style TargetType="ComboBox">
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="Margin" Value="0,3"/>
+                </Style>
+            </Grid.Resources>
 
-            <Label Grid.Row="0" 
-                   Grid.Column="0" 
-                   Content="Name:"
-                   VerticalAlignment="Center"/>
-            <TextBox Grid.Row="0" 
-                     Grid.Column="1"
-                     VerticalAlignment="Center"
+            <Label Grid.Row="0" Grid.Column="0" Content="Name:"/>
+            <TextBox Grid.Row="0" Grid.Column="1"
                      Text="{Binding Signal.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-            <Label Grid.Row="1" 
-                   Grid.Column="0"
-                   Content="Type:"
-                   VerticalAlignment="Center"
-                   />
-            <ComboBox Grid.Row="1"
-                      Grid.Column="1"
+            <Label Grid.Row="1" Grid.Column="0" Content="Type:"/>
+            <ComboBox Grid.Row="1" Grid.Column="1"
                       ItemsSource="{Binding TypeOptions}"
-                      SelectedItem="{Binding Signal.Type}"
-                      VerticalAlignment="Center"/>
+                      SelectedItem="{Binding SelectedType}"/>
 
-            <Label Grid.Row="2" 
-                   Grid.Column="0"
-                   Content="Source:"
-                   VerticalAlignment="Center"
-                   />
-            <ComboBox Grid.Row="2"
-                      Grid.Column="1"
+            <Label Grid.Row="2" Grid.Column="0" Content="Source:"/>
+            <ComboBox Grid.Row="2" Grid.Column="1"
                       ItemsSource="{Binding SourceOptions}"
-                      SelectedItem="{Binding Signal.Source}"
-                      VerticalAlignment="Center"/>
+                      SelectedItem="{Binding SelectedSource}"/>
 
-            <Label Grid.Row="3" 
-                   Grid.Column="0" 
-                   Content="Unit:" 
-                   VerticalAlignment="Center" />
-            <TextBox Grid.Row="3" 
-                     Grid.Column="1" 
-                     VerticalAlignment="Center"/>
+            <!-- Numeric only -->
+            <Label Grid.Row="3" Grid.Column="0" Content="Unit:"
+                   Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
+            <TextBox Grid.Row="3" Grid.Column="1"
+                     Text="{Binding Signal.Properties.Unit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
 
-            <Label Grid.Row="4" 
-                   Grid.Column="0"
-                   Content="Lower Bound:" 
-                   VerticalAlignment="Center" />
-            
-            <TextBox Grid.Row="4"
-                     Grid.Column="1" 
-                     Text="{Binding Signal.Properties.LowerBound}"
-                     VerticalAlignment="Center"/>
+            <Label Grid.Row="4" Grid.Column="0" Content="Lower Bound:"
+                   Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
+            <TextBox Grid.Row="4" Grid.Column="1"
+                     Text="{Binding Signal.Properties.LowerBound, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
 
-            <Label Grid.Row="5"
-                   Grid.Column="0" 
-                   Content="Upper Bound:" 
-                   VerticalAlignment="Center"/>
-            
-            <TextBox Grid.Row="5" 
-                     Grid.Column="1" 
-                     Text="{Binding Signal.Properties.UpperBound}"
-                     VerticalAlignment="Center"/>
+            <Label Grid.Row="5" Grid.Column="0" Content="Upper Bound:"
+                   Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
+            <TextBox Grid.Row="5" Grid.Column="1"
+                     Text="{Binding Signal.Properties.UpperBound, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
         </Grid>
-        
-        <Grid Grid.Row="1">
+
+        <!-- Buttons -->
+        <Grid Grid.Row="1" Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-
-            <Button Grid.Column="0" 
-                    Content="Cancel" 
+            <Button Grid.Column="0"
+                    Content="Cancel"
                     Command="{Binding CancelCmd}"
                     Width="100"
                     HorizontalAlignment="Left"/>
-            <Button Grid.Column="1" 
-                    Command="{Binding CreateCmd}"
+            <Button Grid.Column="1"
                     Content="Create"
+                    Command="{Binding CreateCmd}"
                     Width="100"
                     HorizontalAlignment="Right"/>
         </Grid>
