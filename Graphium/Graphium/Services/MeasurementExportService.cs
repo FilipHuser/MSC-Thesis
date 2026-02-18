@@ -25,7 +25,7 @@ namespace Graphium.Services
         public CsvMeasurementWriter CreateCsvWriter(MeasurementViewModel vm)
         {
             var signals = _signalService.Signals?.OrderBy(s => s.Name).ToList()
-              ?? new List<Signal>();
+              ?? new List<SignalBase>();
 
             if (signals.Count == 0)
             {
@@ -82,7 +82,7 @@ namespace Graphium.Services
             return Path.Combine(folderPath, fileName);
         }
 
-        private void WriteCsvFile(string filePath, List<Signal> signals, IEnumerable<MeasurementDataRow> data)
+        private void WriteCsvFile(string filePath, List<SignalBase> signals, IEnumerable<MeasurementDataRow> data)
         {
             using var writer = new StreamWriter(filePath, false, Encoding.UTF8, CsvMeasurementWriter.BUFFER_SIZE);
 
@@ -96,7 +96,7 @@ namespace Graphium.Services
             }
         }
 
-        private string BuildCsvHeader(List<Signal> signals)
+        private string BuildCsvHeader(List<SignalBase> signals)
         {
             var headers = new List<string> { "Timestamp" };
 
@@ -108,7 +108,7 @@ namespace Graphium.Services
             return string.Join(CsvMeasurementWriter.COLUMN_DELIMITER, headers);
         }
 
-        private string BuildCsvRow(List<Signal> signals, MeasurementDataRow row)
+        private string BuildCsvRow(List<SignalBase> signals, MeasurementDataRow row)
         {
             var values = new List<string>
             {

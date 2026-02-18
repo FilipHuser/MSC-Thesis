@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using DataHub.Core;
 using Graphium.Core;
+using Graphium.Enums;
 using Graphium.Interfaces;
 using Graphium.Models;
 
@@ -13,8 +14,9 @@ namespace Graphium.ViewModels
         #endregion
         #region PROPERITES
         private bool _isCreating = false;
-        private Signal? _signal = new();
-        public Signal? Signal { get => _signal; set => SetProperty(ref _signal, value); }
+        private SignalBase? _signal;
+        public SignalBase? Signal { get => _signal; set => SetProperty(ref _signal, value); }
+        public ObservableCollection<SignalType> TypeOptions { get; private set; } = [];
         public ObservableCollection<ModuleType> SourceOptions { get; private set; } = [];
         #endregion
         #region RELAY_COMMANDS
@@ -36,8 +38,12 @@ namespace Graphium.ViewModels
         }
         private void Init()
         {
-            var sources = Enum.GetValues(typeof(ModuleType)).Cast<ModuleType>().Where(x => x != ModuleType.NONE);
+            var types = Enum.GetValues(typeof(SignalType)).Cast<SignalType>().Where(x => x != SignalType.NaN);
+            var sources = Enum.GetValues(typeof(ModuleType)).Cast<ModuleType>().Where(x => x != ModuleType.NaN);
+            TypeOptions = new ObservableCollection<SignalType>(types);
             SourceOptions = new ObservableCollection<ModuleType>(sources);
+
+            Signal!.Type = TypeOptions.First();
             Signal!.Source = SourceOptions.First();
         }
         private void Create()

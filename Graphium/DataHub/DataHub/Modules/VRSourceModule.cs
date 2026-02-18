@@ -8,6 +8,7 @@ namespace DataHub.Modules
         #region PROPERTIES
         private readonly string _url;
         private HttpListener _listener;
+        public override double SamplingRate => 60;
         public override ModuleType ModuleType => ModuleType.VR;
         #endregion
         #region METHODS

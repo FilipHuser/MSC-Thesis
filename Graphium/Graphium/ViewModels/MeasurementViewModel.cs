@@ -7,6 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Threading.Tasks.Dataflow;
 using System.Runtime.InteropServices;
+using System.Collections.Specialized;
 
 namespace Graphium.ViewModels
 {
@@ -32,7 +33,7 @@ namespace Graphium.ViewModels
         public int TabId { get; set; } = -1;
         public bool IsMeasuring { get; private set; }
         public DataPlotterViewModel DataPlotter { get; set; }
-        public ObservableCollection<Signal> Signals { get; set; } = [];
+        public ObservableCollection<SignalBase> Signals { get; set; } = [];
         public string? Name { get => _name; set => SetProperty(ref _name, value); }
         public ObservableCollection<SourceStatus> SourceStatuses { get; set; } = [];
         #endregion
@@ -59,6 +60,7 @@ namespace Graphium.ViewModels
             _measurementExportService = measurementExportService;
             _loggingService = loggingService;
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
+            Signals.CollectionChanged += OnSignalsCollectionChanged;
         }
         public async Task StopMeasuringAsync()
         {
@@ -118,8 +120,6 @@ namespace Graphium.ViewModels
             {
                 SourceStatuses.Add(new SourceStatus { Type = source, IsActive = false });
             }
-
-            DataPlotter.Reset();
             _signalAligner = new SignalAligner();
 
             _globalClock.Restart();
@@ -127,9 +127,6 @@ namespace Graphium.ViewModels
             _cts = new CancellationTokenSource();
             _measurementTask = AcquireDataAsync(_cts.Token);
             IsMeasuring = true;
-
-            DataPlotter.ResumeRefresh();
-            DataPlotter.OnSignalsChanged();
         }
         private async Task SaveAsCSV(bool suppressResumePrompt = false)
         {
@@ -162,12 +159,12 @@ namespace Graphium.ViewModels
             var start = DateTime.Now;
             var signalsBySource = Signals.GroupBy(x => x.Source).ToDictionary(x => x.Key, x => x.ToList());
             var masterSource = signalsBySource
-                .Select(x => new { Source = x.Key, MaxSamplingRate = x.Value.Max(s => s.SamplingRate) })
-                .OrderByDescending(x => x.MaxSamplingRate)
+                .Select(x => new { Source = x.Key, SamplingRate = _dataHubService.GetSamplingRate(x.Key) })
+                .OrderByDescending(x => x.SamplingRate)
                 .First()
                 .Source;
 
-            var slaveSignals = new HashSet<Signal>(Signals.Where(x => x.Source != masterSource));
+            var slaveSignals = new HashSet<SignalBase>(Signals.Where(x => x.Source != masterSource));
 
             using var csvWriter = _measurementExportService.CreateCsvWriter(this);
 
@@ -195,7 +192,6 @@ namespace Graphium.ViewModels
                     continue;
                 }
 
-                // Update slave signals
                 foreach (var sourceData in slaveSourceData)
                 {
                     var groups = sourceData.Value;
@@ -240,7 +236,7 @@ namespace Graphium.ViewModels
                         var sampleTimestamp = currentTimestamp + (sampleIncrement * sampleIndex);
                         var xVal = (sampleTimestamp - start).TotalMilliseconds;
 
-                        var rowValues = new Dictionary<Signal, object>();
+                        var rowValues = new Dictionary<SignalBase, object>();
 
                         foreach (var channel in sample.Channels)
                         {
@@ -280,7 +276,7 @@ namespace Graphium.ViewModels
                     {
                         var lastTimestamp = lastProcessedGroup[0].GetTimestamp();
                         var xVal = (lastTimestamp - start).TotalMilliseconds;
-                        DataPlotter.Update(xVal);
+                        //DataPlotter.Update(xVal);
                     }
                 }
 
@@ -288,6 +284,7 @@ namespace Graphium.ViewModels
                 await Task.Delay(_dataPollingInterval);
             }
         }
+        private void OnSignalsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => DataPlotter.OnSignalsChanged(Signals);
         #endregion
     }
 }

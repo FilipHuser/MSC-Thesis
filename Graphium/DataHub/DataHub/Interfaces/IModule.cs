@@ -1,19 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using DataHub.Core;
-using DataHub.Modules;
+﻿using DataHub.Core;
 
 namespace DataHub.Interfaces
 {
     public interface IModule : IDisposable
     {
         #region METHODS
-        ModuleType ModuleType { get; }
         bool IsCapturing { get; }
+        double SamplingRate { get; }
+        ModuleType ModuleType { get; }
         event EventHandler<DataAvailableEventArgs>? DataAvailable;
         #endregion
         #region PROPERTIES

@@ -8,8 +8,8 @@ namespace DataHub.Core
 {
     public enum ModuleType
     {
-        BIOPAC,
+        NaN,
+        Biopac,
         VR,
-        NONE,
     }
 }

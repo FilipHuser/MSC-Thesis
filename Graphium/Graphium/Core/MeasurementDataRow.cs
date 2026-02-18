@@ -6,7 +6,7 @@ namespace Graphium.Core
     {
         #region PROPERTIES
         public double Timestamp { get; set; }
-        public Dictionary<Signal, object> Values { get; set; } = new();
+        public Dictionary<SignalBase, object> Values { get; set; } = new();
         #endregion
     }
 }

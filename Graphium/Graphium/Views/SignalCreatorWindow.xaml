@@ -18,6 +18,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
@@ -36,39 +37,50 @@
 
             <Label Grid.Row="1" 
                    Grid.Column="0"
-                   Content="Source:"
+                   Content="Type:"
                    VerticalAlignment="Center"
                    />
             <ComboBox Grid.Row="1"
+                      Grid.Column="1"
+                      ItemsSource="{Binding TypeOptions}"
+                      SelectedItem="{Binding Signal.Type}"
+                      VerticalAlignment="Center"/>
+
+            <Label Grid.Row="2" 
+                   Grid.Column="0"
+                   Content="Source:"
+                   VerticalAlignment="Center"
+                   />
+            <ComboBox Grid.Row="2"
                       Grid.Column="1"
                       ItemsSource="{Binding SourceOptions}"
                       SelectedItem="{Binding Signal.Source}"
                       VerticalAlignment="Center"/>
 
-            <Label Grid.Row="2" 
+            <Label Grid.Row="3" 
                    Grid.Column="0" 
                    Content="Unit:" 
                    VerticalAlignment="Center" />
-            <TextBox Grid.Row="2" 
+            <TextBox Grid.Row="3" 
                      Grid.Column="1" 
                      VerticalAlignment="Center"/>
 
-            <Label Grid.Row="3" 
+            <Label Grid.Row="4" 
                    Grid.Column="0"
                    Content="Lower Bound:" 
                    VerticalAlignment="Center" />
             
-            <TextBox Grid.Row="3"
+            <TextBox Grid.Row="4"
                      Grid.Column="1" 
                      Text="{Binding Signal.Properties.LowerBound}"
                      VerticalAlignment="Center"/>
 
-            <Label Grid.Row="4"
+            <Label Grid.Row="5"
                    Grid.Column="0" 
                    Content="Upper Bound:" 
                    VerticalAlignment="Center"/>
             
-            <TextBox Grid.Row="4" 
+            <TextBox Grid.Row="5" 
                      Grid.Column="1" 
                      Text="{Binding Signal.Properties.UpperBound}"
                      VerticalAlignment="Center"/>

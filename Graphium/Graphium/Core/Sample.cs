@@ -6,16 +6,16 @@ namespace Graphium.Core
     {
         #region PROPERTIES
         private readonly DateTime _timestamp;
-        public Dictionary<Signal,object> Channels = [];
+        public Dictionary<SignalBase, object> Channels = [];
         #endregion
         #region METHODS
         public Sample(DateTime timestamp)
         {
             _timestamp = timestamp;
         }
-        public void AddValue(Signal signal, object value) => Channels.Add(signal, value);
+        public void AddValue(SignalBase signal, object value) => Channels.Add(signal, value);
         public DateTime GetTimestamp() => _timestamp;
-        public object? this[Signal signal] { get => Channels.TryGetValue(signal, out var value) ? value : null; }
+        public object? this[SignalBase signal] { get => Channels.TryGetValue(signal, out var value) ? value : null; }
         #endregion
     }
 }

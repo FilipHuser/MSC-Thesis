@@ -12,10 +12,9 @@ namespace DataHub.Modules
         private DateTime _referenceTime;
         private ILiveDevice? _captureDevice;
         private PosixTimeval? _firstTimeval;
-
-        public override ModuleType ModuleType => ModuleType.BIOPAC;
+        public override double SamplingRate => 2000;
+        public override ModuleType ModuleType => ModuleType.Biopac;
         #endregion
-
         #region METHODS
         public BiopacSourceModule(int captureDeviceIndex, string? filter = null, int? readTimeout = null)
         {
