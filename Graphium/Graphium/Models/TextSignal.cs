@@ -11,19 +11,36 @@ namespace Graphium.Models
     public class TextSignal : SignalBase
     {
         [JsonIgnore] public List<string> YData { get; set; } = new();
-
         public TextSignal() { }
-
-        public TextSignal(string name, ModuleType source)
-            : base(name, SignalType.Text, source) { }
-
+        public TextSignal(string name, ModuleType source) : base(name, SignalType.Text, source) { }
         public override void Update(double absoluteTimeSeconds, object? data)
         {
             if (data == null) return;
-            YData.Add(data.ToString() ?? string.Empty);
+
+            string value;
+            try
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(data, data.GetType());
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                value = root.ValueKind switch
+                {
+                    System.Text.Json.JsonValueKind.Array =>
+                        $"[{root.GetArrayLength()} items] {root.EnumerateArray().FirstOrDefault()}",
+                    System.Text.Json.JsonValueKind.Object =>
+                        string.Join(" | ", root.EnumerateObject().Take(3).Select(p => $"{p.Name}: {p.Value}")),
+                    _ => json
+                };
+            }
+            catch
+            {
+                value = data.ToString() ?? string.Empty;
+            }
+
+            YData.Add(value);
             XData.Add(absoluteTimeSeconds);
         }
-
         public override void ClearData()
         {
             base.ClearData();

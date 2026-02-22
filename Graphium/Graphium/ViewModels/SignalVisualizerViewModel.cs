@@ -7,6 +7,8 @@ namespace Graphium.ViewModels
     {
         #region PROPERTIES
         protected readonly TSignal Signal;
+        public TSignal SignalData => Signal;
+        public SignalBase SignalBase => Signal;
         #endregion
         #region METHODS
         protected SignalVisualizerViewModel(TSignal signal) => Signal = signal;

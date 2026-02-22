@@ -12,7 +12,6 @@ namespace Graphium.ViewModels
         #region SERVICES
         private readonly IViewManager _viewManager;
         #endregion
-
         #region PROPERTIES
         private bool _isCreating = false;
 
@@ -54,25 +53,21 @@ namespace Graphium.ViewModels
         public ObservableCollection<SignalType> TypeOptions { get; private set; } = [];
         public ObservableCollection<ModuleType> SourceOptions { get; private set; } = [];
         #endregion
-
         #region RELAY_COMMANDS
         public RelayCommand CreateCmd => new RelayCommand(execute => Create(), canExecute => !string.IsNullOrWhiteSpace(Signal?.Name));
         public RelayCommand CancelCmd => new RelayCommand(execute => Cancel());
         #endregion
-
         #region METHODS
         public SignalCreatorViewModel(IViewManager viewManager)
         {
             _viewManager = viewManager;
             Init();
         }
-
         public void OnSignalClosing()
         {
             if (!_isCreating)
                 Signal = null;
         }
-
         private void Init()
         {
             var types = Enum.GetValues(typeof(SignalType)).Cast<SignalType>().Where(x => x != SignalType.NaN);
@@ -82,7 +77,6 @@ namespace Graphium.ViewModels
             SelectedSource = SourceOptions.First();
             SelectedType = TypeOptions.First();
         }
-
         private void CreateSignalForType(SignalType type)
         {
             var previousName = Signal?.Name;
@@ -101,13 +95,11 @@ namespace Graphium.ViewModels
                     Signal.Name = previousName;
             }
         }
-
         private void Create()
         {
             _isCreating = true;
             _viewManager.Close<SignalCreatorViewModel>();
         }
-
         private void Cancel()
         {
             Signal = null;

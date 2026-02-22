@@ -29,7 +29,6 @@ namespace Graphium.ViewModels
         private SignalAligner _signalAligner = new();
         private CancellationTokenSource? _cts = new();
         private readonly Stopwatch _globalClock = new Stopwatch();
-
         public int TabId { get; set; } = -1;
         public bool IsMeasuring { get; private set; }
         public DataPlotterViewModel DataPlotter { get; set; }
@@ -257,7 +256,7 @@ namespace Graphium.ViewModels
                                 {
                                     if (sig.IsPlotted)
                                     {
-                                        // sig.Update(xVal, val);
+                                        sig.Update(xVal, val);
                                     }
                                     rowValues[sig] = val;
                                 }
@@ -276,7 +275,7 @@ namespace Graphium.ViewModels
                     {
                         var lastTimestamp = lastProcessedGroup[0].GetTimestamp();
                         var xVal = (lastTimestamp - start).TotalMilliseconds;
-                        //DataPlotter.Update(xVal);
+                        DataPlotter.Update(xVal);
                     }
                 }
 
