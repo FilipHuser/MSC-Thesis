@@ -22,7 +22,6 @@ namespace Graphium.Services
         #endregion
         #region PROPERTIES
         private readonly Hub _hub;
-        // _signalCounts is kept for UpdateSignalCounts event handler
         private Dictionary<ModuleType, int> _signalCounts = [];
         public bool IsCapturing => _hub.IsCapturing;
         #endregion
@@ -49,7 +48,6 @@ namespace Graphium.Services
             _appConfigurationService.ConfigurationChanged += OnConfigurationChanged;
             _signalService.SignalsChanged += UpdateSignalCounts;
         }
-
         private void InitializeModules(AppSettings settings)
         {
             _loggingService.LogDebug($"Initializing modules with CaptureDevice: {settings.CaptureDeviceIndex}, IP: {settings.IPAddr}");
@@ -116,33 +114,28 @@ namespace Graphium.Services
                 throw;
             }
         }
-
         public Dictionary<ModuleType, List<List<Sample>>> GetData() => DataProcessor.ProcessAll(_hub.Modules.Values, _signalService.Signals);
-
         public void StartCapturing()
         {
             _hub.StartCapturing();
             _loggingService.LogDebug("Starting data capture");
         }
-
         public void StopCapturing()
         {
             _hub.StopCapturing();
             _loggingService.LogDebug("Stopping data capture");
         }
-
         public void AddModule(IModule module)
         {
             _hub.AddModule(module);
             _loggingService.LogDebug($"Adding module: {module.GetType().Name}");
         }
-
         public void RemoveModule(IModule module)
         {
             _hub.RemoveModule(module);
             _loggingService.LogDebug($"Removing module: {module.GetType().Name}");
         }
-
+        public double GetSamplingRate(ModuleType moduleType) => _hub.Modules.TryGetValue(moduleType, out var module) ? module.SamplingRate : 0;
         private void UpdateSignalCounts(object? sender, EventArgs e)
         {
             _signalCounts = _signalService.Signals?
@@ -152,7 +145,6 @@ namespace Graphium.Services
 
             _loggingService.LogDebug($"Signal counts updated: {string.Join(", ", _signalCounts.Select(x => $"{x.Key}={x.Value}"))}");
         }
-
         private void OnConfigurationChanged(object? sender, EventArgs e)
         {
             _loggingService.LogDebug("Configuration changed, reinitializing modules");

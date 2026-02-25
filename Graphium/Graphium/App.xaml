@@ -15,6 +15,12 @@
             <DataTemplate DataType="{x:Type vm:SignalManagerViewModel}">
                 <c:SignalManagerControl/>
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:NumericSignalViewModel}">
+                <c:NumericSignalControl Height="200"/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:TextSignalViewModel}">
+                <c:TextSignalControl Height="200"/>
+            </DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -14,6 +14,7 @@ namespace DataHub.Core
         private Task? _capturingTask;
         private CancellationTokenSource? _cts;
         public bool IsCapturing { get; set; }
+        public abstract double SamplingRate { get; }
         public abstract ModuleType ModuleType { get; }
         public event EventHandler<DataAvailableEventArgs>? DataAvailable;
         protected ConcurrentQueue<CapturedData<T>> DataQueue { get; } = new();

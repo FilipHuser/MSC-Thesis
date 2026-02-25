@@ -12,7 +12,7 @@ namespace Graphium.Core
     static class DataProcessor
     {
         private static string NormalizeKey(string key) => Regex.Replace(key, @"\s+", string.Empty);
-        public static Dictionary<ModuleType, List<List<Sample>>> ProcessAll(IEnumerable<IModule> modules, IEnumerable<Signal> signals)
+        public static Dictionary<ModuleType, List<List<Sample>>> ProcessAll(IEnumerable<IModule> modules, IEnumerable<SignalBase> signals)
         {
             var result = new Dictionary<ModuleType, List<List<Sample>>>();
             var signalsByModule = signals.GroupBy(s => s.Source)
@@ -32,7 +32,7 @@ namespace Graphium.Core
 
             return result;
         }
-        private static List<List<Sample>> ProcessModule(IModule module, List<Signal> moduleSignals)
+        private static List<List<Sample>> ProcessModule(IModule module, List<SignalBase> moduleSignals)
         {
             var channelCount = moduleSignals.Count;
             if (channelCount <= 0) return new List<List<Sample>>();
@@ -47,7 +47,7 @@ namespace Graphium.Core
                     return new List<List<Sample>>();
             }
         }
-        private static List<List<Sample>> ProcessBiopacModule(BiopacSourceModule module, int channelCount, List<Signal> moduleSignals)
+        private static List<List<Sample>> ProcessBiopacModule(BiopacSourceModule module, int channelCount, List<SignalBase> moduleSignals)
         {
             var output = new List<List<Sample>>();
             var convertFunc = ByteArrayConverter<short>.GetConvertFunction();
@@ -63,15 +63,9 @@ namespace Graphium.Core
                 var timestamp = capturedData.Timestamp;
                 var payload = udp.PayloadData;
 
-                // Minimum: header(1) + one sample per channel(2*channelCount) + checksum(1)
-                if (payload.Length < 2 + (2 * channelCount))
-                { 
-                    continue; 
-                }
+                if (payload.Length < 2 + (2 * channelCount)) { continue; }
 
                 int dataBytes = payload.Length - 2;
-
-                // Validate packet has complete samples
                 if (dataBytes % (sizeof(short) * channelCount) != 0) { continue; }
 
                 int samplesPerChannel = dataBytes / sizeof(short) / channelCount;
@@ -80,8 +74,6 @@ namespace Graphium.Core
                 for (int sampleIndex = 0; sampleIndex < samplesPerChannel; sampleIndex++)
                 {
                     var sample = new Sample(timestamp);
-
-                    // Extract all channel values for this sample
                     for (int channel = 0; channel < channelCount; channel++)
                     {
                         int pairIndex = sampleIndex * channelCount + channel;
@@ -99,7 +91,7 @@ namespace Graphium.Core
 
             return output;
         }
-        private static List<List<Sample>> ProcessVRModule(VRSourceModule module, List<Signal> moduleSignals)
+        private static List<List<Sample>> ProcessVRModule(VRSourceModule module, List<SignalBase> moduleSignals)
         {
             var output = new List<List<Sample>>();
 

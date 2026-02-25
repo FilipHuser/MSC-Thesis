@@ -1,12 +1,65 @@
 ﻿<UserControl x:Class="Graphium.Controls.DataPlotterControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:b="clr-namespace:Graphium.Behaviors"
+             xmlns:controls="clr-namespace:Graphium.Controls"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:Graphium.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <ContentControl Content="{Binding PlotControl, Mode=OneTime}"/>
+        <Grid>
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Visualizers.Count}" Value="0">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <Rectangle Fill="Transparent" Stroke="DarkGray" StrokeThickness="1" StrokeDashArray="4,4"/>
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="No signals configured" Foreground="DarkGray" FontSize="14" HorizontalAlignment="Center"/>
+                <TextBlock Text="Add signals via Data Acquisition" Foreground="#999" FontSize="11" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid>
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Visible"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Visualizers.Count}" Value="0">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="50"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="35"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="0">
+                <i:Interaction.Behaviors>
+                    <b:VisualizerGridBehavior Visualizers="{Binding Visualizers}"/>
+                </i:Interaction.Behaviors>
+            </Grid>
+
+            <controls:XAxisControl Grid.Column="1" Grid.Row="1"
+                                          MinX="{Binding XMin}"
+                                          MaxX="{Binding XMax}"
+                                          DataAreaLeft="0"
+                                          DataAreaRight="0"/>
+        </Grid>
+
     </Grid>
 </UserControl>

@@ -50,8 +50,8 @@ namespace Graphium
             services.AddSingleton<Create<DataPlotterViewModel>>(x => 
             {
                 return () => new DataPlotterViewModel(
-                    x.GetRequiredService<ISignalService>(),
-                    x.GetRequiredService<ILoggingService>());
+                    x.GetRequiredService<ILoggingService>(),
+                    x.GetRequiredService<IViewModelFactory>());
             });
 
             services.AddSingleton<Create<DataAcquisitionViewModel>>(x =>

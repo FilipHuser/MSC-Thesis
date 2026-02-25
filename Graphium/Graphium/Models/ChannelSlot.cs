@@ -10,9 +10,9 @@ namespace Graphium.Models
     {
         #region PROPERTIES
         private int _number;
-        private Signal? _signal;
+        private SignalBase? _signal;
         public int Number { get => _number; set => SetProperty(ref _number, value); }
-        public Signal? Signal 
+        public SignalBase? Signal 
         { 
             get => _signal;
             set

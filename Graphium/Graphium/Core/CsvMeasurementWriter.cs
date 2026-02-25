@@ -12,10 +12,10 @@ namespace Graphium.Core
         internal const int BUFFER_SIZE = 65536;
 
         private readonly StreamWriter _writer;
-        private readonly List<Signal> _signals;
+        private readonly List<SignalBase> _signals;
         private bool _disposed;
 
-        internal CsvMeasurementWriter(string filePath, List<Signal> signals)
+        internal CsvMeasurementWriter(string filePath, List<SignalBase> signals)
         {
             _signals = signals.OrderBy(x => x.Source).ToList();
 
@@ -44,7 +44,7 @@ namespace Graphium.Core
             _writer.WriteLine(string.Join(COLUMN_DELIMITER, headers));
         }
 
-        public void WriteRow(double timestamp, Dictionary<Signal, object> values)
+        public void WriteRow(double timestamp, Dictionary<SignalBase, object> values)
         {
             var row = new List<string>
             {
@@ -66,7 +66,7 @@ namespace Graphium.Core
             _writer.WriteLine(string.Join(COLUMN_DELIMITER, row));
         }
 
-        public async Task WriteRowAsync(DateTime timestamp, Dictionary<Signal, object> values)
+        public async Task WriteRowAsync(DateTime timestamp, Dictionary<SignalBase, object> values)
         {
             long unixTimestampUs = ((DateTimeOffset)timestamp).ToUnixTimeMilliseconds() * 1000
                           + (timestamp.Ticks % TimeSpan.TicksPerMillisecond) / 10;

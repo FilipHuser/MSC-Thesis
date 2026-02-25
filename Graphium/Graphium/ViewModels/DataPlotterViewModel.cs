@@ -1,247 +1,180 @@
-﻿using ScottPlot;
-using ScottPlot.WPF;
+﻿using Graphium.Enums;
 using Graphium.Interfaces;
-using Graphium.Services;
 using Graphium.Models;
+using ScottPlot;
+using System.Collections.ObjectModel;
 using System.Windows.Input;
-using ScottPlot.MultiplotLayouts;
-using System.Windows;
-using System.Windows.Threading;
-using ScottPlot.Plottables;
 
 namespace Graphium.ViewModels
 {
     internal class DataPlotterViewModel : ViewModelBase
     {
         #region SERVICES
-        private readonly ISignalService _signalService;
         private readonly ILoggingService _loggingService;
-        private readonly SignalPlotManager _plotManager;
+        private readonly IViewModelFactory _viewModelFactory;
         #endregion
+
         #region PROPERTIES
-        private DraggableRows? _layout;
-        private int? _dividerBeingDragged;
-        private bool _mouseDragging = false;
-        private double _timeWindow = 5000;
-        private bool _autoFollow = true;
-        private readonly IMultiplot _multiplot;
-        private readonly DispatcherTimer _refreshTimer;
-        public IPalette PlotPallete;
-        public WpfPlot PlotControl { get; } = new();
-        #endregion
-        #region METHODS
-        public DataPlotterViewModel(ISignalService signalService, ILoggingService loggingService)
+        private double _xMin = 0;
+        private double _xMax = 1;
+        private bool _isFollowing = false;
+        private bool _paletteApplied = false;
+        private Task? _renderTask;
+        private CancellationTokenSource? _renderCts;
+        private PeriodicTimer? _renderTimer;
+        private string _selectedPalette = "Category10";
+
+        public double ViewWindowMs { get; set; } = 5000;
+
+        private static readonly Dictionary<string, IPalette> Palettes = new()
         {
-            _signalService = signalService;
-            _loggingService = loggingService;
-            //TBD => GLOBAL MISC SETTINGS
-            PlotPallete = new ScottPlot.Palettes.Aurora();
-            _plotManager = new SignalPlotManager(PlotPallete);
-            _multiplot = PlotControl.Multiplot;
-            _refreshTimer = new DispatcherTimer()
+            ["Category10"] = new ScottPlot.Palettes.Category10(),
+            ["Nord"] = new ScottPlot.Palettes.Nord(),
+            ["Frost"] = new ScottPlot.Palettes.Frost(),
+            ["Amber"] = new ScottPlot.Palettes.Amber(),
+            ["Aurora"] = new ScottPlot.Palettes.Aurora(),
+        };
+
+        public string SelectedPalette
+        {
+            get => _selectedPalette;
+            set
             {
-                Interval = TimeSpan.FromMilliseconds(16.67)
-            };
-            _refreshTimer.Tick += (s,e) => { PlotControl.Refresh(); };
-            _refreshTimer.Start();
-
-            Init();
+                SetProperty(ref _selectedPalette, value);
+                _ = System.Windows.Application.Current.Dispatcher.InvokeAsync(ApplyPalette);
+            }
         }
-        public void SetAutoFollow(bool enabled) => _autoFollow = enabled;
-        public void OnSignalsChanged()
-        {
-            PlotControl.Reset();
-            _multiplot.RemovePlot(_multiplot.GetPlot(0));
-            UnsubscribePlotEvents();
 
-            var signals = _signalService.Signals?.ToList();
-            if (signals == null || !signals.Any()) { return; }
+        public IEnumerable<string> AvailablePalettes => Palettes.Keys;
+        public double XMin { get => _xMin; set => SetProperty(ref _xMin, value); }
+        public double XMax { get => _xMax; set => SetProperty(ref _xMax, value); }
+        public ObservableCollection<ISignalVisualizerViewModel> Visualizers { get; set; } = [];
+        #endregion
+
+        #region METHODS
+        public DataPlotterViewModel(ILoggingService loggingService, IViewModelFactory viewModelFactory)
+        {
+            _loggingService = loggingService;
+            _viewModelFactory = viewModelFactory;
+        }
+
+        public void OnSignalsChanged(IReadOnlyCollection<SignalBase>? signals)
+        {
+            Visualizers.Clear();
+            _paletteApplied = false;
+            if (signals == null) return;
 
             int colorIndex = 0;
             foreach (var signal in signals)
             {
-                var plot = _plotManager.GetOrCreatePlot(signal);
-                _multiplot.AddPlot(plot);
+                if (signal == null) continue;
+                ISignalVisualizerViewModel visualizer = signal switch
+                {
+                    NumericSignal numeric => new NumericSignalViewModel(numeric),
+                    TextSignal text => new TextSignalViewModel(text),
+                    _ when signal.Type == SignalType.NaN => throw new InvalidOperationException($"Signal '{signal.Name}' has no type set."),
+                    _ => throw new NotSupportedException($"SignalType {signal.Type} is not supported")
+                };
 
-                var color = PlotPallete.GetColor(colorIndex);
-                _plotManager.SetAllChannelsColor(signal, color);
+                if (visualizer is NumericSignalViewModel numVm)
+                    numVm.SetColor(Palettes[_selectedPalette].GetColor(colorIndex++));
 
-                colorIndex++;
-                colorIndex %= PlotPallete.Count();
+                Visualizers.Add(visualizer);
             }
 
-            _multiplot.CollapseVertically();
+            _paletteApplied = true;
+            ApplySharedXAxis();
+        }
 
-            var plots = _multiplot.GetPlots();
-            var bottomPlot = plots.Last();
-            bottomPlot.Axes.SetLimits(0, _timeWindow);
+        public void ToggleFollow()
+        {
+            _isFollowing = !_isFollowing;
+        }
 
-            foreach (var plot in plots)
+        public void StartRendering()
+        {
+            _isFollowing = false;
+            _paletteApplied = false;
+            _renderCts = new CancellationTokenSource();
+            _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
+            _renderTask = RunRenderLoopAsync(_renderCts.Token);
+        }
+
+        public void StopRendering()
+        {
+            _renderCts?.Cancel();
+            _renderCts?.Dispose();
+            _renderCts = null;
+            _renderTimer?.Dispose();
+            _renderTimer = null;
+            _renderTask = null;
+        }
+        private async Task RunRenderLoopAsync(CancellationToken token)
+        {
+            try
             {
-                plot.Axes.Right.LockSize(64);
-                plot.Grid.YAxis = plot.Axes.Right;
-
-                if (plot != bottomPlot)
+                while (await _renderTimer!.WaitForNextTickAsync(token))
                 {
-                    plot.Grid.XAxis = bottomPlot.Axes.Bottom;
+                    _ = System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        foreach (var vm in Visualizers)
+                            vm.Refresh();
+
+                        if (!_paletteApplied)
+                        {
+                            ApplyPalette();
+                            _paletteApplied = true;
+                        }
+                    }, System.Windows.Threading.DispatcherPriority.Background);
                 }
             }
-
-            _multiplot.SharedAxes.ShareX(plots);
-
-            _layout = new DraggableRows();
-            _multiplot.Layout = _layout;
-            _dividerBeingDragged = null;
-
-
-            SubscribePlotEvents();
-            PlotControl.UpdateLayout();
-            PlotControl.Refresh();
-
-            _loggingService.LogDebug($"Refreshed plot with {signals.Count()} signals.");
+            catch (OperationCanceledException) { }
         }
-        public void Update(double currentTime)
+
+        private void ApplyPalette()
         {
-            var signals = _signalService.Signals?.ToList();
-            if (signals != null)
+            var palette = Palettes[_selectedPalette];
+            var numericVMs = Visualizers.OfType<NumericSignalViewModel>().ToList();
+            for (int i = 0; i < numericVMs.Count; i++)
+                numericVMs[i].SetColor(palette.GetColor(i));
+        }
+
+        private void ApplySharedXAxis()
+        {
+            var numericVMs = Visualizers.OfType<NumericSignalViewModel>().ToList();
+            if (numericVMs.Count == 0) return;
+
+            foreach (var vm in numericVMs)
             {
-                foreach (var signal in signals)
+                void SyncFromVm()
                 {
-                    _plotManager.UpdatePlot(signal);
+                    var limits = vm.PlotControl.Plot.Axes.GetLimits();
+                    XMin = limits.Left;
+                    XMax = limits.Right;
+
+                    foreach (var other in numericVMs.Where(x => x != vm))
+                    {
+                        other.PlotControl.Plot.Axes.SetLimitsX(limits.Left, limits.Right);
+                        other.PlotControl.Refresh();
+                    }
+
+                    foreach (var tvm in Visualizers.OfType<TextSignalViewModel>())
+                        tvm.Refresh();
                 }
-            }
 
-            if (_autoFollow)
-            {
-                var plots = _multiplot.GetPlots();
-                if (!plots.Any()) return;
-
-                double startTime = Math.Max(0, currentTime - _timeWindow);
-
-                foreach (var plot in plots)
+                vm.PlotControl.MouseMove += (_, e) =>
                 {
-                    plot.Axes.SetLimitsX(startTime, currentTime);
-                    plot.Axes.AutoScaleY(plot.Axes.Right);
-                }
+                    if (e.LeftButton != MouseButtonState.Pressed && e.RightButton != MouseButtonState.Pressed) return;
+                    SyncFromVm();
+                };
+                vm.PlotControl.MouseUp += (_, _) => SyncFromVm();
+                vm.PlotControl.PreviewMouseWheel += (_, _) => _ = vm.PlotControl.Dispatcher.BeginInvoke(SyncFromVm, System.Windows.Threading.DispatcherPriority.Render);
+                vm.PlotControl.Dispatcher.BeginInvoke(() =>
+                {
+                    vm.PlotControl.Refresh();
+                    SyncFromVm();
+                }, System.Windows.Threading.DispatcherPriority.Loaded);
             }
-        }
-        public void Reset()
-        {
-            _plotManager.ClearAll();
-            Init();
-        }
-        public void PauseRefresh()
-        {
-            if (_refreshTimer.IsEnabled)
-            {
-                _refreshTimer.Stop();
-                _loggingService.LogDebug("Plot refresh timer stopped.");
-            }
-        }
-
-        public void ResumeRefresh()
-        {
-            if (!_refreshTimer.IsEnabled)
-            {
-                _refreshTimer.Start();
-                _loggingService.LogDebug("Plot refresh timer resumed.");
-            }
-        }
-        private void Init()
-        {
-            PlotControl.Plot.Legend.Orientation = Orientation.Horizontal;
-            _multiplot.RemovePlot(_multiplot.GetPlot(0));
-        }
-        private void SubscribePlotEvents()
-        {
-            PlotControl.MouseDown += OnPlotMouseDown;
-            PlotControl.MouseUp += OnPlotMouseUp;
-            PlotControl.MouseMove += OnPlotMouseMove;
-            PlotControl.MouseLeave += OnPlotMouseLeave;
-            PlotControl.MouseDoubleClick += OnPlotMouseDoubleClick;
-            PlotControl.KeyDown += OnPlotKeyDown;
-        }
-        private void UnsubscribePlotEvents()
-        {
-            PlotControl.MouseDown -= OnPlotMouseDown;
-            PlotControl.MouseUp -= OnPlotMouseUp;
-            PlotControl.MouseMove -= OnPlotMouseMove;
-            PlotControl.MouseLeave -= OnPlotMouseLeave;
-            PlotControl.MouseDoubleClick -= OnPlotMouseDoubleClick;
-            PlotControl.KeyDown -= OnPlotKeyDown;
-        }
-        private void OnPlotMouseDown(object s, MouseButtonEventArgs e)
-        {
-            if (_layout == null) return;
-
-            double mouseY = e.GetPosition(PlotControl).Y;
-            double dpiScale = GetDPIScale();
-            _dividerBeingDragged = _layout.GetDivider((float)(mouseY * dpiScale));
-
-            if (_dividerBeingDragged is null)
-            {
-                _mouseDragging = true;
-                _autoFollow = false;
-            }
-
-            PlotControl.UserInputProcessor.IsEnabled = _dividerBeingDragged is null;
-        }
-        private void OnPlotMouseUp(object s, MouseButtonEventArgs e)
-        {
-            if (_dividerBeingDragged is not null)
-            {
-                _dividerBeingDragged = null;
-                PlotControl.UserInputProcessor.IsEnabled = true;
-            }
-
-            _mouseDragging = false;
-        }
-        private void OnPlotMouseMove(object s, MouseEventArgs e)
-        {
-            if (_layout == null) return;
-
-            double mouseY = e.GetPosition(PlotControl).Y;
-            double dpiScale = GetDPIScale();
-
-            if (_dividerBeingDragged is not null)
-            {
-                _layout.SetDivider(_dividerBeingDragged.Value, (float)(mouseY * dpiScale));
-                PlotControl.Refresh();
-            }
-
-            UpdateCursor(mouseY * dpiScale);
-        }
-        private void OnPlotMouseLeave(object s, MouseEventArgs e)
-        {
-            Mouse.OverrideCursor = null;
-        }
-        private void OnPlotMouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            _autoFollow = true;
-            _loggingService.LogDebug("Auto-follow re-enabled");
-        }
-        private void OnPlotKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.F)
-            {
-                _autoFollow = !_autoFollow;
-                _loggingService.LogDebug($"Auto-follow {(_autoFollow ? "enabled" : "disabled")}");
-            }
-        }
-        private void UpdateCursor(double mouseY)
-        {
-            Mouse.OverrideCursor = _layout?.GetDivider((float)mouseY) != null
-                ? Cursors.SizeNS
-                : Cursors.Arrow;
-        }
-        private double GetDPIScale()
-        {
-            var source = PresentationSource.FromVisual(PlotControl);
-            if (source?.CompositionTarget != null)
-            {
-                return source.CompositionTarget.TransformToDevice.M22;
-            }
-            return 1.0;
         }
         #endregion
     }

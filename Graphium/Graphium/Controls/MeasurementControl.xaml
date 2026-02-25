@@ -31,6 +31,15 @@
 
             <Separator />
 
+            <TextBlock Text="{Binding ElapsedTime}"
+                       VerticalAlignment="Center"
+                       FontFamily="Consolas"
+                       FontSize="13"
+                       Margin="8,0"
+                       Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+
+            <Separator />
+
             <ItemsControl ItemsSource="{Binding SourceStatuses}" 
                           VerticalAlignment="Center"
                           ToolBar.OverflowMode="Never">
@@ -68,6 +77,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            
         </ToolBar>
 
         <local:DataPlotterControl DataContext="{Binding DataPlotter}"/>

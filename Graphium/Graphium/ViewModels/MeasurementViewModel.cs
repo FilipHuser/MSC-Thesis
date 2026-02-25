@@ -7,6 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Threading.Tasks.Dataflow;
 using System.Runtime.InteropServices;
+using System.Collections.Specialized;
 
 namespace Graphium.ViewModels
 {
@@ -24,23 +25,25 @@ namespace Graphium.ViewModels
         #region PROPERTIES
         private string? _name;
         private Task? _measurementTask;
+        private DateTime _measurementStart;
         private int _dataPollingInterval = 10;
+        private string _elapsedTime = "00:00:00";
         private SignalAligner _signalAligner = new();
         private CancellationTokenSource? _cts = new();
-        private readonly Stopwatch _globalClock = new Stopwatch();
-
+        private System.Windows.Threading.DispatcherTimer? _clockTimer;
         public int TabId { get; set; } = -1;
         public bool IsMeasuring { get; private set; }
         public DataPlotterViewModel DataPlotter { get; set; }
-        public ObservableCollection<Signal> Signals { get; set; } = [];
+        public ObservableCollection<SignalBase> Signals { get; set; } = [];
         public string? Name { get => _name; set => SetProperty(ref _name, value); }
         public ObservableCollection<SourceStatus> SourceStatuses { get; set; } = [];
+        public string ElapsedTime { get => _elapsedTime; set => SetProperty(ref _elapsedTime, value); }
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand StartCmd => new RelayCommand(async execute => await StartMeasuringAsync(),
                                                 canExecute => !_dataHubService.IsCapturing && _signalService.Signals != null && _signalService.Signals.Any());
-        public RelayCommand StopCmd => new RelayCommand(async execute => await StopMeasuringAsync(), canExecute => _dataHubService.IsCapturing);
         public RelayCommand SaveAsCSVCmd => new RelayCommand(async execute => await SaveAsCSV());
+        public RelayCommand StopCmd => new RelayCommand(async execute => await StopMeasuringAsync(), canExecute => _dataHubService.IsCapturing);
         #endregion
         #region METHODS
         public MeasurementViewModel(ISignalService signalService,
@@ -59,29 +62,24 @@ namespace Graphium.ViewModels
             _measurementExportService = measurementExportService;
             _loggingService = loggingService;
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
+            Signals.CollectionChanged += OnSignalsCollectionChanged;
         }
         public async Task StopMeasuringAsync()
         {
+            _clockTimer?.Stop();
+            _clockTimer = null;
+            ElapsedTime = "00:00:00";
+            DataPlotter.StopRendering();
             _dataHubService.StopCapturing();
-
             _cts?.Cancel();
             IsMeasuring = false;
-
             foreach (var status in SourceStatuses) { status.IsActive = false; }
-
             if (_measurementTask != null)
             {
-                try
-                {
-                    await _measurementTask;
-                }
-                catch (Exception ex)
-                {
-                    _loggingService.LogError($"Error waiting for measurement task: {ex.Message}");
-                }
+                try { await _measurementTask; }
+                catch (Exception ex) { _loggingService.LogError($"Error waiting for measurement task: {ex.Message}"); }
                 _measurementTask = null;
             }
-
             _cts?.Dispose();
             _cts = null;
         }
@@ -92,44 +90,33 @@ namespace Graphium.ViewModels
                 _loggingService.LogWarning("Attempted to start measurement while already capturing.");
                 return;
             }
-
             bool hasPreviousData = Signals.Any(s => s.XData.Any());
-
             if (hasPreviousData)
             {
                 bool confirmedOverwrite = _dialogService.ShowConfirmation(
                     "Starting a new measurement will erase all unsaved data from the previous session. Do you want to continue?",
                     "Overwrite Unsaved Data?");
-
                 if (!confirmedOverwrite) { return; }
-
                 bool confirmedSave = _dialogService.ShowConfirmation(
                     "The previous measurement is unsaved. Would you like to save it before starting a new session?",
                     "Save Current Data?");
-
                 if (confirmedSave) { await SaveAsCSV(suppressResumePrompt: true); }
             }
-
             foreach (var signal in Signals) { signal.ClearData(); }
-
             SourceStatuses.Clear();
             var uniqueSources = Signals.Select(s => s.Source).Distinct();
             foreach (var source in uniqueSources)
-            {
                 SourceStatuses.Add(new SourceStatus { Type = source, IsActive = false });
-            }
-
-            DataPlotter.Reset();
             _signalAligner = new SignalAligner();
-
-            _globalClock.Restart();
+            _measurementStart = DateTime.Now;
+            _clockTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _clockTimer.Tick += (_, _) => ElapsedTime = (DateTime.Now - _measurementStart).ToString(@"hh\:mm\:ss");
+            _clockTimer.Start();
             _dataHubService.StartCapturing();
             _cts = new CancellationTokenSource();
             _measurementTask = AcquireDataAsync(_cts.Token);
+            DataPlotter.StartRendering();
             IsMeasuring = true;
-
-            DataPlotter.ResumeRefresh();
-            DataPlotter.OnSignalsChanged();
         }
         private async Task SaveAsCSV(bool suppressResumePrompt = false)
         {
@@ -162,16 +149,14 @@ namespace Graphium.ViewModels
             var start = DateTime.Now;
             var signalsBySource = Signals.GroupBy(x => x.Source).ToDictionary(x => x.Key, x => x.ToList());
             var masterSource = signalsBySource
-                .Select(x => new { Source = x.Key, MaxSamplingRate = x.Value.Max(s => s.SamplingRate) })
-                .OrderByDescending(x => x.MaxSamplingRate)
+                .Select(x => new { Source = x.Key, SamplingRate = _dataHubService.GetSamplingRate(x.Key) })
+                .OrderByDescending(x => x.SamplingRate)
                 .First()
                 .Source;
 
-            var slaveSignals = new HashSet<Signal>(Signals.Where(x => x.Source != masterSource));
+            var slaveSignals = new HashSet<SignalBase>(Signals.Where(x => x.Source != masterSource));
 
             using var csvWriter = _measurementExportService.CreateCsvWriter(this);
-
-            List<Sample>? bufferedGroup = null;
 
             while (!token.IsCancellationRequested)
             {
@@ -195,7 +180,6 @@ namespace Graphium.ViewModels
                     continue;
                 }
 
-                // Update slave signals
                 foreach (var sourceData in slaveSourceData)
                 {
                     var groups = sourceData.Value;
@@ -213,11 +197,6 @@ namespace Graphium.ViewModels
                 }
 
                 var groupsToProcess = new List<List<Sample>>();
-
-                if (bufferedGroup != null)
-                {
-                    groupsToProcess.Add(bufferedGroup);
-                }
 
                 groupsToProcess.AddRange(masterSourceData);
 
@@ -240,7 +219,7 @@ namespace Graphium.ViewModels
                         var sampleTimestamp = currentTimestamp + (sampleIncrement * sampleIndex);
                         var xVal = (sampleTimestamp - start).TotalMilliseconds;
 
-                        var rowValues = new Dictionary<Signal, object>();
+                        var rowValues = new Dictionary<SignalBase, object>();
 
                         foreach (var channel in sample.Channels)
                         {
@@ -261,7 +240,7 @@ namespace Graphium.ViewModels
                                 {
                                     if (sig.IsPlotted)
                                     {
-                                        // sig.Update(xVal, val);
+                                        sig.Update(xVal, val);
                                     }
                                     rowValues[sig] = val;
                                 }
@@ -273,21 +252,11 @@ namespace Graphium.ViewModels
                     processedGroups++;
                 }
 
-                if (groupsToProcess.Count > 1)
-                {
-                    var lastProcessedGroup = groupsToProcess[groupsToProcess.Count - 2];
-                    if (lastProcessedGroup.Count > 0)
-                    {
-                        var lastTimestamp = lastProcessedGroup[0].GetTimestamp();
-                        var xVal = (lastTimestamp - start).TotalMilliseconds;
-                        DataPlotter.Update(xVal);
-                    }
-                }
-
                 await csvWriter.FlushAsync();
                 await Task.Delay(_dataPollingInterval);
             }
         }
+        private void OnSignalsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => DataPlotter.OnSignalsChanged(Signals);
         #endregion
     }
 }

@@ -21,7 +21,7 @@ namespace Graphium.ViewModels
         private ObservableCollection<ChannelSlot> _configuredChannels = [];
         public string Header => "Channels";
         public ObservableCollection<int> Channels { get; set; } = [];
-        public ObservableCollection<Signal> ChannelOptions { get; set; } = [];
+        public ObservableCollection<SignalBase> ChannelOptions { get; set; } = [];
         public ObservableCollection<ChannelSlot> ConfiguredChannels { get => _configuredChannels; set => SetProperty(ref _configuredChannels, value); }
         #endregion
         #region RELAY_COMMANDS
@@ -44,7 +44,7 @@ namespace Graphium.ViewModels
         }
         public void LoadSignals()
         {
-            var availableSignals = _ConfigurationService.Load<List<Signal>>(SettingsCategory.SIGNALS_CONFIGURATION) ?? new List<Signal>();
+            var availableSignals = _ConfigurationService.Load<List<SignalBase>>(SettingsCategory.SIGNALS_CONFIGURATION) ?? new List<SignalBase>();
             var currentSelections = ConfiguredChannels
                 .Where(slot => slot.Signal != null)
                 .ToDictionary(slot => slot.Number, slot => slot.Signal!.Name);

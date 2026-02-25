@@ -1,12 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using Graphium.Interfaces;
 using Graphium.Core;
-using Graphium.Controls;
-using Graphium.Services;
-using Graphium.Views;
-using HarfBuzzSharp;
-using System.Runtime.CompilerServices;
-
 
 namespace Graphium.ViewModels
 {
@@ -26,20 +20,12 @@ namespace Graphium.ViewModels
             set
             {
                 if (_currentTab == value) return;
-
-                _signalService.SignalsChanged -= OnSignalsChanged;
-
                 SetProperty(ref _currentTab, value);
-
-                if (_currentTab != null)
-                {
-                    _signalService.SetCurrentSignals(_currentTab.Signals);
-                    _signalService.SignalsChanged += OnSignalsChanged;
-                }
+                if (_currentTab != null) { _signalService.SetCurrentSignals(_currentTab.Signals); }
             }
         }
         public ObservableCollection<MeasurementViewModel> Tabs { get; set; } = [];
-        public event EventHandler? CurrentTabChanged; 
+        public event EventHandler? CurrentTabChanged;
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand NewTabCmd => new RelayCommand(execute => NewTab());
@@ -49,7 +35,7 @@ namespace Graphium.ViewModels
         public RelayCommand DataAcquisitionSetupCmd => new RelayCommand(execute => DataAcquisitionSetup(), canExecute => CurrentTab is not null);
         public RelayCommand PreferencesCmd => new RelayCommand(execute => Preferences());
         #endregion
-        public MainViewModel(IViewManager viewManager, IViewModelFactory viewModelFactory , ISignalService signalService, ILoggingService loggingService)
+        public MainViewModel(IViewManager viewManager, IViewModelFactory viewModelFactory, ISignalService signalService, ILoggingService loggingService)
         {
             _viewManager = viewManager;
             _viewModelFactory = viewModelFactory;
@@ -72,7 +58,7 @@ namespace Graphium.ViewModels
         }
         private void CloseTab(object item)
         {
-            if(item is not MeasurementViewModel mvm) { return; }
+            if (item is not MeasurementViewModel mvm) { return; }
             Tabs.Remove(mvm);
             CurrentTab = !Tabs.Any() ? null : Tabs.Last();
             _loggingService.LogDebug($"Measurement Tab closed: '{mvm.Name}'");
@@ -93,10 +79,6 @@ namespace Graphium.ViewModels
         }
         private void DataAcquisitionSetup() => _viewManager.ShowDialog<MainViewModel, DataAcquisitionViewModel>();
         private void Preferences() => _viewManager.ShowDialog<MainViewModel, PreferencesViewModel>();
-        private void OnSignalsChanged(object? sender, EventArgs e)  
-        {
-            _currentTab?.DataPlotter.OnSignalsChanged();
-        }
         #endregion
     }
 }

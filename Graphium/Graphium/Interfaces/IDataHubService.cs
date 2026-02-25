@@ -18,6 +18,7 @@ namespace Graphium.Interfaces
         bool IsCapturing { get; }
         void AddModule(IModule module);
         void RemoveModule(IModule module);
+        double GetSamplingRate(ModuleType moduleType);
         #endregion
     }
 }

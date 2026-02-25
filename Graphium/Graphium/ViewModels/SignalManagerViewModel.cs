@@ -16,7 +16,7 @@ namespace Graphium.ViewModels
         #endregion
         #region PROPERTIES
         public string Header => "Signals";
-        public ObservableCollection<Signal> Signals { get; set; } = [];
+        public ObservableCollection<SignalBase> Signals { get; set; } = [];
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand RemoveSignalCmd => new RelayCommand(item => RemoveSignal(item));
@@ -31,20 +31,20 @@ namespace Graphium.ViewModels
         }
         private void Init()
         {
-            var configuredSignals = _ConfigurationService.Load<List<Signal>>(SettingsCategory.SIGNALS_CONFIGURATION) ?? new List<Signal>();
-            Signals = new ObservableCollection<Signal>(configuredSignals);
+            var configuredSignals = _ConfigurationService.Load<List<SignalBase>>(SettingsCategory.SIGNALS_CONFIGURATION) ?? new List<SignalBase>();
+            Signals = new ObservableCollection<SignalBase>(configuredSignals);
             Signals.CollectionChanged += OnSignalsChanged;
         }
         private void RemoveSignal(object? param)
         {
-            if(param is not Signal signal) { return; }
+            if(param is not SignalBase signal) { return; }
 
             Signals.Remove(signal);
             _ConfigurationService.Save(Signals, SettingsCategory.SIGNALS_CONFIGURATION);
         }
         private void SignalCreator()
         {
-            var signal = _viewManager.ShowDialog<DataAcquisitionViewModel,SignalCreatorViewModel, Signal?>(x => x.Signal);
+            var signal = _viewManager.ShowDialog<DataAcquisitionViewModel,SignalCreatorViewModel, SignalBase?>(x => x.Signal);
             if(signal == null) { return; }
             Signals.Add(signal);
         }
