@@ -25,22 +25,25 @@ namespace Graphium.ViewModels
         #region PROPERTIES
         private string? _name;
         private Task? _measurementTask;
+        private DateTime _measurementStart;
         private int _dataPollingInterval = 10;
+        private string _elapsedTime = "00:00:00";
         private SignalAligner _signalAligner = new();
         private CancellationTokenSource? _cts = new();
-        private readonly Stopwatch _globalClock = new Stopwatch();
+        private System.Windows.Threading.DispatcherTimer? _clockTimer;
         public int TabId { get; set; } = -1;
         public bool IsMeasuring { get; private set; }
         public DataPlotterViewModel DataPlotter { get; set; }
         public ObservableCollection<SignalBase> Signals { get; set; } = [];
         public string? Name { get => _name; set => SetProperty(ref _name, value); }
         public ObservableCollection<SourceStatus> SourceStatuses { get; set; } = [];
+        public string ElapsedTime { get => _elapsedTime; set => SetProperty(ref _elapsedTime, value); }
         #endregion
         #region RELAY_COMMANDS
         public RelayCommand StartCmd => new RelayCommand(async execute => await StartMeasuringAsync(),
                                                 canExecute => !_dataHubService.IsCapturing && _signalService.Signals != null && _signalService.Signals.Any());
-        public RelayCommand StopCmd => new RelayCommand(async execute => await StopMeasuringAsync(), canExecute => _dataHubService.IsCapturing);
         public RelayCommand SaveAsCSVCmd => new RelayCommand(async execute => await SaveAsCSV());
+        public RelayCommand StopCmd => new RelayCommand(async execute => await StopMeasuringAsync(), canExecute => _dataHubService.IsCapturing);
         #endregion
         #region METHODS
         public MeasurementViewModel(ISignalService signalService,
@@ -63,26 +66,20 @@ namespace Graphium.ViewModels
         }
         public async Task StopMeasuringAsync()
         {
+            _clockTimer?.Stop();
+            _clockTimer = null;
+            ElapsedTime = "00:00:00";
+            DataPlotter.StopRendering();
             _dataHubService.StopCapturing();
-
             _cts?.Cancel();
             IsMeasuring = false;
-
             foreach (var status in SourceStatuses) { status.IsActive = false; }
-
             if (_measurementTask != null)
             {
-                try
-                {
-                    await _measurementTask;
-                }
-                catch (Exception ex)
-                {
-                    _loggingService.LogError($"Error waiting for measurement task: {ex.Message}");
-                }
+                try { await _measurementTask; }
+                catch (Exception ex) { _loggingService.LogError($"Error waiting for measurement task: {ex.Message}"); }
                 _measurementTask = null;
             }
-
             _cts?.Dispose();
             _cts = null;
         }
@@ -93,38 +90,32 @@ namespace Graphium.ViewModels
                 _loggingService.LogWarning("Attempted to start measurement while already capturing.");
                 return;
             }
-
             bool hasPreviousData = Signals.Any(s => s.XData.Any());
-
             if (hasPreviousData)
             {
                 bool confirmedOverwrite = _dialogService.ShowConfirmation(
                     "Starting a new measurement will erase all unsaved data from the previous session. Do you want to continue?",
                     "Overwrite Unsaved Data?");
-
                 if (!confirmedOverwrite) { return; }
-
                 bool confirmedSave = _dialogService.ShowConfirmation(
                     "The previous measurement is unsaved. Would you like to save it before starting a new session?",
                     "Save Current Data?");
-
                 if (confirmedSave) { await SaveAsCSV(suppressResumePrompt: true); }
             }
-
             foreach (var signal in Signals) { signal.ClearData(); }
-
             SourceStatuses.Clear();
             var uniqueSources = Signals.Select(s => s.Source).Distinct();
             foreach (var source in uniqueSources)
-            {
                 SourceStatuses.Add(new SourceStatus { Type = source, IsActive = false });
-            }
             _signalAligner = new SignalAligner();
-
-            _globalClock.Restart();
+            _measurementStart = DateTime.Now;
+            _clockTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _clockTimer.Tick += (_, _) => ElapsedTime = (DateTime.Now - _measurementStart).ToString(@"hh\:mm\:ss");
+            _clockTimer.Start();
             _dataHubService.StartCapturing();
             _cts = new CancellationTokenSource();
             _measurementTask = AcquireDataAsync(_cts.Token);
+            DataPlotter.StartRendering();
             IsMeasuring = true;
         }
         private async Task SaveAsCSV(bool suppressResumePrompt = false)
@@ -167,8 +158,6 @@ namespace Graphium.ViewModels
 
             using var csvWriter = _measurementExportService.CreateCsvWriter(this);
 
-            List<Sample>? bufferedGroup = null;
-
             while (!token.IsCancellationRequested)
             {
                 var dataByModule = _dataHubService.GetData();
@@ -208,11 +197,6 @@ namespace Graphium.ViewModels
                 }
 
                 var groupsToProcess = new List<List<Sample>>();
-
-                if (bufferedGroup != null)
-                {
-                    groupsToProcess.Add(bufferedGroup);
-                }
 
                 groupsToProcess.AddRange(masterSourceData);
 
@@ -266,17 +250,6 @@ namespace Graphium.ViewModels
                         await csvWriter.WriteRowAsync(sampleTimestamp, rowValues);
                     }
                     processedGroups++;
-                }
-
-                if (groupsToProcess.Count > 1)
-                {
-                    var lastProcessedGroup = groupsToProcess[groupsToProcess.Count - 2];
-                    if (lastProcessedGroup.Count > 0)
-                    {
-                        var lastTimestamp = lastProcessedGroup[0].GetTimestamp();
-                        var xVal = (lastTimestamp - start).TotalMilliseconds;
-                        DataPlotter.Update(xVal);
-                    }
                 }
 
                 await csvWriter.FlushAsync();

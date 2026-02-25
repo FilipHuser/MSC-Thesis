@@ -13,14 +13,19 @@ namespace Graphium.ViewModels
         private readonly ILoggingService _loggingService;
         private readonly IViewModelFactory _viewModelFactory;
         #endregion
+
         #region PROPERTIES
         private double _xMin = 0;
         private double _xMax = 1;
-        private double _dataAreaLeft;
-        private double _dataAreaRight;
+        private bool _isFollowing = false;
         private bool _paletteApplied = false;
-        private const int RefreshIntervalMs = 16;
+        private Task? _renderTask;
+        private CancellationTokenSource? _renderCts;
+        private PeriodicTimer? _renderTimer;
         private string _selectedPalette = "Category10";
+
+        public double ViewWindowMs { get; set; } = 5000;
+
         private static readonly Dictionary<string, IPalette> Palettes = new()
         {
             ["Category10"] = new ScottPlot.Palettes.Category10(),
@@ -36,21 +41,16 @@ namespace Graphium.ViewModels
             set
             {
                 SetProperty(ref _selectedPalette, value);
-                _paletteApplied = false;
-                System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    ApplyPalette();
-                });
+                _ = System.Windows.Application.Current.Dispatcher.InvokeAsync(ApplyPalette);
             }
         }
-        private DateTime _lastRefresh = DateTime.MinValue;
+
         public IEnumerable<string> AvailablePalettes => Palettes.Keys;
         public double XMin { get => _xMin; set => SetProperty(ref _xMin, value); }
         public double XMax { get => _xMax; set => SetProperty(ref _xMax, value); }
-        public double DataAreaLeft { get => _dataAreaLeft; set => SetProperty(ref _dataAreaLeft, value); }
-        public double DataAreaRight { get => _dataAreaRight; set => SetProperty(ref _dataAreaRight, value); }
         public ObservableCollection<ISignalVisualizerViewModel> Visualizers { get; set; } = [];
         #endregion
+
         #region METHODS
         public DataPlotterViewModel(ILoggingService loggingService, IViewModelFactory viewModelFactory)
         {
@@ -64,6 +64,7 @@ namespace Graphium.ViewModels
             _paletteApplied = false;
             if (signals == null) return;
 
+            int colorIndex = 0;
             foreach (var signal in signals)
             {
                 if (signal == null) continue;
@@ -74,28 +75,60 @@ namespace Graphium.ViewModels
                     _ when signal.Type == SignalType.NaN => throw new InvalidOperationException($"Signal '{signal.Name}' has no type set."),
                     _ => throw new NotSupportedException($"SignalType {signal.Type} is not supported")
                 };
+
+                if (visualizer is NumericSignalViewModel numVm)
+                    numVm.SetColor(Palettes[_selectedPalette].GetColor(colorIndex++));
+
                 Visualizers.Add(visualizer);
             }
 
+            _paletteApplied = true;
             ApplySharedXAxis();
         }
-        public void Update(double xVal)
+
+        public void ToggleFollow()
         {
-            var now = DateTime.Now;
-            if ((now - _lastRefresh).TotalMilliseconds < RefreshIntervalMs) return;
-            _lastRefresh = now;
+            _isFollowing = !_isFollowing;
+        }
 
-            System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+        public void StartRendering()
+        {
+            _isFollowing = false;
+            _paletteApplied = false;
+            _renderCts = new CancellationTokenSource();
+            _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
+            _renderTask = RunRenderLoopAsync(_renderCts.Token);
+        }
+
+        public void StopRendering()
+        {
+            _renderCts?.Cancel();
+            _renderCts?.Dispose();
+            _renderCts = null;
+            _renderTimer?.Dispose();
+            _renderTimer = null;
+            _renderTask = null;
+        }
+        private async Task RunRenderLoopAsync(CancellationToken token)
+        {
+            try
             {
-                foreach (var vm in Visualizers)
-                    vm.Refresh();
-
-                if (!_paletteApplied)
+                while (await _renderTimer!.WaitForNextTickAsync(token))
                 {
-                    ApplyPalette();
-                    _paletteApplied = true;
+                    _ = System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        foreach (var vm in Visualizers)
+                            vm.Refresh();
+
+                        if (!_paletteApplied)
+                        {
+                            ApplyPalette();
+                            _paletteApplied = true;
+                        }
+                    }, System.Windows.Threading.DispatcherPriority.Background);
                 }
-            }, System.Windows.Threading.DispatcherPriority.Background);
+            }
+            catch (OperationCanceledException) { }
         }
 
         private void ApplyPalette()
@@ -118,23 +151,24 @@ namespace Graphium.ViewModels
                     var limits = vm.PlotControl.Plot.Axes.GetLimits();
                     XMin = limits.Left;
                     XMax = limits.Right;
+
                     foreach (var other in numericVMs.Where(x => x != vm))
                     {
                         other.PlotControl.Plot.Axes.SetLimitsX(limits.Left, limits.Right);
                         other.PlotControl.Refresh();
                     }
+
+                    foreach (var tvm in Visualizers.OfType<TextSignalViewModel>())
+                        tvm.Refresh();
                 }
 
                 vm.PlotControl.MouseMove += (_, e) =>
                 {
-                    if (e.LeftButton != MouseButtonState.Pressed) return;
+                    if (e.LeftButton != MouseButtonState.Pressed && e.RightButton != MouseButtonState.Pressed) return;
                     SyncFromVm();
                 };
                 vm.PlotControl.MouseUp += (_, _) => SyncFromVm();
-                vm.PlotControl.PreviewMouseWheel += (_, _) =>
-                    vm.PlotControl.Dispatcher.BeginInvoke(SyncFromVm,
-                        System.Windows.Threading.DispatcherPriority.Background);
-
+                vm.PlotControl.PreviewMouseWheel += (_, _) => _ = vm.PlotControl.Dispatcher.BeginInvoke(SyncFromVm, System.Windows.Threading.DispatcherPriority.Render);
                 vm.PlotControl.Dispatcher.BeginInvoke(() =>
                 {
                     vm.PlotControl.Refresh();
