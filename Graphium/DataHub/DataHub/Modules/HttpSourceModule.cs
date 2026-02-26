@@ -3,16 +3,16 @@ using DataHub.Core;
 
 namespace DataHub.Modules
 {
-    public class VRSourceModule : ModuleBase<string>
+    public class HttpSourceModule : ModuleBase<string>
     {
         #region PROPERTIES
         private readonly string _url;
         private HttpListener _listener;
         public override double SamplingRate => 60;
-        public override ModuleType ModuleType => ModuleType.VR;
+        public override ModuleType ModuleType => ModuleType.HTTP;
         #endregion
         #region METHODS
-        public VRSourceModule(string url)
+        public HttpSourceModule(string url)
         {
             _url = url;
             _listener = new HttpListener();

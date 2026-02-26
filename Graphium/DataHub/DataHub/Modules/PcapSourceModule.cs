@@ -3,7 +3,7 @@ using SharpPcap;
 
 namespace DataHub.Modules
 {
-    public class BiopacSourceModule : ModuleBase<RawCapture>
+    public class PcapSourceModule : ModuleBase<RawCapture>
     {
         #region PROPERTIES
         private readonly string? _filter;
@@ -13,10 +13,10 @@ namespace DataHub.Modules
         private ILiveDevice? _captureDevice;
         private PosixTimeval? _firstTimeval;
         public override double SamplingRate => 2000;
-        public override ModuleType ModuleType => ModuleType.Biopac;
+        public override ModuleType ModuleType => ModuleType.PCAP;
         #endregion
         #region METHODS
-        public BiopacSourceModule(int captureDeviceIndex, string? filter = null, int? readTimeout = null)
+        public PcapSourceModule(int captureDeviceIndex, string? filter = null, int? readTimeout = null)
         {
             _captureDeviceIndex = captureDeviceIndex;
             _filter = filter;

@@ -9,7 +9,8 @@ namespace DataHub.Core
     public enum ModuleType
     {
         NaN,
-        Biopac,
-        VR,
+        UDP,
+        PCAP,
+        HTTP,
     }
 }
