@@ -120,7 +120,18 @@ namespace Graphium.ViewModels
                         foreach (var vm in Visualizers)
                             vm.Refresh();
 
-                        if (!_paletteApplied)
+                        var numericVMs = Visualizers.OfType<NumericSignalViewModel>().ToList();
+                        if (numericVMs.Count > 1)
+                        {
+                            var masterLimits = numericVMs[0].PlotControl.Plot.Axes.GetLimits();
+                            foreach (var vm in numericVMs.Skip(1).Where(v => v.NeedsXSync))
+                            {
+                                vm.PlotControl.Plot.Axes.SetLimitsX(masterLimits.Left, masterLimits.Right);
+                                vm.NeedsXSync = false;
+                            }
+                        }
+
+                        if (!_paletteApplied && numericVMs.All(vm => vm.HasPlottables))
                         {
                             ApplyPalette();
                             _paletteApplied = true;
@@ -130,7 +141,6 @@ namespace Graphium.ViewModels
             }
             catch (OperationCanceledException) { }
         }
-
         private void ApplyPalette()
         {
             var palette = Palettes[_selectedPalette];

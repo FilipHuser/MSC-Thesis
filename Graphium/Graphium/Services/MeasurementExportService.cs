@@ -22,8 +22,7 @@ namespace Graphium.Services
         }
         public CsvMeasurementWriter CreateCsvWriter(MeasurementViewModel vm)
         {
-            var signals = _signalService.Signals?.OrderBy(s => s.Name).ToList()
-              ?? new List<SignalBase>();
+            var signals = vm.Signals.ToList();
             if (signals.Count == 0)
                 throw new InvalidOperationException("No signals available for export.");
             var fileName = $"{vm.Name}_tmp.csv";
