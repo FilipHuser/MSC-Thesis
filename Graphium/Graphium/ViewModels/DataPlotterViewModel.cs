@@ -13,7 +13,6 @@ namespace Graphium.ViewModels
         private readonly ILoggingService _loggingService;
         private readonly IViewModelFactory _viewModelFactory;
         #endregion
-
         #region PROPERTIES
         private double _xMin = 0;
         private double _xMax = 1;
@@ -50,7 +49,6 @@ namespace Graphium.ViewModels
         public double XMax { get => _xMax; set => SetProperty(ref _xMax, value); }
         public ObservableCollection<ISignalVisualizerViewModel> Visualizers { get; set; } = [];
         #endregion
-
         #region METHODS
         public DataPlotterViewModel(ILoggingService loggingService, IViewModelFactory viewModelFactory)
         {
