@@ -9,7 +9,7 @@ namespace DataHub.Modules
         #region PROPERTIES
         private readonly int _port;
         private UdpClient? _udpClient;
-        public override double SamplingRate => 30;
+        public override double SamplingRate => 0.98;
         public override ModuleType ModuleType => ModuleType.UDP;
         #endregion
         #region METHODS

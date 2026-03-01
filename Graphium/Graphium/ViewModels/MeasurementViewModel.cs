@@ -105,8 +105,14 @@ namespace Graphium.ViewModels
             foreach (var signal in Signals) { signal.ClearData(); }
             SourceStatuses.Clear();
             var uniqueSources = Signals.Select(s => s.Source).Distinct();
+
             foreach (var source in uniqueSources)
-                SourceStatuses.Add(new SourceStatus { Type = source, IsActive = false });
+            {
+                var samplingRate = _dataHubService.GetSamplingRate(source);
+                var timeoutMs = (int)(1000.0 / samplingRate * 5);
+                SourceStatuses.Add(new SourceStatus(timeoutMs) { Type = source, IsActive = false });
+            }
+
             _signalAligner = new SignalAligner();
             _measurementStart = DateTime.Now;
             _clockTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -158,6 +164,8 @@ namespace Graphium.ViewModels
 
             using var csvWriter = _measurementExportService.CreateCsvWriter(this);
 
+            List<Sample>? bufferedGroup = null;
+
             while (!token.IsCancellationRequested)
             {
                 var dataByModule = _dataHubService.GetData();
@@ -165,9 +173,7 @@ namespace Graphium.ViewModels
                 foreach (var status in SourceStatuses)
                 {
                     if (dataByModule.TryGetValue(status.Type, out var moduleData) && moduleData.Count > 0)
-                    {
                         status.MarkDataReceived();
-                    }
                     status.UpdateStatus();
                 }
 
@@ -184,23 +190,22 @@ namespace Graphium.ViewModels
                 {
                     var groups = sourceData.Value;
                     if (groups == null || groups.Count == 0) continue;
-
                     var lastGroup = groups[groups.Count - 1];
                     if (lastGroup.Count > 0)
                     {
                         var latestSample = lastGroup[lastGroup.Count - 1];
                         foreach (var channel in latestSample.Channels)
-                        {
                             _signalAligner.UpdateSignal(channel.Key, channel.Value);
-                        }
                     }
                 }
 
                 var groupsToProcess = new List<List<Sample>>();
 
+                if (bufferedGroup != null)
+                    groupsToProcess.Add(bufferedGroup);
+
                 groupsToProcess.AddRange(masterSourceData);
 
-                int processedGroups = 0;
                 for (int groupIndex = 0; groupIndex < groupsToProcess.Count - 1; groupIndex++)
                 {
                     var currentGroup = groupsToProcess[groupIndex];
@@ -225,9 +230,7 @@ namespace Graphium.ViewModels
                         {
                             var signal = channel.Key;
                             if (signal.IsPlotted)
-                            {
                                 signal.Update(xVal, channel.Value);
-                            }
                             rowValues[channel.Key] = channel.Value;
                         }
 
@@ -239,9 +242,7 @@ namespace Graphium.ViewModels
                                 if (val != null)
                                 {
                                     if (sig.IsPlotted)
-                                    {
                                         sig.Update(xVal, val);
-                                    }
                                     rowValues[sig] = val;
                                 }
                             }
@@ -249,8 +250,9 @@ namespace Graphium.ViewModels
 
                         await csvWriter.WriteRowAsync(sampleTimestamp, rowValues);
                     }
-                    processedGroups++;
                 }
+
+                bufferedGroup = groupsToProcess.Count > 0 ? groupsToProcess[^1] : null;
 
                 await csvWriter.FlushAsync();
                 await Task.Delay(_dataPollingInterval);
