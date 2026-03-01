@@ -36,8 +36,7 @@ namespace Graphium.Core
             foreach (var module in modules)
             {
                 result[module.ModuleType] = signalsByModule.TryGetValue(module.ModuleType, out var moduleSignals) && moduleSignals.Any()
-                    ? ProcessModule(module, moduleSignals)
-                    : null;
+                    ? ProcessModule(module, moduleSignals) : [];
             }
 
             return result;
@@ -76,7 +75,10 @@ namespace Graphium.Core
 
                 var sample = new Sample(captured.Timestamp);
                 foreach (var (key, signal) in signalMap)
-                    sample.Channels[signal] = receivedData.TryGetValue(key, out var val) ? val : null;
+                {
+                    if (receivedData.TryGetValue(key, out var val) && val != null)
+                        sample.Channels[signal] = val;
+                }
 
                 samples.Add(sample);
             }

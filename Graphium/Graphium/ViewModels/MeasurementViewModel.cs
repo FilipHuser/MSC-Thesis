@@ -64,6 +64,20 @@ namespace Graphium.ViewModels
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
             Signals.CollectionChanged += OnSignalsCollectionChanged;
         }
+        public async Task SaveAsCSV(bool suppressResumePrompt = false)
+        {
+            bool wasRunning = IsMeasuring;
+            if (wasRunning) await StopMeasuringAsync();
+            try
+            {
+                await _measurementExportService.SaveAsync(this);
+            }
+            finally
+            {
+                if (wasRunning && !suppressResumePrompt && _dialogService.ShowConfirmation("Resume measurement?", "Continue"))
+                    await StartMeasuringAsync();
+            }
+        }
         public async Task StopMeasuringAsync()
         {
             _clockTimer?.Stop();
@@ -109,7 +123,8 @@ namespace Graphium.ViewModels
             foreach (var source in uniqueSources)
             {
                 var samplingRate = _dataHubService.GetSamplingRate(source);
-                var timeoutMs = (int)(1000.0 / samplingRate * 5);
+                var periodMs = 1000.0 / samplingRate;
+                var timeoutMs = (int)Math.Clamp(periodMs * 3, 500, 3000);
                 SourceStatuses.Add(new SourceStatus(timeoutMs) { Type = source, IsActive = false });
             }
 
@@ -123,32 +138,6 @@ namespace Graphium.ViewModels
             _measurementTask = AcquireDataAsync(_cts.Token);
             DataPlotter.StartRendering();
             IsMeasuring = true;
-        }
-        private async Task SaveAsCSV(bool suppressResumePrompt = false)
-        {
-            bool wasRunning = IsMeasuring;
-            if (wasRunning) { await StopMeasuringAsync(); }
-
-            try
-            {
-                string sourceFile = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "Graphium",
-                    "Measurements",
-                    $"{Name}_tmpMeasurement.csv");
-
-                await _fileExportService.ExportAsync(
-                    sourceFile,
-                    "measurement.csv",
-                    "CSV files (*.csv)|*.csv|All files (*.*)|*.*");
-            }
-            finally
-            {
-                if (wasRunning && !suppressResumePrompt && _dialogService.ShowConfirmation("Resume measurement?", "Continue"))
-                {
-                    await StartMeasuringAsync();
-                }
-            }
         }
         private async Task AcquireDataAsync(CancellationToken token)
         {

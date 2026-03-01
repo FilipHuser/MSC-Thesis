@@ -19,6 +19,7 @@ namespace DataHub.Modules
         }
         protected override async Task CaptureTask(CancellationToken ct)
         {
+            _udpClient?.Dispose();
             _udpClient = new UdpClient(_port);
             try
             {
@@ -29,6 +30,11 @@ namespace DataHub.Modules
                 }
             }
             catch (OperationCanceledException) { }
+            finally
+            {
+                _udpClient?.Dispose();
+                _udpClient = null;
+            }
         }
         public override void Dispose()
         {

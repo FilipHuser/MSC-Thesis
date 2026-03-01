@@ -88,7 +88,7 @@ namespace Graphium
                     x.GetRequiredService<IViewManager>());
             });
 
-            services.AddScoped<MainWindow>(x => new MainWindow(x.GetRequiredService<MainViewModel>()));
+            services.AddScoped(x => new MainWindow(x.GetRequiredService<MainViewModel>()));
 
             _serviceProvider = services.BuildServiceProvider();
         }
