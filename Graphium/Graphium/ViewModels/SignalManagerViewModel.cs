@@ -12,6 +12,7 @@ namespace Graphium.ViewModels
     {
         #region SERVICES
         private readonly IViewManager _viewManager;
+        private readonly ISignalService _signalService;
         private readonly IConfigurationService _ConfigurationService;
         #endregion
         #region PROPERTIES
@@ -23,9 +24,10 @@ namespace Graphium.ViewModels
         public RelayCommand CreateSignalCmd => new RelayCommand(item => SignalCreator());
         #endregion
         #region METHODS
-        public SignalManagerViewModel(IViewManager viewManager, IConfigurationService ConfigurationService)
+        public SignalManagerViewModel(IViewManager viewManager, ISignalService signalService, IConfigurationService ConfigurationService)
         {
             _viewManager = viewManager;
+            _signalService = signalService;
             _ConfigurationService = ConfigurationService;
             Init();
         }
@@ -51,6 +53,7 @@ namespace Graphium.ViewModels
         private void OnSignalsChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             _ConfigurationService.Save(Signals, SettingsCategory.SIGNALS_CONFIGURATION);
+            _signalService.NotifySignalsChanged();
         }
         #endregion
     }

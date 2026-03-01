@@ -74,6 +74,7 @@ namespace Graphium
             {
                 return () => new SignalManagerViewModel(
                     x.GetRequiredService<IViewManager>(),
+                    x.GetRequiredService<ISignalService>(),
                     x.GetRequiredService<IConfigurationService>());
             });
 

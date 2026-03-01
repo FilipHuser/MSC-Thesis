@@ -40,6 +40,7 @@ namespace Graphium.ViewModels
             _loggingService = loggingService;
             _ConfigurationService = ConfigurationService;
             _viewManager = viewManager;
+            _signalService.SignalsChanged += (_, _) => LoadSignals();
             Init();
         }
         public void LoadSignals()

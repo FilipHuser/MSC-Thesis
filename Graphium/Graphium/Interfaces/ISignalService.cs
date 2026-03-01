@@ -13,6 +13,7 @@ namespace Graphium.Interfaces
         public void SetCurrentSignals(ObservableCollection<SignalBase> signals);
         public void AddSignal(SignalBase signal);
         public void RemoveSignal(SignalBase signal);
+        public void NotifySignalsChanged();
         public void Clear();
         #endregion
     }
