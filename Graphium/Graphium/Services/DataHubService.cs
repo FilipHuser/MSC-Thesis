@@ -61,8 +61,9 @@ namespace Graphium.Services
                     disposable.Dispose();
             }
 
-            int captureDeviceIndex = settings.CaptureDeviceIndex;
+            int udpPort = settings.UdpPort;
             int payloadSize = settings.PayloadSize;
+            int captureDeviceIndex = settings.CaptureDeviceIndex;
             string ipAddr = settings.IPAddr;
             string uri = settings.URI ?? "http://localhost:8888/";
             string filter = $"udp and src host {ipAddr} and udp[4:2] >  {payloadSize}";
@@ -99,11 +100,13 @@ namespace Graphium.Services
                     _appConfigurationService.SetAppSettings(settings);
                 }
 
-                var packetModule = new BiopacSourceModule(captureDeviceIndex, filter, 5);
-                var httpModule = new VRSourceModule(uri);
+                var packetModule = new PcapSourceModule(captureDeviceIndex, filter, 5);
+                var httpModule = new HttpSourceModule(uri);
+                var udpModule = new UdpSourceModule(udpPort);
 
                 _hub.AddModule(packetModule);
                 _hub.AddModule(httpModule);
+                _hub.AddModule(udpModule);
 
                 _loggingService.LogDebug("Modules initialized successfully");
             }

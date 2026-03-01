@@ -17,30 +17,29 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="150"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-
         <Label Content="Capture Device" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
         <ComboBox SelectedIndex="{Binding Settings.CaptureDeviceIndex, Mode=TwoWay}" 
                   ItemsSource="{Binding CaptureDeviceOptions}"
                   Grid.Row="0" Grid.Column="1" Margin="0,2"/>
-
         <Label Content="UDP Packet Payload Size" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
         <TextBox Text="{Binding Settings.PayloadSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                  Grid.Row="1" Grid.Column="1" Margin="0,2"/>
-
         <Label Content="BIOPAC IP Address" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
         <TextBox Text="{Binding Settings.IPAddr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                  Grid.Row="2" Grid.Column="1" Margin="0,2"/>
-
         <Label Content="URI" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
         <TextBox Text="{Binding Settings.URI, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                  Grid.Row="3" Grid.Column="1" Margin="0,2"/>
-
-        <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+        <Label Content="UDP Port" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"/>
+        <TextBox Text="{Binding Settings.UdpPort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                 Grid.Row="4" Grid.Column="1" Margin="0,2"/>
+        <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
            Text="{Binding ValidationError}"
            Foreground="Red"
            TextWrapping="Wrap"
@@ -56,9 +55,8 @@
                 </Style>
             </TextBlock.Style>
         </TextBlock>
-
         <Button Content="Save" 
-                Grid.Row="5" Grid.Column="1"
+                Grid.Row="6" Grid.Column="1"
                 Margin="0,10,0,0"
                 HorizontalAlignment="Right" 
                 Width="80"

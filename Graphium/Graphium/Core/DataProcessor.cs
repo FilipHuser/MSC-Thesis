@@ -11,142 +11,119 @@ namespace Graphium.Core
 {
     static class DataProcessor
     {
+        #region METHODS
         private static string NormalizeKey(string key) => Regex.Replace(key, @"\s+", string.Empty);
-        public static Dictionary<ModuleType, List<List<Sample>>> ProcessAll(IEnumerable<IModule> modules, IEnumerable<SignalBase> signals)
+
+        private static object? ConvertElement(JsonElement element) => element.ValueKind switch
         {
+            JsonValueKind.String => element.GetString(),
+            JsonValueKind.Number => element.TryGetInt64(out var l) ? (object)l :
+                                     element.TryGetDouble(out var d) ? (object)d : null,
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Array => element.EnumerateArray().Select(ConvertElement).ToList(),
+            JsonValueKind.Object => element.EnumerateObject().ToDictionary(p => p.Name, p => ConvertElement(p.Value)),
+            _ => null
+        };
+        public static Dictionary<ModuleType, List<List<Sample>>> ProcessAll(IEnumerable<IModule> modules, IEnumerable<SignalBase>? signals)
+        {
+            ArgumentNullException.ThrowIfNull(signals);
+
             var result = new Dictionary<ModuleType, List<List<Sample>>>();
             var signalsByModule = signals.GroupBy(s => s.Source)
                                          .ToDictionary(g => g.Key, g => g.ToList());
 
             foreach (var module in modules)
             {
-                if (signalsByModule.TryGetValue(module.ModuleType, out var moduleSignals) && moduleSignals.Any())
-                {
-                    result[module.ModuleType] = ProcessModule(module, moduleSignals);
-                }
-                else
-                {
-                    result[module.ModuleType] = null;
-                }
+                result[module.ModuleType] = signalsByModule.TryGetValue(module.ModuleType, out var moduleSignals) && moduleSignals.Any()
+                    ? ProcessModule(module, moduleSignals) : [];
             }
 
             return result;
         }
         private static List<List<Sample>> ProcessModule(IModule module, List<SignalBase> moduleSignals)
         {
-            var channelCount = moduleSignals.Count;
-            if (channelCount <= 0) return new List<List<Sample>>();
+            if (moduleSignals.Count <= 0) return [];
 
-            switch (module)
+            return module switch
             {
-                case BiopacSourceModule biopac:
-                    return ProcessBiopacModule(biopac, channelCount, moduleSignals);
-                case VRSourceModule vr:
-                    return ProcessVRModule(vr, moduleSignals);
-                default:
-                    return new List<List<Sample>>();
-            }
-        }
-        private static List<List<Sample>> ProcessBiopacModule(BiopacSourceModule module, int channelCount, List<SignalBase> moduleSignals)
-        {
-            var output = new List<List<Sample>>();
-            var convertFunc = ByteArrayConverter<short>.GetConvertFunction();
-
-            //ITERATING PACKETS
-            foreach (var capturedData in module.Get())
-            {
-                var packetSamples = new List<Sample>();
-
-                var udp = Packet.ParsePacket(capturedData.Data.LinkLayerType, capturedData.Data.Data).Extract<UdpPacket>();
-                if (udp == null) continue;
-
-                var timestamp = capturedData.Timestamp;
-                var payload = udp.PayloadData;
-
-                if (payload.Length < 2 + (2 * channelCount)) { continue; }
-
-                int dataBytes = payload.Length - 2;
-                if (dataBytes % (sizeof(short) * channelCount) != 0) { continue; }
-
-                int samplesPerChannel = dataBytes / sizeof(short) / channelCount;
-
-                // 01 xx yy xx yy cs
-                for (int sampleIndex = 0; sampleIndex < samplesPerChannel; sampleIndex++)
-                {
-                    var sample = new Sample(timestamp);
-                    for (int channel = 0; channel < channelCount; channel++)
-                    {
-                        int pairIndex = sampleIndex * channelCount + channel;
-                        int offset = 1 + pairIndex * sizeof(short);
-                        var bytes = new byte[] { payload[offset + 1], payload[offset] };
-                        var value = convertFunc(bytes, 0);
-
-                        sample.Channels[moduleSignals[channel]] = value;
-                    }
-
-                    packetSamples.Add(sample);
-                }
-                output.Add(packetSamples);
-            }
-
-            return output;
-        }
-        private static List<List<Sample>> ProcessVRModule(VRSourceModule module, List<SignalBase> moduleSignals)
-        {
-            var output = new List<List<Sample>>();
-
-            object? ConvertElement(JsonElement element) => element.ValueKind switch
-            {
-                JsonValueKind.String => element.GetString(),
-                JsonValueKind.Number => element.TryGetInt64(out var l) ? (object)l :
-                                         element.TryGetDouble(out var d) ? (object)d : null,
-                JsonValueKind.True => true,
-                JsonValueKind.False => false,
-                JsonValueKind.Array => element.EnumerateArray().Select(ConvertElement).ToList(),
-                JsonValueKind.Object => element.EnumerateObject().ToDictionary(p => p.Name, p => ConvertElement(p.Value)),
-                _ => null
+                PcapSourceModule pcap => ProcessPcapModule(pcap, moduleSignals.Count, moduleSignals),
+                HttpSourceModule http => ProcessJsonModule(http, moduleSignals, c => c.Data),
+                UdpSourceModule udp => ProcessJsonModule(udp, moduleSignals, c => System.Text.Encoding.UTF8.GetString(c.Data)),
+                _ => []
             };
-
-            var signalNameToSignal = moduleSignals
-                .ToDictionary(signal => NormalizeKey(signal.Name), signal => signal, StringComparer.OrdinalIgnoreCase);
-
+        }
+        private static List<List<Sample>> ProcessJsonModule<T>(ModuleBase<T> module, List<SignalBase> moduleSignals, Func<CapturedData<T>, string> getJson)
+        {
+            var output = new List<List<Sample>>();
+            var signalMap = moduleSignals.ToDictionary(
+                s => NormalizeKey(s.Name), s => s, StringComparer.OrdinalIgnoreCase);
             var samples = new List<Sample>();
 
-            foreach (var post in module.Get())
+            foreach (var captured in module.Get())
             {
-                var sample = new Sample(post.Timestamp);
+                string json;
+                try { json = getJson(captured); }
+                catch { continue; }
 
-                using var doc = JsonDocument.Parse(post.Data);
+                using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
                 if (root.ValueKind != JsonValueKind.Object) continue;
 
                 var receivedData = root.EnumerateObject()
                     .ToDictionary(p => NormalizeKey(p.Name), p => ConvertElement(p.Value), StringComparer.OrdinalIgnoreCase);
 
-                foreach (var signalMapping in signalNameToSignal)
+                var sample = new Sample(captured.Timestamp);
+                foreach (var (key, signal) in signalMap)
                 {
-                    var normalizedSignalName = signalMapping.Key;
-                    var signal = signalMapping.Value;
-
-                    if (receivedData.TryGetValue(normalizedSignalName, out object? value))
-                    {
-                        sample.Channels[signal] = value;
-                    }
-                    else
-                    {
-                        sample.Channels[signal] = null;
-                    }
+                    if (receivedData.TryGetValue(key, out var val) && val != null)
+                        sample.Channels[signal] = val;
                 }
 
                 samples.Add(sample);
             }
 
             if (samples.Count > 0)
-            {
                 output.Add(samples);
+
+            return output;
+        }
+        private static List<List<Sample>> ProcessPcapModule(PcapSourceModule module, int channelCount, List<SignalBase> moduleSignals)
+        {
+            var output = new List<List<Sample>>();
+            var convertFunc = ByteArrayConverter<short>.GetConvertFunction();
+
+            foreach (var capturedData in module.Get())
+            {
+                var udp = Packet.ParsePacket(capturedData.Data.LinkLayerType, capturedData.Data.Data).Extract<UdpPacket>();
+                if (udp == null) continue;
+
+                var payload = udp.PayloadData;
+                if (payload.Length < 2 + (2 * channelCount)) continue;
+
+                int dataBytes = payload.Length - 2;
+                if (dataBytes % (sizeof(short) * channelCount) != 0) continue;
+
+                int samplesPerChannel = dataBytes / sizeof(short) / channelCount;
+                var packetSamples = new List<Sample>();
+
+                for (int sampleIndex = 0; sampleIndex < samplesPerChannel; sampleIndex++)
+                {
+                    var sample = new Sample(capturedData.Timestamp);
+                    for (int channel = 0; channel < channelCount; channel++)
+                    {
+                        int offset = 1 + (sampleIndex * channelCount + channel) * sizeof(short);
+                        var bytes = new byte[] { payload[offset + 1], payload[offset] };
+                        sample.Channels[moduleSignals[channel]] = convertFunc(bytes, 0);
+                    }
+                    packetSamples.Add(sample);
+                }
+
+                output.Add(packetSamples);
             }
 
             return output;
         }
+        #endregion
     }
 }

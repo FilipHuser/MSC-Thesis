@@ -74,6 +74,7 @@ namespace Graphium
             {
                 return () => new SignalManagerViewModel(
                     x.GetRequiredService<IViewManager>(),
+                    x.GetRequiredService<ISignalService>(),
                     x.GetRequiredService<IConfigurationService>());
             });
 
@@ -88,7 +89,7 @@ namespace Graphium
                     x.GetRequiredService<IViewManager>());
             });
 
-            services.AddScoped<MainWindow>(x => new MainWindow(x.GetRequiredService<MainViewModel>()));
+            services.AddScoped(x => new MainWindow(x.GetRequiredService<MainViewModel>()));
 
             _serviceProvider = services.BuildServiceProvider();
         }

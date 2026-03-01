@@ -16,7 +16,8 @@ namespace Graphium.Services
         {
             WriteIndented = true,
             IncludeFields = true,
-            NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
+            NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
+            Converters = { new JsonStringEnumConverter() }
         };
         #endregion
         #region METHODS

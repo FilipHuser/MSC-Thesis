@@ -77,9 +77,8 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-            
-        </ToolBar>
 
+        </ToolBar>
         <local:DataPlotterControl DataContext="{Binding DataPlotter}"/>
     </DockPanel>
 </UserControl>

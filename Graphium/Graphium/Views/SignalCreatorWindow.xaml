@@ -12,8 +12,6 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
-        <!-- Fields -->
         <Grid Grid.Row="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -42,42 +40,33 @@
                     <Setter Property="Margin" Value="0,3"/>
                 </Style>
             </Grid.Resources>
-
-            <Label Grid.Row="0" Grid.Column="0" Content="Name:"/>
-            <TextBox Grid.Row="0" Grid.Column="1"
-                     Text="{Binding Signal.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-
-            <Label Grid.Row="1" Grid.Column="0" Content="Type:"/>
-            <ComboBox Grid.Row="1" Grid.Column="1"
+            <Label Grid.Row="0" Grid.Column="0" Content="Type:"/>
+            <ComboBox Grid.Row="0" Grid.Column="1"
                       ItemsSource="{Binding TypeOptions}"
                       SelectedItem="{Binding SelectedType}"/>
-
-            <Label Grid.Row="2" Grid.Column="0" Content="Source:"/>
-            <ComboBox Grid.Row="2" Grid.Column="1"
+            <Label Grid.Row="1" Grid.Column="0" Content="Source:"/>
+            <ComboBox Grid.Row="1" Grid.Column="1"
                       ItemsSource="{Binding SourceOptions}"
                       SelectedItem="{Binding SelectedSource}"/>
-
-            <!-- Numeric only -->
+            <Label Grid.Row="2" Grid.Column="0" Content="Name:"/>
+            <TextBox Grid.Row="2" Grid.Column="1"
+                     Text="{Binding Signal.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             <Label Grid.Row="3" Grid.Column="0" Content="Unit:"
                    Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
             <TextBox Grid.Row="3" Grid.Column="1"
                      Text="{Binding Signal.Properties.Unit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
-
             <Label Grid.Row="4" Grid.Column="0" Content="Lower Bound:"
                    Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
             <TextBox Grid.Row="4" Grid.Column="1"
                      Text="{Binding Signal.Properties.LowerBound, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
-
             <Label Grid.Row="5" Grid.Column="0" Content="Upper Bound:"
                    Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
             <TextBox Grid.Row="5" Grid.Column="1"
                      Text="{Binding Signal.Properties.UpperBound, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      Visibility="{Binding IsNumeric, Converter={StaticResource BoolToVisibility}}"/>
         </Grid>
-
-        <!-- Buttons -->
         <Grid Grid.Row="1" Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>

@@ -15,6 +15,9 @@
             <Menu DockPanel.Dock="Top">
                 <MenuItem Header="_File">
                     <MenuItem Header="_New" Command="{Binding NewTabCmd}"/>
+                    <MenuItem Header="_Save As">
+                        <MenuItem Header="_CSV" Command="{Binding SaveCurrentTabAsCSVCmd}"/>
+                    </MenuItem>
                     <MenuItem Header="_Preferences" Command="{Binding PreferencesCmd}"/>
                 </MenuItem>
                 <MenuItem Header="_Data Acquisition">

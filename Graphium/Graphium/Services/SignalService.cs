@@ -19,6 +19,7 @@ namespace Graphium.Services
             _signals.Add(signal);
         }
         public void RemoveSignal(SignalBase signal) => _signals?.Remove(signal);
+        public void NotifySignalsChanged() => SignalsChanged?.Invoke(this, EventArgs.Empty);
         public void Clear() => _signals?.Clear();
         public void SetCurrentSignals(ObservableCollection<SignalBase> signals)
         {
