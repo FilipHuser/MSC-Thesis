@@ -30,7 +30,7 @@ namespace Graphium.ViewModels
         private string _elapsedTime = "00:00:00";
         private SignalAligner _signalAligner = new();
         private CancellationTokenSource? _cts = new();
-        private System.Windows.Threading.DispatcherTimer? _clockTimer;
+        private System.Timers.Timer? _clockTimer;
         public int TabId { get; set; } = -1;
         public bool IsMeasuring { get; private set; }
         public DataPlotterViewModel DataPlotter { get; set; }
@@ -81,6 +81,7 @@ namespace Graphium.ViewModels
         public async Task StopMeasuringAsync()
         {
             _clockTimer?.Stop();
+            _clockTimer?.Dispose();
             _clockTimer = null;
             ElapsedTime = "00:00:00";
             DataPlotter.StopRendering();
@@ -130,8 +131,11 @@ namespace Graphium.ViewModels
 
             _signalAligner = new SignalAligner();
             _measurementStart = DateTime.Now;
-            _clockTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            _clockTimer.Tick += (_, _) => ElapsedTime = (DateTime.Now - _measurementStart).ToString(@"hh\:mm\:ss");
+            _clockTimer = new System.Timers.Timer(1000);
+            _clockTimer.Elapsed += (_, _) =>
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+                    ElapsedTime = (DateTime.Now - _measurementStart).ToString(@"hh\:mm\:ss"));
+            _clockTimer.Start();
             _clockTimer.Start();
             _dataHubService.StartCapturing();
             _cts = new CancellationTokenSource();

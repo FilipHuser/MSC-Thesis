@@ -96,7 +96,7 @@ namespace Graphium.ViewModels
             _isFollowing = false;
             _paletteApplied = false;
             _renderCts = new CancellationTokenSource();
-            _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
+            _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(33));
             _renderTask = RunRenderLoopAsync(_renderCts.Token);
         }
 
