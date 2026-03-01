@@ -89,6 +89,11 @@ namespace Graphium.ViewModels
                 errors.Add("Invalid capture device index");
             }
 
+            if (Settings.UdpPort < 1 || Settings.UdpPort > 65535)
+            {
+                errors.Add("UDP Port must be between 1 and 65535");
+            }
+
             HasValidationError = errors.Count > 0;
             ValidationError = string.Join(Environment.NewLine, errors);
         }
