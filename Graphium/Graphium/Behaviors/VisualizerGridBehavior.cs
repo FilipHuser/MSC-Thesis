@@ -42,15 +42,12 @@ namespace Graphium.Behaviors
         {
             RebuildGrid();
         }
-
         private void RebuildGrid()
         {
             if (AssociatedObject == null || Visualizers == null) return;
-
             var grid = AssociatedObject;
             grid.Children.Clear();
             grid.RowDefinitions.Clear();
-
             for (int i = 0; i < Visualizers.Count; i++)
             {
                 if (i > 0)
@@ -65,22 +62,23 @@ namespace Graphium.Behaviors
                     Grid.SetRow(splitter, grid.RowDefinitions.Count - 1);
                     grid.Children.Add(splitter);
                 }
-
-                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-
+                grid.RowDefinitions.Add(new RowDefinition
+                {
+                    Height = Visualizers[i] is TextSignalViewModel
+                        ? GridLength.Auto
+                        : new GridLength(1, GridUnitType.Star)
+                });
                 UserControl view = Visualizers[i] switch
                 {
                     NumericSignalViewModel => new NumericSignalControl(),
                     TextSignalViewModel => new TextSignalControl(),
                     _ => throw new InvalidOperationException()
                 };
-
                 view.DataContext = Visualizers[i];
                 Grid.SetRow(view, grid.RowDefinitions.Count - 1);
                 grid.Children.Add(view);
             }
         }
-
         protected override void OnDetaching()
         {
             if (Visualizers != null)

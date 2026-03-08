@@ -13,19 +13,22 @@ namespace Graphium.ViewModels
         private readonly ILoggingService _loggingService;
         private readonly IViewModelFactory _viewModelFactory;
         #endregion
-
         #region PROPERTIES
         private double _xMin = 0;
         private double _xMax = 1;
         private bool _isFollowing = false;
         private bool _paletteApplied = false;
+        private int _axisUpdateCounter = 0;
         private Task? _renderTask;
         private CancellationTokenSource? _renderCts;
         private PeriodicTimer? _renderTimer;
         private string _selectedPalette = "Category10";
-
         public double ViewWindowMs { get; set; } = 5000;
-
+        public bool IsFollowing
+        {
+            get => _isFollowing;
+            set => SetProperty(ref _isFollowing, value);
+        }
         private static readonly Dictionary<string, IPalette> Palettes = new()
         {
             ["Category10"] = new ScottPlot.Palettes.Category10(),
@@ -34,7 +37,6 @@ namespace Graphium.ViewModels
             ["Amber"] = new ScottPlot.Palettes.Amber(),
             ["Aurora"] = new ScottPlot.Palettes.Aurora(),
         };
-
         public string SelectedPalette
         {
             get => _selectedPalette;
@@ -44,26 +46,22 @@ namespace Graphium.ViewModels
                 _ = System.Windows.Application.Current.Dispatcher.InvokeAsync(ApplyPalette);
             }
         }
-
         public IEnumerable<string> AvailablePalettes => Palettes.Keys;
         public double XMin { get => _xMin; set => SetProperty(ref _xMin, value); }
         public double XMax { get => _xMax; set => SetProperty(ref _xMax, value); }
         public ObservableCollection<ISignalVisualizerViewModel> Visualizers { get; set; } = [];
         #endregion
-
         #region METHODS
         public DataPlotterViewModel(ILoggingService loggingService, IViewModelFactory viewModelFactory)
         {
             _loggingService = loggingService;
             _viewModelFactory = viewModelFactory;
         }
-
         public void OnSignalsChanged(IReadOnlyCollection<SignalBase>? signals)
         {
             Visualizers.Clear();
             _paletteApplied = false;
             if (signals == null) return;
-
             int colorIndex = 0;
             foreach (var signal in signals)
             {
@@ -75,31 +73,22 @@ namespace Graphium.ViewModels
                     _ when signal.Type == SignalType.NaN => throw new InvalidOperationException($"Signal '{signal.Name}' has no type set."),
                     _ => throw new NotSupportedException($"SignalType {signal.Type} is not supported")
                 };
-
                 if (visualizer is NumericSignalViewModel numVm)
                     numVm.SetColor(Palettes[_selectedPalette].GetColor(colorIndex++));
-
                 Visualizers.Add(visualizer);
             }
-
-            _paletteApplied = true;
             ApplySharedXAxis();
         }
-
-        public void ToggleFollow()
-        {
-            _isFollowing = !_isFollowing;
-        }
-
+        public void ToggleFollow() => IsFollowing = !IsFollowing;
         public void StartRendering()
         {
-            _isFollowing = false;
+            IsFollowing = true;
             _paletteApplied = false;
+            _axisUpdateCounter = 0;
             _renderCts = new CancellationTokenSource();
             _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(33));
             _renderTask = RunRenderLoopAsync(_renderCts.Token);
         }
-
         public void StopRendering()
         {
             _renderCts?.Cancel();
@@ -109,6 +98,8 @@ namespace Graphium.ViewModels
             _renderTimer = null;
             _renderTask = null;
         }
+        private double _currentXMax = 0;
+        private const double FollowSmoothingFactor = 0.1; // 0.0 = žádný pohyb, 1.0 = okamžitý
         private async Task RunRenderLoopAsync(CancellationToken token)
         {
             try
@@ -121,6 +112,7 @@ namespace Graphium.ViewModels
                             vm.Refresh();
 
                         var numericVMs = Visualizers.OfType<NumericSignalViewModel>().ToList();
+
                         if (numericVMs.Count > 1)
                         {
                             var masterLimits = numericVMs[0].PlotControl.Plot.Axes.GetLimits();
@@ -128,6 +120,20 @@ namespace Graphium.ViewModels
                             {
                                 vm.PlotControl.Plot.Axes.SetLimitsX(masterLimits.Left, masterLimits.Right);
                                 vm.NeedsXSync = false;
+                            }
+                        }
+
+                        if (_isFollowing)
+                        {
+                            var xData = numericVMs.FirstOrDefault()?.SignalBase.XData;
+                            if (xData?.Count > 0)
+                            {
+                                double targetXMax = xData[^1];
+                                _currentXMax += (targetXMax - _currentXMax) * FollowSmoothingFactor;
+                                foreach (var vm in numericVMs)
+                                    vm.ScrollTo(_currentXMax, ViewWindowMs);
+                                XMin = _currentXMax - ViewWindowMs;
+                                XMax = _currentXMax;
                             }
                         }
 
@@ -148,37 +154,35 @@ namespace Graphium.ViewModels
             for (int i = 0; i < numericVMs.Count; i++)
                 numericVMs[i].SetColor(palette.GetColor(i));
         }
-
         private void ApplySharedXAxis()
         {
             var numericVMs = Visualizers.OfType<NumericSignalViewModel>().ToList();
             if (numericVMs.Count == 0) return;
-
             foreach (var vm in numericVMs)
             {
                 void SyncFromVm()
                 {
+                    if (_isFollowing) return;
                     var limits = vm.PlotControl.Plot.Axes.GetLimits();
                     XMin = limits.Left;
                     XMax = limits.Right;
-
                     foreach (var other in numericVMs.Where(x => x != vm))
                     {
                         other.PlotControl.Plot.Axes.SetLimitsX(limits.Left, limits.Right);
                         other.PlotControl.Refresh();
                     }
-
                     foreach (var tvm in Visualizers.OfType<TextSignalViewModel>())
                         tvm.Refresh();
                 }
-
+                vm.PlotControl.MouseDown += (_, _) => IsFollowing = false;
                 vm.PlotControl.MouseMove += (_, e) =>
                 {
                     if (e.LeftButton != MouseButtonState.Pressed && e.RightButton != MouseButtonState.Pressed) return;
                     SyncFromVm();
                 };
                 vm.PlotControl.MouseUp += (_, _) => SyncFromVm();
-                vm.PlotControl.PreviewMouseWheel += (_, _) => _ = vm.PlotControl.Dispatcher.BeginInvoke(SyncFromVm, System.Windows.Threading.DispatcherPriority.Render);
+                vm.PlotControl.PreviewMouseWheel += (_, _) =>
+                    _ = vm.PlotControl.Dispatcher.BeginInvoke(SyncFromVm, System.Windows.Threading.DispatcherPriority.Render);
                 vm.PlotControl.Dispatcher.BeginInvoke(() =>
                 {
                     vm.PlotControl.Refresh();

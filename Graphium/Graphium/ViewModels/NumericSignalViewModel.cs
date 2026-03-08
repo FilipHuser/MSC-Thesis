@@ -30,24 +30,29 @@ namespace Graphium.ViewModels
         }
         public void ScrollTo(double xMax, double viewWindowMs)
         {
-            PlotControl.Plot.Axes.SetLimitsX(xMax - viewWindowMs, xMax);
+            lock (PlotControl.Plot.Sync)
+                PlotControl.Plot.Axes.SetLimitsX(xMax - viewWindowMs, xMax);
         }
+
         public override void Refresh()
         {
-            if (Signal.XData.Count == 0 || Signal.YData.Count == 0) return;
-            bool wasEmpty = _channelPlottables.Count == 0;
-            while (_channelPlottables.Count < Signal.YData.Count)
+            lock (PlotControl.Plot.Sync)
             {
-                int ch = _channelPlottables.Count;
-                var signalXY = PlotControl.Plot.Add.SignalXY(Signal.XData, Signal.YData[ch]);
-                if (_color.HasValue)
-                    signalXY.Color = _color.Value;
-                _channelPlottables.Add(signalXY);
-            }
-            if (wasEmpty)
-            {
-                PlotControl.Plot.Axes.AutoScale();
-                NeedsXSync = true;
+                if (Signal.XData.Count == 0 || Signal.YData.Count == 0) return;
+                bool wasEmpty = _channelPlottables.Count == 0;
+                while (_channelPlottables.Count < Signal.YData.Count)
+                {
+                    int ch = _channelPlottables.Count;
+                    var signalXY = PlotControl.Plot.Add.SignalXY(Signal.XData, Signal.YData[ch]);
+                    if (_color.HasValue)
+                        signalXY.Color = _color.Value;
+                    _channelPlottables.Add(signalXY);
+                }
+                if (wasEmpty)
+                {
+                    PlotControl.Plot.Axes.AutoScale();
+                    NeedsXSync = true;
+                }
             }
             PlotControl.Refresh();
         }

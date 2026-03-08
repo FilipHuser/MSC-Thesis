@@ -222,7 +222,7 @@ namespace Graphium.ViewModels
                         foreach (var channel in sample.Channels)
                         {
                             var signal = channel.Key;
-                            if (signal.IsPlotted)
+                            lock (signal.DataLock)
                                 signal.Update(xVal, channel.Value);
                             rowValues[channel.Key] = channel.Value;
                         }
@@ -234,7 +234,7 @@ namespace Graphium.ViewModels
                                 var val = _signalAligner.GetLastValue(sig);
                                 if (val != null)
                                 {
-                                    if (sig.IsPlotted)
+                                    lock (sig.DataLock)
                                         sig.Update(xVal, val);
                                     rowValues[sig] = val;
                                 }

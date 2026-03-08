@@ -16,7 +16,7 @@ public abstract class SignalBase
         set => _type = value;
     }
     public ModuleType Source { get; set; }
-    public bool IsPlotted { get; set; } = true;
+    [JsonIgnore] public readonly object DataLock = new();
     [JsonIgnore] public bool IsAcquired { get; set; } = true;
     [JsonIgnore] public List<double> XData { get; set; } = new();
     #endregion
