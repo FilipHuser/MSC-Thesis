@@ -38,5 +38,25 @@
             set => SetProperty(ref _udpPort, value);
         }
         #endregion
+        #region DATA_EXPORT
+        private bool _exportEnabled = true;
+        private string _exportHost = "127.0.0.1";
+        private int _exportPort = 9998;
+        public bool ExportEnabled
+        {
+            get => _exportEnabled;
+            set => SetProperty(ref _exportEnabled, value);
+        }
+        public string ExportHost
+        {
+            get => _exportHost;
+            set => SetProperty(ref _exportHost, value);
+        }
+        public int ExportPort
+        {
+            get => _exportPort;
+            set => SetProperty(ref _exportPort, value);
+        }
+        #endregion
     }
 }

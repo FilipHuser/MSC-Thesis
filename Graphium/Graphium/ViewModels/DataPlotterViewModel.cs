@@ -18,7 +18,6 @@ namespace Graphium.ViewModels
         private double _xMax = 1;
         private bool _isFollowing = false;
         private bool _paletteApplied = false;
-        private int _axisUpdateCounter = 0;
         private Task? _renderTask;
         private CancellationTokenSource? _renderCts;
         private PeriodicTimer? _renderTimer;
@@ -84,7 +83,6 @@ namespace Graphium.ViewModels
         {
             IsFollowing = true;
             _paletteApplied = false;
-            _axisUpdateCounter = 0;
             _renderCts = new CancellationTokenSource();
             _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(33));
             _renderTask = RunRenderLoopAsync(_renderCts.Token);

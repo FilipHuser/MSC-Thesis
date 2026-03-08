@@ -1,0 +1,118 @@
+﻿@{
+    ViewData["Title"] = "Graphium Live";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graphium Live</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        body { background: #1a1a2e; color: #eee; font-family: Consolas, monospace; margin: 0; padding: 20px; }
+        h1 { color: #00d4ff; font-size: 1.4em; margin-bottom: 20px; }
+        #status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: red; margin-right: 8px; }
+        #status.connected { background: #00ff88; }
+        .charts { display: flex; flex-wrap: wrap; gap: 16px; }
+        .chart-box { background: #16213e; border-radius: 8px; padding: 12px; flex: 1 1 400px; }
+        .chart-box h3 { margin: 0 0 8px; font-size: 0.9em; color: #00d4ff; }
+        .text-signals { margin-top: 20px; background: #16213e; border-radius: 8px; padding: 12px; }
+        .text-row { display: flex; gap: 16px; padding: 4px 0; border-bottom: 1px solid #2a2a4a; font-size: 0.85em; }
+        .text-row span:first-child { color: #888; width: 120px; }
+    </style>
+</head>
+<body>
+    <h1><span id="status"></span>Graphium Live</h1>
+    <div class="charts" id="charts"></div>
+    <div class="text-signals" id="textSignals"></div>
+
+    <script>
+        const MAX_POINTS = 500;
+        const charts = {};
+        const textSignals = {};
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/livedata")
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on("ReceiveData", (json) => {
+            const data = JSON.parse(json);
+            const t = data.t;
+            const signals = data.s;
+
+            for (const [name, value] of Object.entries(signals)) {
+                if (typeof value === "number") {
+                    updateChart(name, t, value);
+                } else {
+                    updateText(name, value);
+                }
+            }
+        });
+
+        connection.onreconnecting(() => document.getElementById("status").classList.remove("connected"));
+        connection.onreconnected(() => document.getElementById("status").classList.add("connected"));
+
+        connection.start().then(() => {
+            document.getElementById("status").classList.add("connected");
+        });
+
+        function updateChart(name, t, value) {
+            if (!charts[name]) {
+                const box = document.createElement("div");
+                box.className = "chart-box";
+                box.innerHTML = `<h3>${name}</h3><canvas id="chart_${name}"></canvas>`;
+                document.getElementById("charts").appendChild(box);
+
+                const ctx = document.getElementById(`chart_${name}`).getContext("2d");
+                charts[name] = new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: name,
+                            data: [],
+                            borderColor: "#00d4ff",
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        animation: false,
+                        responsive: true,
+                        scales: {
+                            x: { display: false },
+                            y: { ticks: { color: "#888" }, grid: { color: "#2a2a4a" } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+
+            const chart = charts[name];
+            chart.data.labels.push(t.toFixed(0));
+            chart.data.datasets[0].data.push(value);
+
+            if (chart.data.labels.length > MAX_POINTS) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+
+            chart.update("none");
+        }
+
+        function updateText(name, value) {
+            if (!textSignals[name]) {
+                const row = document.createElement("div");
+                row.className = "text-row";
+                row.id = `text_${name}`;
+                row.innerHTML = `<span>${name}</span><span id="textval_${name}"></span>`;
+                document.getElementById("textSignals").appendChild(row);
+                textSignals[name] = true;
+            }
+            document.getElementById(`textval_${name}`).textContent = JSON.stringify(value);
+        }
+    </script>
+</body>
+</html>

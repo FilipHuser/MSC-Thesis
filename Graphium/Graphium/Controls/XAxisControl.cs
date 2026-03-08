@@ -31,7 +31,6 @@ namespace Graphium.Controls
         protected override void OnRender(DrawingContext dc)
         {
             base.OnRender(dc);
-            System.Diagnostics.Debug.WriteLine($"DataAreaLeft: {DataAreaLeft}, DataAreaRight: {DataAreaRight}, ActualWidth: {ActualWidth}");
             double left = DataAreaLeft > 0 ? DataAreaLeft : 0;
             double right = DataAreaRight > 0 ? ActualWidth - DataAreaRight : ActualWidth;
             double plotWidth = right - left;

@@ -31,6 +31,7 @@ namespace Graphium
             services.AddSingleton<IAppConfigurationService, AppConfigurationService>();
             services.AddSingleton<IFileExportService, FileExportService>();
             services.AddSingleton<IMeasurementExportService, MeasurementExportService>();
+            services.AddSingleton<IDataExportService, DataExportService>();
 
             //VIEWMODELS
             services.AddScoped<MainViewModel>();
@@ -42,7 +43,7 @@ namespace Graphium
                     x.GetRequiredService<IDataHubService>(),
                     x.GetRequiredService<IViewModelFactory>(),
                     x.GetRequiredService<IDialogService>(),
-                    x.GetRequiredService<IFileExportService>(),
+                    x.GetRequiredService<IDataExportService>(),
                     x.GetRequiredService<IMeasurementExportService>(),
                     x.GetRequiredService<ILoggingService>());
             });

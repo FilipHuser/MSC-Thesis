@@ -14,13 +14,13 @@ namespace Graphium.ViewModels
     internal class MeasurementViewModel : ViewModelBase
     {
         #region SERVICES
+        private readonly IDialogService _dialogService;
         private readonly ISignalService _signalService;
         private readonly IDataHubService _dataHubService;
-        private readonly IViewModelFactory _viewModelFactory;
-        private readonly IDialogService _dialogService;
-        private readonly IFileExportService _fileExportService;
-        private readonly IMeasurementExportService _measurementExportService;
         private readonly ILoggingService _loggingService;
+        private readonly IViewModelFactory _viewModelFactory;
+        private readonly IDataExportService _dataExportService;
+        private readonly IMeasurementExportService _measurementExportService;
         #endregion
         #region PROPERTIES
         private string? _name;
@@ -50,7 +50,7 @@ namespace Graphium.ViewModels
                                     IDataHubService dataHubService,
                                     IViewModelFactory viewModelFactory,
                                     IDialogService dialogService,
-                                    IFileExportService fileExportService,
+                                    IDataExportService dataExportService,
                                     IMeasurementExportService measurementExportService,
                                     ILoggingService loggingService)
         {
@@ -58,7 +58,7 @@ namespace Graphium.ViewModels
             _dataHubService = dataHubService;
             _viewModelFactory = viewModelFactory;
             _dialogService = dialogService;
-            _fileExportService = fileExportService;
+            _dataExportService = dataExportService;
             _measurementExportService = measurementExportService;
             _loggingService = loggingService;
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
@@ -86,6 +86,7 @@ namespace Graphium.ViewModels
             ElapsedTime = "00:00:00";
             DataPlotter.StopRendering();
             _dataHubService.StopCapturing();
+            _dataExportService.Stop();
             _cts?.Cancel();
             IsMeasuring = false;
             foreach (var status in SourceStatuses) { status.IsActive = false; }
@@ -136,7 +137,9 @@ namespace Graphium.ViewModels
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
                     ElapsedTime = (DateTime.Now - _measurementStart).ToString(@"hh\:mm\:ss"));
             _clockTimer.Start();
-            _clockTimer.Start();
+
+
+            _dataExportService.Start();
             _dataHubService.StartCapturing();
             _cts = new CancellationTokenSource();
             _measurementTask = AcquireDataAsync(_cts.Token);
@@ -241,6 +244,7 @@ namespace Graphium.ViewModels
                             }
                         }
 
+                        _dataExportService.Export(rowValues, xVal);
                         await csvWriter.WriteRowAsync(sampleTimestamp, rowValues);
                     }
                 }
