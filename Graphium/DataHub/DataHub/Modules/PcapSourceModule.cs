@@ -33,7 +33,7 @@ namespace DataHub.Modules
         {
             var packet = pc.GetPacket();
 
-            if (_firstTimeval == null)
+            if (_firstTimeval is null)
             {
                 _firstTimeval = packet.Timeval;
                 _referenceTime = DateTime.Now;
@@ -73,7 +73,7 @@ namespace DataHub.Modules
 
             if (_captureDevice != null)
             {
-                _captureDevice.OnPacketArrival -= OnPacketArrival; // ← Odebrat před Close
+                _captureDevice.OnPacketArrival -= OnPacketArrival;
             }
 
             _captureDevice?.Close();

@@ -13,7 +13,6 @@ namespace Graphium.Core
     {
         #region METHODS
         private static string NormalizeKey(string key) => Regex.Replace(key, @"\s+", string.Empty);
-
         private static object? ConvertElement(JsonElement element) => element.ValueKind switch
         {
             JsonValueKind.String => element.GetString(),
@@ -66,21 +65,26 @@ namespace Graphium.Core
                 try { json = getJson(captured); }
                 catch { continue; }
 
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-                if (root.ValueKind != JsonValueKind.Object) continue;
+                JsonDocument doc;
+                try { doc = JsonDocument.Parse(json); }
+                catch (JsonException) { continue; }
 
-                var receivedData = root.EnumerateObject()
-                    .ToDictionary(p => NormalizeKey(p.Name), p => ConvertElement(p.Value), StringComparer.OrdinalIgnoreCase);
-
-                var sample = new Sample(captured.Timestamp);
-                foreach (var (key, signal) in signalMap)
+                using (doc)
                 {
-                    if (receivedData.TryGetValue(key, out var val) && val != null)
-                        sample.Channels[signal] = val;
-                }
+                    var root = doc.RootElement;
+                    if (root.ValueKind != JsonValueKind.Object) continue;
 
-                samples.Add(sample);
+                    var receivedData = root.EnumerateObject()
+                        .ToDictionary(p => NormalizeKey(p.Name), p => ConvertElement(p.Value), StringComparer.OrdinalIgnoreCase);
+
+                    var sample = new Sample(captured.Timestamp);
+                    foreach (var (key, signal) in signalMap)
+                    {
+                        if (receivedData.TryGetValue(key, out var val) && val != null)
+                            sample.Channels[signal] = val;
+                    }
+                    samples.Add(sample);
+                }
             }
 
             if (samples.Count > 0)
