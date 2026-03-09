@@ -28,12 +28,9 @@ namespace Graphium.Services
             _exporter?.Dispose();
             _exporter = null;
         }
-        private int _exportCounter = 0;
         public void Export(Dictionary<SignalBase, object> rowValues, double timestamp)
         {
             if (!IsEnabled || _exporter == null) return;
-            if (++_exportCounter % 20 != 0) return; // ~100x za sekundu
-
             var payload = new
             {
                 t = timestamp,

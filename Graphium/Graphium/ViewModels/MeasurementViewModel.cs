@@ -80,23 +80,34 @@ namespace Graphium.ViewModels
         }
         public async Task StopMeasuringAsync()
         {
+            if (!IsMeasuring) return;
+            IsMeasuring = false;
+
             _clockTimer?.Stop();
             _clockTimer?.Dispose();
             _clockTimer = null;
+            ElapsedTime = "00:00:00";
+
             DataPlotter.StopRendering();
             _dataHubService.StopCapturing();
             _dataExportService.Stop();
-            _cts?.Cancel();
-            IsMeasuring = false;
-            foreach (var status in SourceStatuses) { status.IsActive = false; }
+
+            if (_cts != null)
+            {
+                await _cts.CancelAsync();
+                _cts.Dispose();
+                _cts = null;
+            }
+
+            foreach (var status in SourceStatuses)
+                status.IsActive = false;
+
             if (_measurementTask != null)
             {
                 try { await _measurementTask; }
                 catch (Exception ex) { _loggingService.LogError($"Error waiting for measurement task: {ex.Message}"); }
                 _measurementTask = null;
             }
-            _cts?.Dispose();
-            _cts = null;
         }
         private async Task StartMeasuringAsync()
         {
@@ -178,7 +189,7 @@ namespace Graphium.ViewModels
 
                 if (masterSourceData == null || masterSourceData.Count == 0)
                 {
-                    await Task.Delay(_dataPollingInterval);
+                    await Task.Delay(_dataPollingInterval, token);
                     continue;
                 }
 
@@ -216,6 +227,8 @@ namespace Graphium.ViewModels
 
                     for (int sampleIndex = 0; sampleIndex < currentGroup.Count; sampleIndex++)
                     {
+                        if (token.IsCancellationRequested) break;
+
                         var sample = currentGroup[sampleIndex];
                         var sampleTimestamp = currentTimestamp + (sampleIncrement * sampleIndex);
                         var xVal = (sampleTimestamp - start).TotalMilliseconds;
@@ -251,6 +264,7 @@ namespace Graphium.ViewModels
 
                 bufferedGroup = groupsToProcess.Count > 0 ? groupsToProcess[^1] : null;
 
+                if (token.IsCancellationRequested) break;
                 await csvWriter.FlushAsync();
                 await Task.Delay(_dataPollingInterval);
             }

@@ -16,8 +16,10 @@ namespace Graphium.ViewModels
         #region PROPERTIES
         private double _xMin = 0;
         private double _xMax = 1;
+        private double _currentXMax = 0;
         private bool _isFollowing = false;
         private bool _paletteApplied = false;
+        private const double FollowSmoothingFactor = 0.1;
         private Task? _renderTask;
         private CancellationTokenSource? _renderCts;
         private PeriodicTimer? _renderTimer;
@@ -83,6 +85,7 @@ namespace Graphium.ViewModels
         {
             IsFollowing = true;
             _paletteApplied = false;
+            _currentXMax = 0;
             _renderCts = new CancellationTokenSource();
             _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(33));
             _renderTask = RunRenderLoopAsync(_renderCts.Token);
@@ -96,8 +99,6 @@ namespace Graphium.ViewModels
             _renderTimer = null;
             _renderTask = null;
         }
-        private double _currentXMax = 0;
-        private const double FollowSmoothingFactor = 0.1; // 0.0 = žádný pohyb, 1.0 = okamžitý
         private async Task RunRenderLoopAsync(CancellationToken token)
         {
             try
@@ -127,9 +128,17 @@ namespace Graphium.ViewModels
                             if (xData?.Count > 0)
                             {
                                 double targetXMax = xData[^1];
-                                _currentXMax += (targetXMax - _currentXMax) * FollowSmoothingFactor;
+                                if (_currentXMax == 0)
+                                    _currentXMax = targetXMax;
+                                else
+                                    _currentXMax += (targetXMax - _currentXMax) * FollowSmoothingFactor;
+
                                 foreach (var vm in numericVMs)
+                                {
+                                    vm.AutoScaleY();
                                     vm.ScrollTo(_currentXMax, ViewWindowMs);
+                                }
+
                                 XMin = _currentXMax - ViewWindowMs;
                                 XMax = _currentXMax;
                             }

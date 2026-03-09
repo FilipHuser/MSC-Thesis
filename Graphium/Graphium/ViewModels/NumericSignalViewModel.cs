@@ -33,7 +33,11 @@ namespace Graphium.ViewModels
             lock (PlotControl.Plot.Sync)
                 PlotControl.Plot.Axes.SetLimitsX(xMax - viewWindowMs, xMax);
         }
-
+        public void AutoScaleY()
+        {
+            lock (PlotControl.Plot.Sync)
+                PlotControl.Plot.Axes.AutoScaleY();
+        }
         public override void Refresh()
         {
             lock (PlotControl.Plot.Sync)
