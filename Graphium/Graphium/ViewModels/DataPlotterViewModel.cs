@@ -19,7 +19,6 @@ namespace Graphium.ViewModels
         private double _currentXMax = 0;
         private bool _isFollowing = false;
         private bool _paletteApplied = false;
-        private const double FollowSmoothingFactor = 0.1;
         private Task? _renderTask;
         private CancellationTokenSource? _renderCts;
         private PeriodicTimer? _renderTimer;
@@ -87,7 +86,7 @@ namespace Graphium.ViewModels
             _paletteApplied = false;
             _currentXMax = 0;
             _renderCts = new CancellationTokenSource();
-            _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(33));
+            _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
             _renderTask = RunRenderLoopAsync(_renderCts.Token);
         }
         public void StopRendering()
@@ -128,19 +127,13 @@ namespace Graphium.ViewModels
                             if (xData?.Count > 0)
                             {
                                 double targetXMax = xData[^1];
-                                if (_currentXMax == 0)
-                                    _currentXMax = targetXMax;
-                                else
-                                    _currentXMax += (targetXMax - _currentXMax) * FollowSmoothingFactor;
-
                                 foreach (var vm in numericVMs)
                                 {
                                     vm.AutoScaleY();
-                                    vm.ScrollTo(_currentXMax, ViewWindowMs);
+                                    vm.ScrollTo(targetXMax, ViewWindowMs);
                                 }
-
-                                XMin = _currentXMax - ViewWindowMs;
-                                XMax = _currentXMax;
+                                XMin = targetXMax - ViewWindowMs;
+                                XMax = targetXMax;
                             }
                         }
 
@@ -149,6 +142,10 @@ namespace Graphium.ViewModels
                             ApplyPalette();
                             _paletteApplied = true;
                         }
+
+                        foreach (var vm in numericVMs)
+                            vm.Render();
+
                     }, System.Windows.Threading.DispatcherPriority.Background);
                 }
             }

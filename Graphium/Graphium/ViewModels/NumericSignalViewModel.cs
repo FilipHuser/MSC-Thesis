@@ -58,8 +58,8 @@ namespace Graphium.ViewModels
                     NeedsXSync = true;
                 }
             }
-            PlotControl.Refresh();
         }
+        public void Render() => PlotControl.Refresh();
         public void SetColor(ScottPlot.Color color)
         {
             _color = color;
