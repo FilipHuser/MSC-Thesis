@@ -86,7 +86,6 @@ namespace Graphium.ViewModels
             _clockTimer?.Stop();
             _clockTimer?.Dispose();
             _clockTimer = null;
-            ElapsedTime = "00:00:00";
 
             DataPlotter.StopRendering();
             _dataHubService.StopCapturing();
