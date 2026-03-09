@@ -16,9 +16,9 @@ namespace Graphium.ViewModels
         #region PROPERTIES
         private double _xMin = 0;
         private double _xMax = 1;
+        private double _currentXMax = 0;
         private bool _isFollowing = false;
         private bool _paletteApplied = false;
-        private int _axisUpdateCounter = 0;
         private Task? _renderTask;
         private CancellationTokenSource? _renderCts;
         private PeriodicTimer? _renderTimer;
@@ -84,9 +84,9 @@ namespace Graphium.ViewModels
         {
             IsFollowing = true;
             _paletteApplied = false;
-            _axisUpdateCounter = 0;
+            _currentXMax = 0;
             _renderCts = new CancellationTokenSource();
-            _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(33));
+            _renderTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(16));
             _renderTask = RunRenderLoopAsync(_renderCts.Token);
         }
         public void StopRendering()
@@ -98,8 +98,6 @@ namespace Graphium.ViewModels
             _renderTimer = null;
             _renderTask = null;
         }
-        private double _currentXMax = 0;
-        private const double FollowSmoothingFactor = 0.1; // 0.0 = žádný pohyb, 1.0 = okamžitý
         private async Task RunRenderLoopAsync(CancellationToken token)
         {
             try
@@ -129,11 +127,13 @@ namespace Graphium.ViewModels
                             if (xData?.Count > 0)
                             {
                                 double targetXMax = xData[^1];
-                                _currentXMax += (targetXMax - _currentXMax) * FollowSmoothingFactor;
                                 foreach (var vm in numericVMs)
-                                    vm.ScrollTo(_currentXMax, ViewWindowMs);
-                                XMin = _currentXMax - ViewWindowMs;
-                                XMax = _currentXMax;
+                                {
+                                    vm.AutoScaleY();
+                                    vm.ScrollTo(targetXMax, ViewWindowMs);
+                                }
+                                XMin = targetXMax - ViewWindowMs;
+                                XMax = targetXMax;
                             }
                         }
 
@@ -142,6 +142,10 @@ namespace Graphium.ViewModels
                             ApplyPalette();
                             _paletteApplied = true;
                         }
+
+                        foreach (var vm in numericVMs)
+                            vm.Render();
+
                     }, System.Windows.Threading.DispatcherPriority.Background);
                 }
             }

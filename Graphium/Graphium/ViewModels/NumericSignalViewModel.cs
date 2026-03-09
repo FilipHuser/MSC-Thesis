@@ -33,7 +33,11 @@ namespace Graphium.ViewModels
             lock (PlotControl.Plot.Sync)
                 PlotControl.Plot.Axes.SetLimitsX(xMax - viewWindowMs, xMax);
         }
-
+        public void AutoScaleY()
+        {
+            lock (PlotControl.Plot.Sync)
+                PlotControl.Plot.Axes.AutoScaleY();
+        }
         public override void Refresh()
         {
             lock (PlotControl.Plot.Sync)
@@ -54,8 +58,8 @@ namespace Graphium.ViewModels
                     NeedsXSync = true;
                 }
             }
-            PlotControl.Refresh();
         }
+        public void Render() => PlotControl.Refresh();
         public void SetColor(ScottPlot.Color color)
         {
             _color = color;

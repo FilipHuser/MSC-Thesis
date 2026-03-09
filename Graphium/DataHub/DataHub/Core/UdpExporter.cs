@@ -15,16 +15,18 @@ namespace DataHub.Core
             _endpoint = new IPEndPoint(IPAddress.Parse(host), port);
             _client = new UdpClient();
         }
-
         public void Send(string json)
         {
-            if (_disposed || _client == null) return;
             try
             {
                 var bytes = Encoding.UTF8.GetBytes(json);
                 _client.Send(bytes, bytes.Length, _endpoint);
+                System.Diagnostics.Debug.WriteLine($"UDP sent {bytes.Length} bytes to {_endpoint}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"UDP send error: {ex.Message}");
+            }
         }
 
         public void Restart()

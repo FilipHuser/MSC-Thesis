@@ -14,13 +14,13 @@ namespace Graphium.ViewModels
     internal class MeasurementViewModel : ViewModelBase
     {
         #region SERVICES
+        private readonly IDialogService _dialogService;
         private readonly ISignalService _signalService;
         private readonly IDataHubService _dataHubService;
-        private readonly IViewModelFactory _viewModelFactory;
-        private readonly IDialogService _dialogService;
-        private readonly IFileExportService _fileExportService;
-        private readonly IMeasurementExportService _measurementExportService;
         private readonly ILoggingService _loggingService;
+        private readonly IViewModelFactory _viewModelFactory;
+        private readonly IDataExportService _dataExportService;
+        private readonly IMeasurementExportService _measurementExportService;
         #endregion
         #region PROPERTIES
         private string? _name;
@@ -50,7 +50,7 @@ namespace Graphium.ViewModels
                                     IDataHubService dataHubService,
                                     IViewModelFactory viewModelFactory,
                                     IDialogService dialogService,
-                                    IFileExportService fileExportService,
+                                    IDataExportService dataExportService,
                                     IMeasurementExportService measurementExportService,
                                     ILoggingService loggingService)
         {
@@ -58,7 +58,7 @@ namespace Graphium.ViewModels
             _dataHubService = dataHubService;
             _viewModelFactory = viewModelFactory;
             _dialogService = dialogService;
-            _fileExportService = fileExportService;
+            _dataExportService = dataExportService;
             _measurementExportService = measurementExportService;
             _loggingService = loggingService;
             DataPlotter = _viewModelFactory.Create<DataPlotterViewModel>();
@@ -80,26 +80,38 @@ namespace Graphium.ViewModels
         }
         public async Task StopMeasuringAsync()
         {
+            if (!IsMeasuring) return;
+            IsMeasuring = false;
+
             _clockTimer?.Stop();
             _clockTimer?.Dispose();
             _clockTimer = null;
             ElapsedTime = "00:00:00";
+
             DataPlotter.StopRendering();
             _dataHubService.StopCapturing();
-            _cts?.Cancel();
-            IsMeasuring = false;
-            foreach (var status in SourceStatuses) { status.IsActive = false; }
+            _dataExportService.Stop();
+
+            if (_cts != null)
+            {
+                await _cts.CancelAsync();
+                _cts.Dispose();
+                _cts = null;
+            }
+
+            foreach (var status in SourceStatuses)
+                status.IsActive = false;
+
             if (_measurementTask != null)
             {
                 try { await _measurementTask; }
                 catch (Exception ex) { _loggingService.LogError($"Error waiting for measurement task: {ex.Message}"); }
                 _measurementTask = null;
             }
-            _cts?.Dispose();
-            _cts = null;
         }
         private async Task StartMeasuringAsync()
         {
+            ElapsedTime = "00:00:00";
             if (_dataHubService.IsCapturing)
             {
                 _loggingService.LogWarning("Attempted to start measurement while already capturing.");
@@ -136,7 +148,9 @@ namespace Graphium.ViewModels
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
                     ElapsedTime = (DateTime.Now - _measurementStart).ToString(@"hh\:mm\:ss"));
             _clockTimer.Start();
-            _clockTimer.Start();
+
+
+            _dataExportService.Start();
             _dataHubService.StartCapturing();
             _cts = new CancellationTokenSource();
             _measurementTask = AcquireDataAsync(_cts.Token);
@@ -175,7 +189,7 @@ namespace Graphium.ViewModels
 
                 if (masterSourceData == null || masterSourceData.Count == 0)
                 {
-                    await Task.Delay(_dataPollingInterval);
+                    await Task.Delay(_dataPollingInterval, token);
                     continue;
                 }
 
@@ -213,6 +227,8 @@ namespace Graphium.ViewModels
 
                     for (int sampleIndex = 0; sampleIndex < currentGroup.Count; sampleIndex++)
                     {
+                        if (token.IsCancellationRequested) break;
+
                         var sample = currentGroup[sampleIndex];
                         var sampleTimestamp = currentTimestamp + (sampleIncrement * sampleIndex);
                         var xVal = (sampleTimestamp - start).TotalMilliseconds;
@@ -241,12 +257,14 @@ namespace Graphium.ViewModels
                             }
                         }
 
+                        _dataExportService.Export(rowValues, xVal);
                         await csvWriter.WriteRowAsync(sampleTimestamp, rowValues);
                     }
                 }
 
                 bufferedGroup = groupsToProcess.Count > 0 ? groupsToProcess[^1] : null;
 
+                if (token.IsCancellationRequested) break;
                 await csvWriter.FlushAsync();
                 await Task.Delay(_dataPollingInterval);
             }
