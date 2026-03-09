@@ -83,7 +83,6 @@ namespace Graphium.ViewModels
             _clockTimer?.Stop();
             _clockTimer?.Dispose();
             _clockTimer = null;
-            ElapsedTime = "00:00:00";
             DataPlotter.StopRendering();
             _dataHubService.StopCapturing();
             _dataExportService.Stop();
@@ -101,6 +100,7 @@ namespace Graphium.ViewModels
         }
         private async Task StartMeasuringAsync()
         {
+            ElapsedTime = "00:00:00";
             if (_dataHubService.IsCapturing)
             {
                 _loggingService.LogWarning("Attempted to start measurement while already capturing.");
