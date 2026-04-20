@@ -1,6 +1,4 @@
-﻿using Graphium.Models;
-
-namespace Graphium.Core
+﻿namespace Graphium.Models
 {
     internal class Sample
     {

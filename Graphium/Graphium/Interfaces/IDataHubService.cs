@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DataHub.Core;
 using DataHub.Interfaces;
-using Graphium.Core;
+using Graphium.Models;
 
 namespace Graphium.Interfaces
 {

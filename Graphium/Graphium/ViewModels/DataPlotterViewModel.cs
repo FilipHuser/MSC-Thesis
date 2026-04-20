@@ -74,10 +74,25 @@ namespace Graphium.ViewModels
                     _ => throw new NotSupportedException($"SignalType {signal.Type} is not supported")
                 };
                 if (visualizer is NumericSignalViewModel numVm)
-                    numVm.SetColor(Palettes[_selectedPalette].GetColor(colorIndex++));
+                {
+                    int offset = colorIndex++;
+                    var palette = Palettes[_selectedPalette];
+                    numVm.SetColorSelector(ch => palette.GetColor(offset + ch));
+                }
                 Visualizers.Add(visualizer);
             }
             ApplySharedXAxis();
+        }
+
+        private void ApplyPalette()
+        {
+            var palette = Palettes[_selectedPalette];
+            var numericVMs = Visualizers.OfType<NumericSignalViewModel>().ToList();
+            for (int i = 0; i < numericVMs.Count; i++)
+            {
+                int offset = i;
+                numericVMs[i].SetColorSelector(ch => palette.GetColor(offset + ch));
+            }
         }
         public void ToggleFollow() => IsFollowing = !IsFollowing;
         public void StartRendering()
@@ -150,13 +165,6 @@ namespace Graphium.ViewModels
                 }
             }
             catch (OperationCanceledException) { }
-        }
-        private void ApplyPalette()
-        {
-            var palette = Palettes[_selectedPalette];
-            var numericVMs = Visualizers.OfType<NumericSignalViewModel>().ToList();
-            for (int i = 0; i < numericVMs.Count; i++)
-                numericVMs[i].SetColor(palette.GetColor(i));
         }
         private void ApplySharedXAxis()
         {

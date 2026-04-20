@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Graphium.ViewModels.ViewModelBase" Collapsed="true">
+    <Position X="14.5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>ViewModels\ViewModelBase.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Graphium.Models.ModelBase" Collapsed="true">
+    <Position X="14.5" Y="1.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAIAAAAAAAgAEAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Models\ModelBase.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Graphium.ViewModels.DataAcquisitionViewModel" Collapsed="true">
+    <Position X="10.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAAAAAAAAAAAABAAAAAAQAAAAAEAAAAAAAAAAAAAgAA=</HashCode>
+      <FileName>ViewModels\DataAcquisitionViewModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Graphium.ViewModels.DataPlotterViewModel" Collapsed="true">
+    <Position X="11.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EACDIAEAACAkABAIACQAiECIAIAAEJAAAAAEAQAAAAA=</HashCode>
+      <FileName>ViewModels\DataPlotterViewModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Graphium.ViewModels.ChannelsConfigViewModel" Collapsed="true">
+    <Position X="12.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BACAGMAACAQgAAAAAAJAAkAAIAEAAAAAAAASACAUFAA=</HashCode>
+      <FileName>ViewModels\ChannelsConfigViewModel.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Graphium.ViewModels.MainViewModel" Collapsed="true">
+    <Position X="13.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EACAUAAAAgAAAAASFIAABAAAAAEAAEQAABAgIAIAIEA=</HashCode>
+      <FileName>ViewModels\MainViewModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Graphium.ViewModels.MeasurementViewModel" Collapsed="true">
+    <Position X="14.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EACBMBAARgACAAwgIBAQAMQBEAcAAAQAAAAAARCAAAE=</HashCode>
+      <FileName>ViewModels\MeasurementViewModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Graphium.ViewModels.PreferencesViewModel" Collapsed="true">
+    <Position X="15.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAgFIAAEIAAAAAAgAAAEAAAAAAAIAAAhEACABAAAAA=</HashCode>
+      <FileName>ViewModels\PreferencesViewModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Graphium.ViewModels.SignalCreatorViewModel" Collapsed="true">
+    <Position X="16.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAGAQAQEAAAEAAIAAAAAQAkAIAAECAAACCQAAACAg=</HashCode>
+      <FileName>ViewModels\SignalCreatorViewModel.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Graphium.ViewModels.SignalManagerViewModel" Collapsed="true">
+    <Position X="17.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAEIAAAAAAAAAIABQACAAAAAECAAAAAAACAAACAAA=</HashCode>
+      <FileName>ViewModels\SignalManagerViewModel.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Graphium.ViewModels.SignalVisualizerViewModel&lt;TSignal&gt;" Collapsed="true">
+    <Position X="18.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAABAAAACAAAAAAAAAAoAAAAAAAAAAABAAAA=</HashCode>
+      <FileName>ViewModels\SignalVisualizerViewModel.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
