@@ -11,7 +11,6 @@ namespace Graphium.Models
         public double LowerBound { get; set; } = -10;
         public double UpperBound { get; set; } = 10;
         #endregion
-
         #region METHODS
         public PlotProperties() { }
         public PlotProperties(PlotProperties other)

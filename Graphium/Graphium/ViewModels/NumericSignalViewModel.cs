@@ -2,13 +2,14 @@
 using ScottPlot.Plottables;
 using ScottPlot.WPF;
 using Graphium.Models;
+
 namespace Graphium.ViewModels
 {
     public class NumericSignalViewModel : SignalVisualizerViewModel<NumericSignal>
     {
         #region PROPERTIES
         private readonly List<SignalXY> _channelPlottables = new();
-        private ScottPlot.Color? _color;
+        private Func<int, ScottPlot.Color>? _colorSelector;
         public bool NeedsXSync { get; set; } = false;
         public bool HasPlottables => _channelPlottables.Count > 0;
         public WpfPlot PlotControl { get; set; } = new();
@@ -17,27 +18,39 @@ namespace Graphium.ViewModels
         public double YMin { get => _yMin; set => SetProperty(ref _yMin, value); }
         public double YMax { get => _yMax; set => SetProperty(ref _yMax, value); }
         #endregion
+
         #region METHODS
         public NumericSignalViewModel(NumericSignal signal) : base(signal)
         {
             Init();
         }
+
         public override void Clear()
         {
             foreach (var plottable in _channelPlottables)
                 PlotControl.Plot.Remove(plottable);
             _channelPlottables.Clear();
         }
+
         public void ScrollTo(double xMax, double viewWindowMs)
         {
             lock (PlotControl.Plot.Sync)
                 PlotControl.Plot.Axes.SetLimitsX(xMax - viewWindowMs, xMax);
         }
+
         public void AutoScaleY()
         {
             lock (PlotControl.Plot.Sync)
                 PlotControl.Plot.Axes.AutoScaleY();
         }
+
+        public void SetColorSelector(Func<int, ScottPlot.Color> selector)
+        {
+            _colorSelector = selector;
+            for (int i = 0; i < _channelPlottables.Count; i++)
+                _channelPlottables[i].Color = _colorSelector(i);
+        }
+
         public override void Refresh()
         {
             lock (PlotControl.Plot.Sync)
@@ -48,8 +61,8 @@ namespace Graphium.ViewModels
                 {
                     int ch = _channelPlottables.Count;
                     var signalXY = PlotControl.Plot.Add.SignalXY(Signal.XData, Signal.YData[ch]);
-                    if (_color.HasValue)
-                        signalXY.Color = _color.Value;
+                    if (_colorSelector != null)
+                        signalXY.Color = _colorSelector(ch);
                     _channelPlottables.Add(signalXY);
                 }
                 if (wasEmpty)
@@ -59,12 +72,9 @@ namespace Graphium.ViewModels
                 }
             }
         }
+
         public void Render() => PlotControl.Refresh();
-        public void SetColor(ScottPlot.Color color)
-        {
-            _color = color;
-            _channelPlottables.ForEach(x => x.Color = color);
-        }
+
         private void Init()
         {
             PlotControl.Plot.Layout.Fixed(new PixelPadding(0, 0, 0, 0));
