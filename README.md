@@ -48,7 +48,7 @@ Aplikace Graphium používá vzor **MVVM-S** (Model–View–ViewModel + Service
 - 🥽 **Integrace s VR prostředím** — příjem JSON telemetrie z Unreal Engine / Unity přes HTTP POST
 - ⌚ **Příjem dat z chytrých zařízení** — obecný UDP příjem (ověřeno na Garmin Venu 3)
 - 🔄 **Synchronizace datových proudů** — interpolace časových razítek pro zdroje s různými vzorkovacími frekvencemi
-- 📈 **Vizualizace v reálném čase** — grafy ~60 fps (ScottPlot), sdílená osa X, režim Follow, volitelná barevná paleta
+- 📈 **Vizualizace v reálném čase** — grafy ~60 fps (ScottPlot), sdílená osa X, režim Follow
 - 💾 **Export do CSV** — průběžný zápis, finální uložení po skončení měření
 - 📤 **UDP export** — odesílání dat do externích systémů v reálném čase (např. do Graphium Live nebo VR scény)
 - 🗂️ **Správa konfigurace** — ukládání a načítání nastavení signálů a kanálů
