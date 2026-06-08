@@ -151,5 +151,5 @@ Current values of all signals are sent ~100 times per second in the following fo
 
 ## Author
 
-**Bc. Filip Huser** — Master's Thesis, VŠB-TU Ostrava, FEI, 2026  
+**Ing. Filip Huser** — Master's Thesis, VŠB-TU Ostrava, FEI, 2026  
 Supervisor: Mgr. Ing. Michal Krumnikl, Ph.D.
