@@ -1,113 +1,115 @@
 # Graphium
 
-**Integrovaný systém pro synchronizovaný sběr a vizualizaci biomedicínských a VR dat**
+> Integrated system for synchronized acquisition and visualization of biomedical and VR data.
 
-Graphium je desktopová WPF aplikace umožňující v reálném čase sbírat biologické signály z více zdrojů současně, synchronizovat je na společnou časovou osu a vizualizovat je vedle dat z prostředí virtuální reality. Systém vznikl v kontextu výzkumného projektu Neurologické kliniky FNO zaměřeného na využití VR v desenzitizační terapii.
-
----
-
-## Obsah
-
-- [Přehled](#přehled)
-- [Architektura](#architektura)
-- [Funkce](#funkce)
-- [Požadavky](#požadavky)
-- [Instalace](#instalace)
-- [Konfigurace](#konfigurace)
-- [Podporované zdroje dat](#podporované-zdroje-dat)
-- [Export dat](#export-dat)
-- [Autor](#autor)
+Graphium is a desktop WPF application for real-time collection of biological signals from multiple sources simultaneously, synchronizing them onto a shared timeline and visualizing them alongside virtual reality environment data. The system was developed in the context of a research project at the Neurology Department of FNO focused on VR-based desensitization therapy.
 
 ---
 
-## Přehled
+## Table of Contents
 
-Systém umožňuje korelovat fyziologické signály pacienta (ECG, EDA, RESP, …) s aktuálním stavem VR scény — například zjistit, zda nárůst elektrodermální aktivity odpovídá přiblížení stimulu ve virtuálním prostředí, nebo je pouze artefaktem pohybu hlavy.
-
-Klíčovým technickým příspěvkem je **algoritmus interpolace časových razítek** mezi UDP pakety, který garantuje striktně monotónní časovou osu bez duplicit. Ověřeno na datasetu 31 měření s celkovým objemem přes **39,8 milionu vzorků**.
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Data Sources](#data-sources)
+- [Data Export](#data-export)
+- [Author](#author)
 
 ---
 
-## Architektura
+## Overview
 
-Projekt se skládá ze tří částí:
+Graphium enables correlation of patient physiological signals (ECG, EDA, RESP, …) with the current state of a VR scene — for example, determining whether a spike in electrodermal activity corresponds to a stimulus approaching in the virtual environment, or is merely a motion artifact.
 
-| Projekt | Popis |
+The key technical contribution is a **timestamp interpolation algorithm** between UDP packets that guarantees a strictly monotonic timeline with no duplicates. Validated on a dataset of 31 recordings totaling over **39.8 million samples**.
+
+---
+
+## Architecture
+
+The project consists of three components:
+
+| Project | Description |
 |---|---|
-| **DataHub** | .NET knihovna pro modulární sběr dat (PCAP, UDP, HTTP) |
-| **Graphium** | Hlavní WPF aplikace — vizualizace, konfigurace, export (architektura MVVM-S) |
-| **Graphium Live** | ASP.NET Core webová aplikace pro vzdálené monitorování přes prohlížeč |
+| **DataHub** | .NET library for modular data acquisition (PCAP, UDP, HTTP) |
+| **Graphium** | Main WPF application — visualization, configuration, export (MVVM-S architecture) |
+| **Graphium Live** | ASP.NET Core web application for remote browser-based monitoring |
 
-Aplikace Graphium používá vzor **MVVM-S** (Model–View–ViewModel + Service Layer) s DI kontejnerem (`Microsoft.Extensions.DependencyInjection`). Každá služba je registrována jako Singleton a do ViewModelů vstupuje přes konstruktor.
-
----
-
-## Funkce
-
-- 📡 **Příjem dat z BIOPAC MP200** — zachytávání UDP paketů přes SharpPcap, dekódování interleaved Int16 vzorků
-- 🥽 **Integrace s VR prostředím** — příjem JSON telemetrie z Unreal Engine / Unity přes HTTP POST
-- ⌚ **Příjem dat z chytrých zařízení** — obecný UDP příjem (ověřeno na Garmin Venu 3)
-- 🔄 **Synchronizace datových proudů** — interpolace časových razítek pro zdroje s různými vzorkovacími frekvencemi
-- 📈 **Vizualizace v reálném čase** — grafy ~60 fps (ScottPlot), sdílená osa X, režim Follow
-- 💾 **Export do CSV** — průběžný zápis, finální uložení po skončení měření
-- 📤 **UDP export** — odesílání dat do externích systémů v reálném čase (např. do Graphium Live nebo VR scény)
-- 🗂️ **Správa konfigurace** — ukládání a načítání nastavení signálů a kanálů
+Graphium uses the **MVVM-S** pattern (Model–View–ViewModel + Service Layer) with a DI container (`Microsoft.Extensions.DependencyInjection`). Each service is registered as a Singleton and injected into ViewModels via constructor injection.
 
 ---
 
-## Požadavky
+## Features
+
+- 📡 **BIOPAC MP200 acquisition** — UDP packet capture via SharpPcap, interleaved Int16 sample decoding
+- 🥽 **VR environment integration** — JSON telemetry ingestion from Unreal Engine / Unity via HTTP POST
+- ⌚ **Smart device support** — generic UDP receiver (validated on Garmin Venu 3)
+- 🔄 **Multi-stream synchronization** — timestamp interpolation across sources with different sampling rates
+- 📈 **Real-time visualization** — ~60 fps charts (ScottPlot), shared X axis, Follow mode
+- 💾 **CSV export** — continuous write during session, final save on measurement end
+- 📤 **UDP export** — live data forwarding to external systems (e.g. Graphium Live or VR scene)
+- 🗂️ **Configuration management** — save and load signal and channel settings
+
+---
+
+## Requirements
 
 - **OS:** Windows 10 / 11 (64-bit)
-- **.NET:** .NET 8 nebo novější
-- **Npcap:** [npcap.com](https://npcap.com/) — nutný pro zachytávání PCAP paketů
-- **Hardware:** BIOPAC MP200 *(volitelné)*
+- **.NET:** .NET 8 or later
+- **Npcap:** [npcap.com](https://npcap.com/) — required for PCAP packet capture
+- **Hardware:** BIOPAC MP200 *(optional)*
 
-### NuGet závislosti
+### NuGet Dependencies
 
-| Balíček | Použití |
+| Package | Purpose |
 |---|---|
-| [SharpPcap](https://github.com/dotpcap/sharppcap) | Zachytávání síťových paketů |
-| [ScottPlot](https://scottplot.net/) | Vykreslování grafů v WPF |
-| [NLog](https://nlog-project.org/) | Logování |
+| [SharpPcap](https://github.com/dotpcap/sharppcap) | Network packet capture |
+| [ScottPlot](https://scottplot.net/) | WPF chart rendering |
+| [NLog](https://nlog-project.org/) | Logging |
 | SignalR | Real-time streaming (Graphium Live) |
 
 ---
 
-## Instalace
+## Installation
 
 ```bash
-git clone <url-repozitáře>
+git clone <repository-url>
 cd graphium
 dotnet build
 dotnet run --project Graphium
 ```
 
-> Pro zachytávání PCAP paketů nainstalujte **Npcap** a spusťte aplikaci s dostatečnými oprávněními (nebo povolte Npcap pro neprivilegované uživatele při instalaci).
+> Install **Npcap** before first run. For PCAP capture, launch the application with elevated privileges or enable unprivileged mode during Npcap installation.
 
 ---
 
-## Konfigurace
+## Configuration
 
-Konfigurace se ukládá do `%AppData%\Graphium` a je editovatelná přímo v aplikaci přes **Data Acquisition → Preferences**.
+Configuration is stored in `%AppData%\Graphium` and can be edited directly in the application via **Data Acquisition → Preferences**.
 
-| Parametr | Popis |
+| Parameter | Description |
 |---|---|
-| Capture Device | Síťové rozhraní pro zachytávání |
-| BIOPAC IP Address | IP adresa zařízení MP200 |
-| UDP Packet Payload Size | Velikost datové části paketu MP200 |
-| URI | HTTP endpoint pro VR data (např. `http://localhost:8888/`) |
-| UDP Port | Port pro příjem UDP dat |
-| Export Host / Port | Cíl UDP exportu do externího systému |
+| Capture Device | Network interface for packet capture |
+| BIOPAC IP Address | IP address of the MP200 device |
+| UDP Packet Payload Size | MP200 packet payload size |
+| URI | HTTP endpoint for VR data (e.g. `http://localhost:8888/`) |
+| UDP Port | Port for incoming UDP data |
+| Export Host / Port | UDP export destination for external systems |
 
 ---
 
-## Podporované zdroje dat
+## Data Sources
 
 ### BIOPAC MP200 — PCAP
-Zařízení komunikuje přes UDP na portu `16010`. Aplikace zachytává pakety v promiskuitním režimu a dekóduje prokládané Int16 vzorky. Vzorkovací frekvence až **100 000 Hz / kanál**.
 
-### VR prostředí — HTTP
-VR aplikace odesílá JSON přes HTTP POST na endpoint aplikace. Příklad:
+The device communicates over UDP on port `16010`. The application captures packets in promiscuous mode and decodes interleaved Int16 samples. Sampling rate up to **100,000 Hz per channel**.
+
+### VR Environment — HTTP
+
+The VR application sends JSON via HTTP POST to the application endpoint. Example payload:
 
 ```json
 {
@@ -117,8 +119,9 @@ VR aplikace odesílá JSON přes HTTP POST na endpoint aplikace. Příklad:
 }
 ```
 
-### Chytrá zařízení — UDP
-Obecný UDP příjem libovolného JSON payloadu. Příklad (Garmin Venu 3):
+### Smart Devices — UDP
+
+Generic UDP receiver for arbitrary JSON payloads. Example (Garmin Venu 3):
 
 ```json
 {
@@ -130,13 +133,15 @@ Obecný UDP příjem libovolného JSON payloadu. Příklad (Garmin Venu 3):
 
 ---
 
-## Export dat
+## Data Export
 
 ### CSV
-Data jsou průběžně ukládána do `%AppData%\Graphium\Measurements\`. Po ukončení měření si uživatel zvolí výsledné umístění souboru. Časová osa je uložena jako unixový čas v mikrosekundách.
+
+Data is written continuously to `%AppData%\Graphium\Measurements\`. At the end of a session, the user selects the final file destination. The time axis is stored as Unix time in microseconds.
 
 ### UDP (Graphium Live)
-Aktuální hodnoty všech signálů jsou odesílány ~100× za sekundu ve formátu:
+
+Current values of all signals are sent ~100 times per second in the following format:
 
 ```json
 { "t": 1234567890.123, "s": { "ECG": 1024, "EDA": 3.14, "RESP": -512 } }
@@ -144,7 +149,7 @@ Aktuální hodnoty všech signálů jsou odesílány ~100× za sekundu ve formá
 
 ---
 
-## Autor
+## Author
 
-**Bc. Filip Huser** — Diplomová práce, VŠB-TU Ostrava, FEI, 2026  
-Vedoucí práce: Mgr. Ing. Michal Krumnikl, Ph.D.
+**Bc. Filip Huser** — Master's Thesis, VŠB-TU Ostrava, FEI, 2026  
+Supervisor: Mgr. Ing. Michal Krumnikl, Ph.D.
